@@ -234,7 +234,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                     transition={{ duration: 0.18 }}
                                 >
                                     <h1 className="text-2xl font-bold mb-1 text-primary-foreground">
-                                        {needsVerification ? "Confirma tu correo" : "Bienvenido de nuevo"}
+                                        {needsVerification ? "Confirma tu correo" : "Bienvenido a AleckTours"}
                                     </h1>
                                     <p className="text-primary-foreground/80 text-sm">
                                         {needsVerification
@@ -304,6 +304,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                                 )}
                                             </AnimatePresence>
 
+{/* section button */}
                                             <button
                                                 type="button"
                                                 onClick={handleVerifyCode}
@@ -424,7 +425,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                     )}
                                 </AnimatePresence>
                             </div>
-
+{/* secition welcome */}
                             {!welcomeInfo && !needsVerification && (
                                 <p className="text-center text-muted-foreground text-sm mt-5">
                                     ¿No tienes cuenta?{" "}
