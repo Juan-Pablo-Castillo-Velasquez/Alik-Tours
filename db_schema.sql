@@ -142,31 +142,19 @@ CREATE TABLE IF NOT EXISTS roles (
 
 CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario SERIAL PRIMARY KEY,
-
     username VARCHAR(50) UNIQUE NOT NULL,
-
-    correo_electronico VARCHAR(100) UNIQUE NOT NULL,
-
+    correo_electronico VARCHAR(99) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-
     id_cliente INTEGER UNIQUE,
-
     id_empleado INTEGER UNIQUE,
-
     activo BOOLEAN DEFAULT TRUE,
-
     verificado BOOLEAN DEFAULT FALSE,
-
     foto_perfil VARCHAR(255),
-
     ultimo_login TIMESTAMP,
-
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (id_cliente)
         REFERENCES clientes(id_cliente)
         ON DELETE CASCADE,
-
     FOREIGN KEY (id_empleado)
         REFERENCES empleados(id_empleado)
         ON DELETE CASCADE
@@ -174,17 +162,12 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 CREATE TABLE IF NOT EXISTS usuarios_roles (
     id_usuario INTEGER NOT NULL,
-
     id_rol INTEGER NOT NULL,
-
     fecha_asignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     PRIMARY KEY (id_usuario, id_rol),
-
     FOREIGN KEY (id_usuario)
         REFERENCES usuarios(id_usuario)
         ON DELETE CASCADE,
-
     FOREIGN KEY (id_rol)
         REFERENCES roles(id_rol)
         ON DELETE CASCADE
