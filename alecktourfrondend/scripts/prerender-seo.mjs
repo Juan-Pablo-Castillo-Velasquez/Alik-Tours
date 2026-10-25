@@ -26,7 +26,7 @@
 //
 // Las 3 rutas que ya tienen su propio título/descripción reales vía
 // useSeoMeta (Packages, TermsAndConditions, PrivacyPolicy) los replican
-// acá tal cual -- mismo texto, mismo formato "<title> | AleckTours" que
+// acá tal cual -- mismo texto, mismo formato "<title> | Alik Tours" que
 // useSeoMeta.ts ya construye en el navegador -- no se inventa copy nuevo,
 // solo se adelanta al HTML crudo lo que el JS ya iba a poner. Las demás
 // rutas del sitemap (todavía sin useSeoMeta propio) se dejan con el
@@ -42,8 +42,8 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = join(__dirname, "..", "dist");
-const SITE_URL = "https://proyectoalectours-docker.vercel.app";
-const SITE_NAME = "AleckTours";
+const SITE_URL = "https://alik-tours.vercel.app";
+const SITE_NAME = "Alik Tours";
 
 // path -> { title, description } | null
 // null = todavía sin copy propio -- solo se corrige canonical/og:url.
@@ -52,7 +52,7 @@ const ROUTES = {
   "/packages": {
     title: "Paquetes de viaje",
     description:
-      "Explora los paquetes de viaje de AleckTours: hotel, actividades y traslados combinados en un solo precio por persona.",
+      "Explora los paquetes de viaje de Alik Tours: hotel, actividades y traslados combinados en un solo precio por persona.",
   },
   "/benefits": null,
   "/corporate": null,
@@ -63,12 +63,12 @@ const ROUTES = {
   "/terms": {
     title: "Términos y Condiciones",
     description:
-      "Términos y condiciones de uso de AlecTours: cuenta, reservas, pagos, cancelaciones y responsabilidad.",
+      "Términos y condiciones de uso de Alik Tours: cuenta, reservas, pagos, cancelaciones y responsabilidad.",
   },
   "/privacy": {
     title: "Política de Privacidad",
     description:
-      "Cómo AlekTours recolecta, usa y protege tus datos personales, incluyendo el uso de almacenamiento local del navegador.",
+      "Cómo Alik Tours recolecta, usa y protege tus datos personales, incluyendo el uso de almacenamiento local del navegador.",
   },
 };
 

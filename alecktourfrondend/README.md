@@ -116,7 +116,7 @@ alecktourfrondend/src/
 
 ## Deploy
 
-- **Frontend**: Vercel (`https://proyectoalectours-docker.vercel.app/`)
+- **Frontend**: Vercel (`https://alik-tours.vercel.app/`)
 - **Backend**: Docker en servidor propio
 
 ---

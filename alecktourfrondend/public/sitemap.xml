@@ -9,52 +9,52 @@
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/</loc>
+    <loc>https://alik-tours.vercel.app/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/search</loc>
+    <loc>https://alik-tours.vercel.app/search</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/benefits</loc>
+    <loc>https://alik-tours.vercel.app/benefits</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/corporate</loc>
+    <loc>https://alik-tours.vercel.app/corporate</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/travel-info</loc>
+    <loc>https://alik-tours.vercel.app/travel-info</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/faq</loc>
+    <loc>https://alik-tours.vercel.app/faq</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/contact</loc>
+    <loc>https://alik-tours.vercel.app/contact</loc>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/testimonios</loc>
+    <loc>https://alik-tours.vercel.app/testimonios</loc>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/terms</loc>
+    <loc>https://alik-tours.vercel.app/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
-    <loc>https://proyectoalectours-docker.vercel.app/privacy</loc>
+    <loc>https://alik-tours.vercel.app/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
