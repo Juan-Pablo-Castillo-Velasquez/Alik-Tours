@@ -10,7 +10,7 @@ interface SeoMetaOptions {
 const SITE_NAME = "Alik Tours";
 // Dominio real donde está desplegado el sitio hoy (Vercel) — el mismo que
 // se verificó en Google Search Console. Si más adelante se conecta un
-// dominio propio (ej. alecktours.com), actualizar este valor junto con
+// dominio propio (ej. Alik tours.com), actualizar este valor junto con
 // robots.txt, sitemap.xml y las meta tags de index.html.
 const SITE_URL = "https://alik-tours.vercel.app";
 

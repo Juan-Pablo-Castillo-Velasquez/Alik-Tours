@@ -97,7 +97,7 @@ function FotoPolaroid({
 }
 
 // Palabras clave para reconocer el motivo en el nombre real del archivo
-// subido a Cloudinary (alectours/temporadas/<clave>/) -- ej. subir
+// subido a Cloudinary (Alik tours/temporadas/<clave>/) -- ej. subir
 // "calabaza-recorte.png" hace que el motivo "calabaza" use esa imagen
 // real en vez del SVG. Sin coincidencia (o sin Cloudinary configurado, o
 // carpeta vacía todavía) se cae al SVG de siempre: nunca rompe nada ni

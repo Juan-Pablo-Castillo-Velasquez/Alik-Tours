@@ -24,7 +24,7 @@ import {
 import type { ReservaResponse } from "../../data/reservaTypes";
 import { fmt } from "./TabReservas/utils";
 
-// Chat privado con el equipo de AlecTours -- un solo hilo continuo (no uno
+// Chat privado con el equipo de Alik tours -- un solo hilo continuo (no uno
 // por reserva); cualquier admin puede responder. Solo polling cada 5s
 // (sin websockets, mismo criterio que ModuleMensajes.tsx del panel admin).
 const POLL_MENSAJES_MS = 5000;
@@ -201,7 +201,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
                   <MessageCircle className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
                   <h3 className="text-base font-bold text-foreground tracking-tight">Aún no tienes mensajes</h3>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1 mb-4">
-                    Cuéntanos qué necesitas -- te responderá el equipo de AlecTours.
+                    Cuéntanos qué necesitas -- te responderá el equipo de Alik tours.
                   </p>
                   <div className="flex flex-wrap items-center justify-center gap-2 max-w-sm">
                     {CATEGORIAS_INICIALES.map(({ icon: Icon, label, texto: textoPlantilla }) => (
@@ -240,7 +240,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
                     <div key={m.id_mensaje} className={`flex ${m.remitente_tipo === "cliente" ? "justify-end" : "justify-start"}`}>
                       <div className="max-w-[80%] sm:max-w-[70%] flex flex-col gap-1">
                         {m.remitente_tipo === "admin" && (
-                          <span className="text-[11px] text-muted-foreground px-1">{m.remitente_nombre ?? "AlecTours"}</span>
+                          <span className="text-[11px] text-muted-foreground px-1">{m.remitente_nombre ?? "Alik tours"}</span>
                         )}
                         <div
                           className={`rounded-2xl px-3.5 py-2.5 ${

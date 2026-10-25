@@ -18,7 +18,7 @@ export default function Home() {
   useSeoMeta({
     title: "Agencia de Viajes y Turismo en Colombia",
     description:
-      "Descubre los mejores destinos de Colombia con AleckTours. Reserva hoteles, paquetes y tours de forma rápida y segura.",
+      "Descubre los mejores destinos de Colombia con Alik tours. Reserva hoteles, paquetes y tours de forma rápida y segura.",
     path: "/",
   });
 

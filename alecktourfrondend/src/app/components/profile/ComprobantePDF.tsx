@@ -319,7 +319,7 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
     }
 
     // ── 4. GENERACIÓN DE QR + FOOTER CORPORATIVO ─────────────────────────────
-    const qrString = `ALECTOURS|RES-${detalle.id_reserva}|PAQ-${detalle.id_paquete}|CC-${clienteData.cedula}`;
+    const qrString = `Aliktours|RES-${detalle.id_reserva}|PAQ-${detalle.id_paquete}|CC-${clienteData.cedula}`;
     const qrBase64 = await getQRBase64(qrString);
 
     if (qrBase64) {
@@ -335,7 +335,7 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
       244,
     );
     doc.text(
-      "Documento digital verificado de forma segura a través del servidor centralizado de AlecTours.",
+      "Documento digital verificado de forma segura a través del servidor centralizado de Alik tours.",
       margin,
       247.5,
     );
@@ -358,7 +358,7 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
     doc.text(
-      "Soporte Global: info@alectours.com  |  Bogotá, Colombia",
+      "Soporte Global: info@Aliktours.com  |  Bogotá, Colombia",
       W / 2,
       286,
       { align: "center" },

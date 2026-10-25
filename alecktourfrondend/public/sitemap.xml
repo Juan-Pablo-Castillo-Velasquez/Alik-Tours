@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  AleckTours — sitemap.xml
+  Alik tours — sitemap.xml
   Solo incluye rutas públicas y estáticas (sin parámetros dinámicos): las
   páginas de hotel/paquete individuales (/hotel/:id, /package/:id) dependen
   de IDs reales de la base de datos y deberían agregarse generándolas desde

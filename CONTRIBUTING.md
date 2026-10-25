@@ -1,4 +1,4 @@
-# Contributing to AleckTours
+# Contributing to Alik tours
 
 Thanks for your interest in contributing! This document outlines the workflow and conventions used in this project.
 

@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 # El tema Halloween sembrado originalmente (ver
 # 6c564b92474a_crear_tabla_temas_color.py) usaba un violeta profundo como
-# color_primario -- fuera del sistema de marca carmesi/ambar de AleckTours,
+# color_primario -- fuera del sistema de marca carmesi/ambar de Alik tours,
 # y la causa raiz del efecto "morado sobre morado" detectado en el navbar
 # esta sesion. Como color_primario_* alimenta --primary en TODO el sitio
 # (ver TemaContext.tsx), un violeta ahi no es un detalle decorativo: cambia
@@ -28,7 +28,7 @@ depends_on: Union[str, Sequence[str], None] = None
 #
 # Nuevos valores: un rojo-naranja profundo ("calabaza quemada"), mas cerca
 # en el circulo de color de nuestro propio carmesi (--primary: #6e1832,
-# hue ~342) que de un violeta -- se lee como "AleckTours en modo Halloween",
+# hue ~342) que de un violeta -- se lee como "Alik tours en modo Halloween",
 # no como una marca distinta. color_secundario_* NO se toca: ya era un
 # ambar/naranja calido (hue ~30, cerca de --gold en 43) que cumple el
 # criterio de "un unico color de acento estacional adicional" sin

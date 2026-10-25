@@ -194,7 +194,7 @@ export default function Corporate() {
                 Empresas que confían en nosotros
               </h2>
               <p className="text-xl text-muted-foreground">
-                Más de 500 empresas en Colombia ya son parte de AlecTours
+                Más de 500 empresas en Colombia ya son parte de Alik tours
               </p>
             </motion.div>
 

@@ -64,13 +64,13 @@ export function generarFacturaPdf(pago: FacturaPago, reserva?: FacturaReserva, c
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(...GOLD);
-  doc.text("AlecTours", marginX, y);
+  doc.text("Alik tours", marginX, y);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...MUTED);
   y += 7;
-  doc.text("Agencia de Viajes y Turismo · www.alecktours.com", marginX, y);
+  doc.text("Agencia de Viajes y Turismo · www.Alik-tours.com", marginX, y);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);

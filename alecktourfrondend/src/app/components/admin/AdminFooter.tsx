@@ -6,7 +6,7 @@ export default function AdminFooter() {
   return (
     <footer className="flex-shrink-0 border-t border-border bg-card px-6 py-3 transition-colors duration-300">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-        <p>© {currentYear} AlecTours. Panel de administración interno.</p>
+        <p>© {currentYear} Alik tours. Panel de administración interno.</p>
         <div className="flex items-center gap-4">
           <Link to="/" className="hover:text-foreground transition-colors">
             Ir al sitio público

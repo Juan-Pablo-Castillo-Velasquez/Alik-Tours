@@ -1,6 +1,6 @@
 # Frontend — AlecTours
 
-Aplicación web SPA para la plataforma de gestión turística AlecTours.
+Aplicación web SPA para la plataforma de gestión turística Alik tours.
 
 ---
 

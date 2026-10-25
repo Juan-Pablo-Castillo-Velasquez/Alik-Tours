@@ -11,7 +11,7 @@ export default function Footer() {
     empresa: [
       { name: "Inicio", href: "/" },
       { name: "Viajes Corporativos", href: "/corporate" },
-      { name: "AleckTours Rewards", href: "/benefits" },
+      { name: "Alik tours Rewards", href: "/benefits" },
       { name: "Contacto", href: "/contact" },
     ],
     soporte: [
@@ -108,7 +108,7 @@ export default function Footer() {
             className="text-sm text-center md:text-left"
             style={{ color: "rgba(243,228,232,0.55)" }}
           >
-            © {currentYear} AlecTours. Todos los derechos reservados.
+            © {currentYear} Alik tours. Todos los derechos reservados.
           </p>
           <div className="flex gap-6 text-sm">
             <Link to="/terms" className="footer-link">

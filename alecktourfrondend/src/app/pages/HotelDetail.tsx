@@ -243,7 +243,7 @@ export default function HotelDetail() {
   useSeoMeta({
     title: hotel ? `${hotel.nombre_hotel} en ${hotel.ciudad}` : "Hotel",
     description: hotel
-      ? `Reserva ${hotel.nombre_hotel} en ${hotel.ciudad}, ${hotel.pais} con AleckTours.${
+      ? `Reserva ${hotel.nombre_hotel} en ${hotel.ciudad}, ${hotel.pais} con Alik tours.${
           hotel.calificacion ? ` Calificación ${hotel.calificacion}/5.` : ""
         } Tarifas y disponibilidad real, reserva segura en línea.`
       : undefined,
@@ -731,7 +731,7 @@ export default function HotelDetail() {
                             />
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-foreground truncate">
-                                {r.nombre_cliente ?? "Huésped AlecTours"}
+                                {r.nombre_cliente ?? "Huésped Alik tours"}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {formatFechaResena(r.fecha_creacion)}

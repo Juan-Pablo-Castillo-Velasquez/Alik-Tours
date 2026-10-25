@@ -3,7 +3,7 @@
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, ToasterProps } from "sonner";
 
-// Toaster con los colores/tipografía de marca de AleckTours en vez del
+// Toaster con los colores/tipografía de marca de Alik tours en vez del
 // rojo/verde genérico por defecto de sonner. Las variables de abajo son
 // las que sonner expone cuando se le pasa `richColors` (documentadas en
 // node_modules/sonner/dist/styles.css, bloque [data-rich-colors="true"]):

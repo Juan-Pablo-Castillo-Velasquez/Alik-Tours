@@ -580,7 +580,7 @@ export default function PackageDetail() {
                         />
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-foreground truncate">
-                            {r.nombre_cliente ?? "Huésped AlecTours"}
+                            {r.nombre_cliente ?? "Huésped Alik tours"}
                           </p>
                         </div>
                         <div className="ml-auto flex gap-0.5 shrink-0">
@@ -656,7 +656,7 @@ export default function PackageDetail() {
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
                     Puedes solicitar la cancelación desde tu perfil después de reservar. Un
-                    asesor de AlecTours revisa cada solicitud y te confirma las condiciones de
+                    asesor de Alik tours revisa cada solicitud y te confirma las condiciones de
                     reembolso según el hotel y el tiempo restante hasta el viaje.
                   </AccordionContent>
                 </AccordionItem>

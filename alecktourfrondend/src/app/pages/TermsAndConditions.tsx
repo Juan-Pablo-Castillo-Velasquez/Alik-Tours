@@ -9,7 +9,7 @@ const SECCIONES = [
     icon: FileText,
     titulo: "1. Aceptación de los términos",
     parrafos: [
-      "Al crear una cuenta, navegar el catálogo de hoteles y paquetes, o realizar una reserva en AlecTours, aceptas estos Términos y Condiciones en su totalidad. Si no estás de acuerdo con alguna parte, te pedimos no usar la plataforma.",
+      "Al crear una cuenta, navegar el catálogo de hoteles y paquetes, o realizar una reserva en Alik tours, aceptas estos Términos y Condiciones en su totalidad. Si no estás de acuerdo con alguna parte, te pedimos no usar la plataforma.",
     ],
   },
   {
@@ -65,7 +65,7 @@ const SECCIONES = [
 export default function TermsAndConditions() {
   useSeoMeta({
     title: "Términos y Condiciones",
-    description: "Términos y condiciones de uso de AlecTours: cuenta, reservas, pagos, cancelaciones y responsabilidad.",
+    description: "Términos y condiciones de uso de Alik tours: cuenta, reservas, pagos, cancelaciones y responsabilidad.",
     path: "/terms",
   });
 

@@ -51,7 +51,7 @@ export default function Packages() {
   useSeoMeta({
     title: "Paquetes de viaje",
     description:
-      "Explora los paquetes de viaje de AleckTours: hotel, actividades y traslados combinados en un solo precio por persona.",
+      "Explora los paquetes de viaje de Alik tours: hotel, actividades y traslados combinados en un solo precio por persona.",
     path: "/packages",
   });
 

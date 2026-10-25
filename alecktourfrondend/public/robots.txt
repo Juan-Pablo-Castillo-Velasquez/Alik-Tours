@@ -1,4 +1,4 @@
-# AleckTours — robots.txt
+# Alik tours — robots.txt
 # Deja indexar el contenido público del sitio; bloquea únicamente las áreas
 # transaccionales/autenticadas, que no tienen ningún valor de búsqueda y
 # generarían contenido duplicado o vacío para el rastreador.

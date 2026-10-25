@@ -202,4 +202,4 @@ app.mount("/uploads", StaticFiles(directory=_UPLOADS_DIR), name="uploads")
 
 @app.get("/")
 def root():
-    return {"message": "API Alecktours funcionando"}
+    return {"message": "API Alik tours funcionando"}
