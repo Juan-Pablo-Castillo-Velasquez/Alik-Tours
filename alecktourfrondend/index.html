@@ -1,83 +1,99 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!DOCTYPE html>
-  <html lang="es">
-    <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Título SEO -->
+    <title>Alik Tours | Agencia de Viajes y Turismo en Colombia</title>
 
-  <!-- Título SEO -->
-  <title>Alik Tours | Agencia de Viajes y Turismo en Colombia</title>
-
-  <!-- Descripción SEO -->
-  <!-- Acortada (antes 188 caracteres / 1165px, por encima del máx. de
+    <!-- Descripción SEO -->
+    <!-- Acortada (antes 188 caracteres / 1165px, por encima del máx. de
        ~1000px que recomienda Google antes de truncar en los resultados de
        búsqueda) -- mismo mensaje, sin la enumeración larga del final. -->
-  <meta
-    name="description"
-    content="Descubre los mejores destinos de Colombia con Alik Tours. Reserva hoteles, paquetes y tours de forma rápida y segura."
-  />
+    <meta
+      name="description"
+      content="Descubre los mejores destinos de Colombia con Alik Tours. Reserva hoteles, paquetes y tours de forma rápida y segura."
+    />
 
-  <!-- Keywords -->
-  <meta
-    name="keywords"
-    content="agencia de viajes, turismo Colombia, paquetes turísticos, hoteles, reservas, tours Colombia, viajes nacionales, vacaciones, Alik Tours, destinos turísticos"
-  />
+    <!-- Keywords -->
+    <meta
+      name="keywords"
+      content="agencia de viajes, turismo Colombia, paquetes turísticos, hoteles, reservas, tours Colombia, viajes nacionales, vacaciones, Alik Tours, destinos turísticos"
+    />
 
-  <!-- Robots -->
-  <meta name="robots" content="index, follow" />
+    <!-- Robots -->
+    <meta name="robots" content="index, follow" />
 
-  <!-- Autor -->
-  <meta name="author" content="Alik Tours" />
+    <!-- Autor -->
+    <meta name="author" content="Juan Pablo Castillo Velásquez" />
 
-  <!-- Canonical -->
-  <link rel="canonical" href="https://alik-tours.vercel.app/" />
+    <!-- Canonical -->
+    <link rel="canonical" href="https://alik-tours.vercel.app/" />
 
-  <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="Alik Tours | Vive Colombia como Nunca Antes" />
-  <meta
-    property="og:description"
-    content="Explora destinos increíbles, reserva hoteles y encuentra experiencias únicas en Colombia con Alik Tours."
-  />
-  <meta property="og:url" content="https://alik-tours.vercel.app/" />
-  <meta property="og:site_name" content="Alik Tours" />
-  <meta property="og:locale" content="es_CO" />
-  <meta property="og:image" content="https://alik-tours.vercel.app/og-image.jpg" />
+    <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Alik Tours | Vive Colombia como Nunca Antes"
+    />
+    <meta
+      property="og:description"
+      content="Explora destinos increíbles, reserva hoteles y encuentra experiencias únicas en Colombia con Alik Tours."
+    />
+    <meta property="og:url" content="https://alik-tours.vercel.app/" />
+    <meta property="og:site_name" content="Alik Tours" />
+    <meta property="og:locale" content="es_CO" />
+    <meta
+      property="og:image"
+      content="https://alik-tours.vercel.app/og-image.jpg"
+    />
 
-  <!-- Twitter/X -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Alik Tours | Agencia de Viajes y Turismo" />
-  <meta
-    name="twitter:description"
-    content="Reserva hoteles, paquetes turísticos y experiencias únicas en Colombia."
-  />
-  <meta name="twitter:image" content="https://alik-tours.vercel.app/og-image.jpg" />
+    <!-- Twitter/X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Alik Tours | Agencia de Viajes y Turismo"
+    />
+    <meta
+      name="twitter:description"
+      content="Reserva hoteles, paquetes turísticos y experiencias únicas en Colombia."
+    />
+    <meta
+      name="twitter:image"
+      content="https://alik-tours.vercel.app/og-image.jpg"
+    />
 
-  <!-- Theme Color -->
-  <!-- Antes #0F766E (un teal que no existe en ningun lado de la paleta
+    <!-- Theme Color -->
+    <!-- Antes #0F766E (un teal que no existe en ningun lado de la paleta
        real del sitio -- granate/dorado, ver theme.css). Se deja el
        granate de marca como valor por defecto para el navegador/SO
        (barra de titulo en Android, PWA, etc.); TemaContext.tsx lo
        actualiza en vivo si el visitante esta en modo oscuro o con un
        tema de temporada activo, igual que ya hace con el resto del
        sitio -- ver aplicarTemaEnDOM(). -->
-  <meta name="theme-color" content="#6e1832" />
+    <meta name="theme-color" content="#6e1832" />
 
-  <!-- Favicon -->
-  <!-- SVG primero (vectorial, nitido a cualquier tamaño) con el PNG como
+    <!-- Favicon -->
+    <!-- SVG primero (vectorial, nitido a cualquier tamaño) con el PNG como
        respaldo para navegadores que aun no soportan favicon SVG. El
        propio badge del navbar (Navbar.tsx: cuadrado granate + avion
        blanco) es el logo oficial -- estos archivos son exactamente ese
        diseño exportado, no un ícono aparte inventado para la pestaña. -->
-  <link id="favicon-svg" rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link id="favicon-png" rel="icon" type="image/png" href="/favicon.png" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link
+      id="favicon-svg"
+      rel="icon"
+      type="image/svg+xml"
+      href="/favicon.svg"
+    />
+    <link id="favicon-png" rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-  <!-- Performance -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-  <!-- Contenido estático de respaldo (ver comentario junto al <div id="root">
+    <!-- Contenido estático de respaldo (ver comentario junto al <div id="root">
        más abajo, y el mismo criterio explicado en TemaContext.tsx para el
        loader de tema): estilo mínimo solo para que no se vea like texto
        plano sin formato durante la fracción de segundo en la que un
@@ -86,27 +102,49 @@
        --primary, etc.) para no desentonar con el sitio real. Se puede
        borrar sin miedo: en cuanto React monta, reemplaza por completo el
        contenido de #root y esta hoja de estilo deja de aplicar a nada. -->
-  <style>
-    #root-fallback {
-      background: var(--background, #fbf8f6);
-      color: var(--foreground, #241a1f);
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 32px 20px 56px;
-      line-height: 1.6;
-    }
-    #root-fallback a { color: var(--primary, #6e1832); }
-    #root-fallback h1 { font-size: 2.25rem; margin: 20px 0 12px; }
-    #root-fallback h2 { font-size: 1.5rem; margin: 32px 0 8px; }
-    #root-fallback h3 { font-size: 1.05rem; margin: 16px 0 4px; }
-    #root-fallback nav a { margin-right: 14px; }
-    #root-fallback footer { margin-top: 40px; border-top: 1px solid var(--border, rgba(110,24,50,.12)); padding-top: 24px; }
-  </style>
+    <style>
+      #root-fallback {
+        background: var(--background, #fbf8f6);
+        color: var(--foreground, #241a1f);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 20px 56px;
+        line-height: 1.6;
+      }
+      #root-fallback a {
+        color: var(--primary, #6e1832);
+      }
+      #root-fallback h1 {
+        font-size: 2.25rem;
+        margin: 20px 0 12px;
+      }
+      #root-fallback h2 {
+        font-size: 1.5rem;
+        margin: 32px 0 8px;
+      }
+      #root-fallback h3 {
+        font-size: 1.05rem;
+        margin: 16px 0 4px;
+      }
+      #root-fallback nav a {
+        margin-right: 14px;
+      }
+      #root-fallback footer {
+        margin-top: 40px;
+        border-top: 1px solid var(--border, rgba(110, 24, 50, 0.12));
+        padding-top: 24px;
+      }
+    </style>
+  </head>
 
-    <body>
-      <div id="root">
-        <!-- Contenido estático de respaldo para la carga inicial de "/":
+  <body>
+    <div id="root">
+      <!-- Contenido estático de respaldo para la carga inicial de "/":
              antes este div quedaba vacío hasta que React terminaba de
              montar la app (createRoot().render() más abajo lo reemplaza
              por completo apenas corre, así que un visitante real casi
@@ -120,113 +158,115 @@
              (no se inventó ningún dato) -- es exactamente lo que la app
              real termina mostrando en pantalla, solo que ahora también
              está presente en el HTML crudo que recibe un crawler. -->
-        <main id="root-fallback">
-          <header>
-            <nav aria-label="Principal">
-              <a href="/">Inicio</a>
-              <a href="/search">Buscar Destinos</a>
-              <a href="/packages">Paquetes</a>
-              <a href="/corporate">Viajes Corporativos</a>
-              <a href="/benefits">Alik Tours Rewards</a>
-              <a href="/testimonios">Opiniones de viajeros</a>
-              <a href="/contact">Contacto</a>
-              <a href="/faq">Preguntas Frecuentes</a>
-              <a href="/travel-info">Información de Viaje</a>
-            </nav>
-          </header>
+      <main id="root-fallback">
+        <header>
+          <nav aria-label="Principal">
+            <a href="/">Inicio</a>
+            <a href="/search">Buscar Destinos</a>
+            <a href="/packages">Paquetes</a>
+            <a href="/corporate">Viajes Corporativos</a>
+            <a href="/benefits">Alik Tours Rewards</a>
+            <a href="/testimonios">Opiniones de viajeros</a>
+            <a href="/contact">Contacto</a>
+            <a href="/faq">Preguntas Frecuentes</a>
+            <a href="/travel-info">Información de Viaje</a>
+          </nav>
+        </header>
 
-          <h1>Tu próximo viaje empieza aquí.</h1>
-          <p>
-            Compara vuelos, hoteles y experiencias en un solo lugar.
-            Encuentra destinos increíbles con precios transparentes y
-            acompañamiento real.
-          </p>
+        <h1>Tu próximo viaje empieza aquí.</h1>
+        <p>
+          Compara vuelos, hoteles y experiencias en un solo lugar. Encuentra
+          destinos increíbles con precios transparentes y acompañamiento real.
+        </p>
 
-          <h2>Todo lo que necesitas para disfrutar tu viaje</h2>
-          <p>
-            Nosotros nos encargamos de los detalles para que tú solo
-            tengas que preocuparte por disfrutar.
-          </p>
-          <h3>Precios transparentes</h3>
-          <p>Sin costos ocultos ni sorpresas.</p>
-          <h3>Atención personalizada</h3>
-          <p>Te acompañamos antes y durante tu viaje.</p>
-          <h3>Viajes a tu medida</h3>
-          <p>Diseñamos experiencias según tus gustos.</p>
-          <h3>Opciones para todos</h3>
-          <p>Encuentra el viaje ideal para ti.</p>
+        <h2>Todo lo que necesitas para disfrutar tu viaje</h2>
+        <p>
+          Nosotros nos encargamos de los detalles para que tú solo tengas que
+          preocuparte por disfrutar.
+        </p>
+        <h3>Precios transparentes</h3>
+        <p>Sin costos ocultos ni sorpresas.</p>
+        <h3>Atención personalizada</h3>
+        <p>Te acompañamos antes y durante tu viaje.</p>
+        <h3>Viajes a tu medida</h3>
+        <p>Diseñamos experiencias según tus gustos.</p>
+        <h3>Opciones para todos</h3>
+        <p>Encuentra el viaje ideal para ti.</p>
 
-          <h2>Beneficios Alik Tours</h2>
-          <h3>Paga en cuotas, sin intereses</h3>
-          <p>
-            Hasta 12 cuotas con tu tarjeta. El plan que mejor se acomode a
-            tu bolsillo, no al revés.
-          </p>
-          <h3>Asesoría humana, siempre</h3>
-          <p>
-            Un asesor Alik Tours te acompaña antes, durante y después del
-            viaje. Sin bots que no resuelven.
-          </p>
-          <h3>Compra protegida</h3>
-          <p>
-            Cambios, cancelaciones y reembolsos claros desde el primer
-            momento. Sin letra pequeña.
-          </p>
-          <p>
-            Aceptamos Visa, Mastercard, American Express, PSE /
-            Transferencia, Diners Club, JCB, Efecty, Bancolombia, Nequi y
-            DaviPlata.
-          </p>
+        <h2>Beneficios Alik Tours</h2>
+        <h3>Paga en cuotas, sin intereses</h3>
+        <p>
+          Hasta 12 cuotas con tu tarjeta. El plan que mejor se acomode a tu
+          bolsillo, no al revés.
+        </p>
+        <h3>Asesoría humana, siempre</h3>
+        <p>
+          Un asesor Alik Tours te acompaña antes, durante y después del viaje.
+          Sin bots que no resuelven.
+        </p>
+        <h3>Compra protegida</h3>
+        <p>
+          Cambios, cancelaciones y reembolsos claros desde el primer momento.
+          Sin letra pequeña.
+        </p>
+        <p>
+          Aceptamos Visa, Mastercard, American Express, PSE / Transferencia,
+          Diners Club, JCB, Efecty, Bancolombia, Nequi y DaviPlata.
+        </p>
 
-          <footer>
-            <p>
-              Descubre el mundo con confianza. Ofrecemos experiencias de
-              viaje personalizadas y seguras, con acompañamiento humano
-              real en cada paso.
-            </p>
-            <h3>Empresa</h3>
-            <nav aria-label="Empresa">
-              <a href="/">Inicio</a>
-              <a href="/corporate">Viajes Corporativos</a>
-              <a href="/benefits">Alik Tours Rewards</a>
-              <a href="/testimonios">Opiniones de viajeros</a>
-              <a href="/contact">Contacto</a>
-            </nav>
-            <h3>Ayuda e Información</h3>
-            <nav aria-label="Ayuda e Información">
-              <a href="/faq">Preguntas Frecuentes</a>
-              <a href="/travel-info">Información de Viaje</a>
-              <a href="/search">Buscar Destinos</a>
-            </nav>
-            <h3>Mi Cuenta</h3>
-            <nav aria-label="Mi Cuenta">
-              <a href="/profile">Mi Perfil</a>
-              <a href="/preferences">Preferencias de Viaje</a>
-            </nav>
-            <p>
-              <a href="/terms">Términos y Condiciones</a> ·
-              <a href="/privacy">Política de Privacidad</a>
-            </p>
-            <p>© Alik Tours. Todos los derechos reservados.</p>
-          </footer>
-        </main>
-      </div>
-      <script type="module" src="/src/main.tsx"></script>
-      <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "TravelAgency",
-  "name": "Alik Tours",
-  "url": "https://alik-tours.vercel.app",
-  "description": "Agencia de viajes especializada en paquetes turísticos, reservas de hoteles, tours y experiencias en Colombia.",
-  "telephone": "+57-322-812-7104",
-  "address": {
-    "@type": "PostalAddress",
-    "addressCountry": "CO"
-  },
-  "areaServed": "Colombia"
-}
-</script>
-    </body>
-  </html>
-  
+        <footer>
+          <p>
+            Descubre el mundo con confianza. Ofrecemos experiencias de viaje
+            personalizadas y seguras, con acompañamiento humano real en cada
+            paso.
+          </p>
+          <h3>Empresa</h3>
+          <nav aria-label="Empresa">
+            <a href="/">Inicio</a>
+            <a href="/corporate">Viajes Corporativos</a>
+            <a href="/benefits">Alik Tours Rewards</a>
+            <a href="/testimonios">Opiniones de viajeros</a>
+            <a href="/contact">Contacto</a>
+          </nav>
+          <h3>Ayuda e Información</h3>
+          <nav aria-label="Ayuda e Información">
+            <a href="/faq">Preguntas Frecuentes</a>
+            <a href="/travel-info">Información de Viaje</a>
+            <a href="/search">Buscar Destinos</a>
+          </nav>
+          <h3>Mi Cuenta</h3>
+          <nav aria-label="Mi Cuenta">
+            <a href="/profile">Mi Perfil</a>
+            <a href="/preferences">Preferencias de Viaje</a>
+          </nav>
+          <p>
+            <a href="/terms">Términos y Condiciones</a> ·
+            <a href="/privacy">Política de Privacidad</a>
+          </p>
+          <p>© Alik Tours. Todos los derechos reservados.</p>
+        </footer>
+      </main>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TravelAgency",
+        "name": "Alik Tours",
+        "url": "https://alik-tours.vercel.app",
+        "description": "Agencia de viajes especializada en paquetes turísticos, reservas de hoteles, tours y experiencias en Colombia.",
+        "telephone": "+57-322-812-7104",
+        "address": {
+          "@type": "PostalAddress",
+          "addressCountry": "CO"
+        },
+        "areaServed": "Colombia",
+        "founder": {
+          "@type": "Person",
+          "name": "Juan Pablo Castillo Velásquez",
+          "url": "https://github.com/Juan-Pablo-Castillo-Velasquez"
+        }
+      }
+    </script>
+  </body>
+</html>
