@@ -15,13 +15,13 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { resolveFotoUrl } from "./admin/types";
 import { useAuth } from "../context/AuthContext";
 import { useTema } from "../context/TemaContext";
-import { DURACION, EASE_ENTRADA, EASE_SUAVE } from "../utils/motion";
 import { ClienteResponse, clienteService } from "../services/cliente.service";
 import { resolveImagenTema } from "../services/tema.service";
+import { DURACION, EASE_ENTRADA, EASE_SUAVE } from "../utils/motion";
 import { getTemaIcono } from "../utils/temaIconos";
+import { resolveFotoUrl } from "./admin/types";
 import LoginModal from "./LoginModal";
 import NotificacionesBell from "./NotificacionesBell";
 import RegisterModal from "./RegisterModal";
@@ -46,8 +46,11 @@ export default function Navbar() {
   // Amistad está activo, sin inventar un ícono si el admin no eligió uno
   // (getTemaIcono ya cae en Sparkles, pero ese caso no se muestra como
   // "temporada especial" porque es el mismo ícono que el tema de marca).
-  const temaTemporadaActivo = temaActivo && !temaActivo.es_predeterminado ? temaActivo : null;
-  const IconoTemaTemporada = temaTemporadaActivo ? getTemaIcono(temaTemporadaActivo.icono) : null;
+  const temaTemporadaActivo =
+    temaActivo && !temaActivo.es_predeterminado ? temaActivo : null;
+  const IconoTemaTemporada = temaTemporadaActivo
+    ? getTemaIcono(temaTemporadaActivo.icono)
+    : null;
 
   // Pestaña activa (estilo tabs de Despegar: subrayado persistente, no solo
   // al pasar el mouse) para los enlaces directos de la barra desktop.
@@ -107,14 +110,14 @@ export default function Navbar() {
                 LOGO
             ========================================================= */}
             <div className="col-start-1 flex items-center gap-3 shrink-0">
-            <Link to="/" className="flex items-center gap-3 group">
-              <motion.div
-                whileHover={{
-                  scale: 1.06,
-                  rotate: 3,
-                }}
-                whileTap={{ scale: 0.96 }}
-                className="
+              <Link to="/" className="flex items-center gap-3 group">
+                <motion.div
+                  whileHover={{
+                    scale: 1.06,
+                    rotate: 3,
+                  }}
+                  whileTap={{ scale: 0.96 }}
+                  className="
                   relative
                   w-11 h-11
                   rounded-[14px]
@@ -125,35 +128,35 @@ export default function Navbar() {
                   shadow-primary/15
                   overflow-hidden
                 "
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
 
-                <Plane className="relative w-[19px] h-[19px]" />
-              </motion.div>
+                  <Plane className="relative w-[19px] h-[19px]" />
+                </motion.div>
 
-              <div className="leading-none">
-                <div
-                  className="
+                <div className="leading-none">
+                  <div
+                    className="
                     text-[22px]
                     tracking-[-0.5px]
                     text-primary
                   "
-                  style={{
-                    fontFamily: "'Fraunces', serif",
-                    fontWeight: 800,
-                  }}
-                >
-                  {/* Nombre de marca real: coincide con el <title> del sitio
+                    style={{
+                      fontFamily: "'Fraunces', serif",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {/* Nombre de marca real: coincide con el <title> del sitio
                       (index.html) y con SITE_NAME en useSeoMeta.ts. El navbar
                       antes decía "AlekTours" (sin la segunda "c") -- una marca
                       que se escribe distinto en su propio logo que en la
                       pestaña del navegador resta confianza, así que se unifica
                       acá con el nombre oficial. */}
-                  AleckTours
-                </div>
+                    Alik tours
+                  </div>
 
-                <div
-                  className="
+                  <div
+                    className="
                     mt-1
                     text-[8px]
                     uppercase
@@ -161,43 +164,43 @@ export default function Navbar() {
                     font-bold
                     text-muted-foreground/70
                   "
-                >
-                  Agencia de viajes
+                  >
+                    Agencia de viajes
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
 
-            {temaTemporadaActivo && IconoTemaTemporada && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: DURACION.base, ease: EASE_SUAVE }}
-                title={`Tema de temporada activo: ${temaTemporadaActivo.nombre}`}
-                className="hidden sm:flex items-center gap-1.5 pl-1.5 pr-3 xl:pr-1.5 2xl:pr-3 py-1.5 rounded-full border shrink-0"
-                style={{
-                  borderColor: "rgba(var(--primary-rgb), 0.28)",
-                  background: "rgba(var(--primary-rgb), 0.1)",
-                  color: "var(--primary)",
-                }}
-              >
-                {temaTemporadaActivo.imagen_url ? (
-                  <img
-                    src={resolveImagenTema(temaTemporadaActivo.imagen_url)}
-                    alt=""
-                    className="h-6 w-6 rounded-full object-cover border border-white/70 shadow-sm shrink-0"
-                  />
-                ) : (
-                  <IconoTemaTemporada className="w-3.5 h-3.5 ml-1 shrink-0" />
-                )}
-                {/* Entre xl y 2xl compite por espacio con la barra de nav
+              {temaTemporadaActivo && IconoTemaTemporada && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: DURACION.base, ease: EASE_SUAVE }}
+                  title={`Tema de temporada activo: ${temaTemporadaActivo.nombre}`}
+                  className="hidden sm:flex items-center gap-1.5 pl-1.5 pr-3 xl:pr-1.5 2xl:pr-3 py-1.5 rounded-full border shrink-0"
+                  style={{
+                    borderColor: "rgba(var(--primary-rgb), 0.28)",
+                    background: "rgba(var(--primary-rgb), 0.1)",
+                    color: "var(--primary)",
+                  }}
+                >
+                  {temaTemporadaActivo.imagen_url ? (
+                    <img
+                      src={resolveImagenTema(temaTemporadaActivo.imagen_url)}
+                      alt=""
+                      className="h-6 w-6 rounded-full object-cover border border-white/70 shadow-sm shrink-0"
+                    />
+                  ) : (
+                    <IconoTemaTemporada className="w-3.5 h-3.5 ml-1 shrink-0" />
+                  )}
+                  {/* Entre xl y 2xl compite por espacio con la barra de nav
                     desktop completa (que solo aparece desde xl) -- se
                     esconde la etiqueta y queda solo el ícono/imagen para
                     que nada se vea forzado a partirse en dos líneas. */}
-                <span className="hidden sm:inline xl:hidden 2xl:inline text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">
-                  {temaTemporadaActivo.nombre}
-                </span>
-              </motion.div>
-            )}
+                  <span className="hidden sm:inline xl:hidden 2xl:inline text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">
+                    {temaTemporadaActivo.nombre}
+                  </span>
+                </motion.div>
+              )}
             </div>
 
             {/* =========================================================
@@ -248,7 +251,10 @@ export default function Navbar() {
                         y: 8,
                         scale: 0.98,
                       }}
-                      transition={{ duration: DURACION.rapida, ease: EASE_SUAVE }}
+                      transition={{
+                        duration: DURACION.rapida,
+                        ease: EASE_SUAVE,
+                      }}
                       onMouseEnter={() => setShowOffersMenu(true)}
                       onMouseLeave={() => setShowOffersMenu(false)}
                       className="
