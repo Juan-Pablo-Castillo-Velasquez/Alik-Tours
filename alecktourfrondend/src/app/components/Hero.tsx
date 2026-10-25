@@ -28,8 +28,12 @@ export default function Hero() {
   // admin, ver ModuleTemas.tsx), se usa ese para el fondo del Hero; si no
   // tiene ninguno, se cae al clip genérico de por defecto -- el Hero
   // nunca se queda sin video de fondo por un tema sin configurar.
-  const heroVideoUrl = temaActivo?.video_url ? resolveVideoTema(temaActivo.video_url) : HERO_VIDEO_URL;
-  const heroVideoTipo = heroVideoUrl.toLowerCase().endsWith(".webm") ? "video/webm" : "video/mp4";
+  const heroVideoUrl = temaActivo?.video_url
+    ? resolveVideoTema(temaActivo.video_url)
+    : HERO_VIDEO_URL;
+  const heroVideoTipo = heroVideoUrl.toLowerCase().endsWith(".webm")
+    ? "video/webm"
+    : "video/mp4";
 
   // Si cambia el video (ej. el admin activa otro tema mientras el sitio
   // está abierto), se le da otra oportunidad de cargar en vez de quedar
@@ -78,17 +82,16 @@ export default function Hero() {
   const totalHoteles = hoteles.length;
   const totalHotelesLabel = totalHoteles >= 100 ? "100+" : String(totalHoteles);
 
-  const totalDestinos = new Set(
-    hoteles.map((h) => h.ciudad).filter(Boolean)
-  ).size;
+  const totalDestinos = new Set(hoteles.map((h) => h.ciudad).filter(Boolean))
+    .size;
 
   const totalHabitacionesDisponibles = hoteles.reduce(
     (suma, h) =>
       suma +
       (h.habitaciones?.filter(
-        (hab) => hab.estado?.toLowerCase() === "disponible"
+        (hab) => hab.estado?.toLowerCase() === "disponible",
       ).length ?? 0),
-    0
+    0,
   );
 
   // El backend reporta un promedio de respaldo (5.0) cuando aún no hay
@@ -115,19 +118,6 @@ export default function Hero() {
     <section className="relative overflow-hidden bg-background transition-colors duration-300">
       {/* Fondo */}
       <div className="absolute inset-0 z-0">
-        {/* Foto fija: siempre presente, es la base y el respaldo si el video falla */}
-        <motion.img
-          src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=2400&auto=format&fit=crop"
-          alt="Destino de viaje"
-          initial={{ scale: 1.08 }}
-          animate={{ scale: 1 }}
-          transition={{
-            duration: 2,
-            ease: [0.25, 1, 0.5, 1],
-          }}
-          className="w-full h-full object-cover select-none pointer-events-none"
-        />
-
         {/* Clip de fondo: capa opcional encima de la foto, se retira sola si no carga */}
         {!videoFailed && (
           <motion.video
