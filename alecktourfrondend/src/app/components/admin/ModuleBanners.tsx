@@ -249,6 +249,10 @@ export default function ModuleBanners({ banners, onSubmit, onDelete, onToggleAct
             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
               <Newspaper className="w-4 h-4 text-primary" /> Folletos (anuncio de bienvenida a pantalla completa)
             </h3>
+            <p className="text-xs text-muted-foreground -mt-1">
+              Todos los folletos activos se muestran como carrusel al entrar al sitio, en este orden (usa las flechas
+              para cambiarlo). Pasan solos cada 5 segundos y el visitante puede deslizarlos.
+            </p>
             {folletosOrdenados.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Todavía no hay folletos -- el anuncio de bienvenida simplemente cae al banner activo (si hay) hasta que crees el primero.

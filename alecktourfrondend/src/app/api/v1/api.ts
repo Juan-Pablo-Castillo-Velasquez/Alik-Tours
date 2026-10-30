@@ -4,7 +4,7 @@
 // backend real. Sin la variable definida (dev local), sigue usando
 // localhost como siempre.
 // En desarrollo, sin VITE_API_BASE_URL, se usa el mismo origen ("") y el
-// proxy de Vite (vite.config.ts) reenvía /api, /auth y /static al backend.
+// proxy de Vite (vite.config.ts) reenvía /api, /auth y /uploads al backend.
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? "" : "http://localhost:8000");
 const API_PREFIX = "/api";
 

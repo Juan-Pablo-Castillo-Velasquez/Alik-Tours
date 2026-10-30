@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
-import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Banner, bannerService, resolveImagenBanner } from "../services/banner.service";
 
 const SESSION_KEY = "alectours_welcome_splash_visto";
@@ -13,8 +13,18 @@ const SESSION_KEY = "alectours_welcome_splash_visto";
 // prioridad; si no hay ninguno, se cae al banner clásico del carrusel
 // (tipo="banner", con título/descripción/botón superpuestos). Sin nada
 // activo de ningún tipo, el componente simplemente no renderiza nada.
+//
+// Carrusel: se muestran TODOS los folletos activos (en el orden definido en
+// el panel, Banners y folletos -> flechas de orden), no solo el primero.
+// Avanza solo cada AUTO_AVANCE_MS, se pausa con el mouse encima y se puede
+// mover con flechas, puntos, teclado (← →) o deslizando en el celular.
+const AUTO_AVANCE_MS = 5000;
+
 export default function WelcomeSplash() {
-  const [banner, setBanner] = useState<Banner | null>(null);
+  const [items, setItems] = useState<Banner[]>([]);
+  const [index, setIndex] = useState(0);
+  const [direccion, setDireccion] = useState(1);
+  const [pausado, setPausado] = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -30,14 +40,14 @@ export default function WelcomeSplash() {
         const folletos = await bannerService.getActivos("folleto");
         if (!activo) return;
         if (folletos.length > 0) {
-          setBanner(folletos[0]);
+          setItems(folletos);
           setVisible(true);
           return;
         }
         const banners = await bannerService.getActivos("banner");
         if (!activo) return;
         if (banners.length > 0) {
-          setBanner(banners[0]);
+          setItems(banners);
           setVisible(true);
         }
       } catch {
@@ -53,12 +63,42 @@ export default function WelcomeSplash() {
     };
   }, []);
 
-  const cerrar = () => {
+  const cerrar = useCallback(() => {
     setVisible(false);
     sessionStorage.setItem(SESSION_KEY, "1");
-  };
+  }, []);
 
-  if (!banner) return null;
+  const total = items.length;
+  const ir = useCallback(
+    (paso: number) => {
+      if (total < 2) return;
+      setDireccion(paso);
+      setIndex((i) => (i + paso + total) % total);
+    },
+    [total],
+  );
+
+  // Avance automático (pausado mientras el mouse está encima).
+  useEffect(() => {
+    if (!visible || total < 2 || pausado) return;
+    const id = setInterval(() => ir(1), AUTO_AVANCE_MS);
+    return () => clearInterval(id);
+  }, [visible, total, pausado, ir]);
+
+  // Teclado: ← → para moverse, Esc para cerrar.
+  useEffect(() => {
+    if (!visible) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") ir(1);
+      else if (e.key === "ArrowLeft") ir(-1);
+      else if (e.key === "Escape") cerrar();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [visible, ir, cerrar]);
+
+  if (total === 0) return null;
+  const banner = items[index % total];
   const esFolleto = banner.tipo === "folleto";
 
   return (
@@ -87,6 +127,8 @@ export default function WelcomeSplash() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             onClick={(e) => e.stopPropagation()}
+            onMouseEnter={() => setPausado(true)}
+            onMouseLeave={() => setPausado(false)}
             className={`relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 ${
               // Folleto: SIN caja de fondo negro ni altura fija -- eso era lo
               // que generaba las franjas negras cuando la imagen no calzaba
@@ -105,7 +147,23 @@ export default function WelcomeSplash() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className={esFolleto ? "relative" : "relative h-[26rem] sm:h-[30rem] md:h-[34rem] bg-black"}>
+            <AnimatePresence mode="wait" initial={false} custom={direccion}>
+            <motion.div
+              key={banner.id_banner}
+              custom={direccion}
+              initial={{ opacity: 0, x: direccion * 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direccion * -40 }}
+              transition={{ duration: 0.25 }}
+              drag={total > 1 ? "x" : false}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -60) ir(1);
+                else if (info.offset.x > 60) ir(-1);
+              }}
+              className={esFolleto ? "relative" : "relative h-[26rem] sm:h-[30rem] md:h-[34rem] bg-black"}
+            >
               <img
                 src={resolveImagenBanner(banner.imagen_url)}
                 alt={banner.titulo}
@@ -176,7 +234,40 @@ export default function WelcomeSplash() {
                   </div>
                 </>
               )}
-            </div>
+            </motion.div>
+            </AnimatePresence>
+
+            {total > 1 && (
+              <>
+                <button
+                  onClick={() => ir(-1)}
+                  aria-label="Anterior"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/45 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => ir(1)}
+                  aria-label="Siguiente"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/45 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-sm transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 rounded-full bg-black/35 px-2.5 py-1.5 backdrop-blur-sm">
+                  {items.map((it, i) => (
+                    <button
+                      key={it.id_banner}
+                      onClick={() => {
+                        setDireccion(i > index ? 1 : -1);
+                        setIndex(i);
+                      }}
+                      aria-label={`Ver ${i + 1} de ${total}`}
+                      className={`h-1.5 rounded-full transition-all ${i === index ? "w-6 bg-white" : "w-1.5 bg-white/55 hover:bg-white/80"}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </motion.div>
         </motion.div>
       )}

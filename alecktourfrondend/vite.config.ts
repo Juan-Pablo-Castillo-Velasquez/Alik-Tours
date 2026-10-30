@@ -16,14 +16,14 @@ function figmaAssetResolver() {
 }
 
 // Proxy de desarrollo: el frontend llama al API en su mismo origen
-// (/api, /auth, /health, /static) y Vite lo reenvía al backend. Evita CORS
+// (/api, /auth, /health, /uploads) y Vite lo reenvía al backend. Evita CORS
 // en local y funciona en navegadores que bloquean peticiones a otro puerto.
 // Dentro de Docker el backend es http://backend:8000 (docker-compose.yml);
 // fuera de Docker, http://localhost:8000. En producción (Vercel) no aplica:
 // ahí se usa VITE_API_BASE_URL.
 const API_PROXY_TARGET = process.env.API_PROXY_TARGET || 'http://localhost:8000'
 const apiProxy = Object.fromEntries(
-  ['/api', '/auth', '/health', '/static'].map((ruta) => [ruta, { target: API_PROXY_TARGET, changeOrigin: true }]),
+  ['/api', '/auth', '/health', '/uploads', '/static'].map((ruta) => [ruta, { target: API_PROXY_TARGET, changeOrigin: true }]),
 )
 
 export default defineConfig({
