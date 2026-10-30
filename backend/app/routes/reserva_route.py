@@ -759,9 +759,7 @@ def pagar_reserva(
     if es_async:
         cambiar_estado_pago(db, pago, reserva, "procesando", "")
     elif rechazo_simulado:
-        cambiar_estado_pago(
-            db, pago, reserva, "rechazado", f"Pago {concepto} rechazado (simulado) por ${monto:,.0f}"
-        )
+        cambiar_estado_pago(db, pago, reserva, "rechazado", f"Pago {concepto} rechazado (simulado) por ${monto:,.0f}")
     else:
         cambiar_estado_pago(db, pago, reserva, "pagado", f"Pago {concepto} aprobado (simulado) por ${monto:,.0f}")
 

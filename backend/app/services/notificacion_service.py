@@ -21,11 +21,7 @@ def crear_notificacion(
     # id_cliente=N -> notificación para ese cliente (campana de su cuenta).
     # commit=False cuando el evento forma parte de una transacción mayor
     # (ver pago_estado_service.py): se guarda junto con el resto o nada.
-    db.add(
-        Notificacion(
-            tipo=tipo, titulo=titulo, mensaje=mensaje, id_referencia=id_referencia, id_cliente=id_cliente
-        )
-    )
+    db.add(Notificacion(tipo=tipo, titulo=titulo, mensaje=mensaje, id_referencia=id_referencia, id_cliente=id_cliente))
     if commit:
         db.commit()
 

@@ -183,7 +183,11 @@ def _exigir_mensaje_no_repetido(id_usuario: int, client_msg_id: str | None) -> N
     dos veces (causa de mensajes duplicados en el chat del cliente)."""
     # isinstance: si se llama a la ruta como función (tests) sin el parámetro,
     # el valor por defecto es el objeto Form(None), no un str.
-    if isinstance(client_msg_id, str) and client_msg_id and not reservar_clave_unica(f"chat:idem:{id_usuario}:{client_msg_id}"):
+    if (
+        isinstance(client_msg_id, str)
+        and client_msg_id
+        and not reservar_clave_unica(f"chat:idem:{id_usuario}:{client_msg_id}")
+    ):
         raise HTTPException(status_code=409, detail="Este mensaje ya fue enviado")
 
 

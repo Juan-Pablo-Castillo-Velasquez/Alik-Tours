@@ -43,13 +43,7 @@ class TransicionPagoInvalida(Exception):
 
 
 def total_pagado(reserva: Reserva, excluir_id_pago: int | None = None) -> float:
-    return float(
-        sum(
-            (p.monto or 0)
-            for p in reserva.pagos
-            if p.estado == "pagado" and p.id_pago != excluir_id_pago
-        )
-    )
+    return float(sum((p.monto or 0) for p in reserva.pagos if p.estado == "pagado" and p.id_pago != excluir_id_pago))
 
 
 def numero_comprobante(id_pago: int) -> str:

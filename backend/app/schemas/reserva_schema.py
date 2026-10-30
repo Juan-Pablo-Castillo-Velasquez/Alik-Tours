@@ -2,9 +2,8 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.schemas.validadores import FechaValida
-
 from app.schemas.hotel_schema import ImagenGaleriaResponse
+from app.schemas.validadores import FechaValida
 
 
 class PaqueteHotelInput(BaseModel):

@@ -22,8 +22,6 @@ class Notificacion(Base):
     # Destinatario: NULL = notificación interna del panel de admin (como
     # siempre); un id_cliente = notificación para ese cliente (ej. "¡Pago
     # aprobado!"), que ve en la campana de su cuenta.
-    id_cliente = Column(
-        Integer, ForeignKey("clientes.id_cliente", ondelete="CASCADE"), nullable=True, index=True
-    )
+    id_cliente = Column(Integer, ForeignKey("clientes.id_cliente", ondelete="CASCADE"), nullable=True, index=True)
     leido = Column(Boolean, nullable=False, default=False, index=True)
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())

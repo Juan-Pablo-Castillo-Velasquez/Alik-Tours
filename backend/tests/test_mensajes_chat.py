@@ -15,11 +15,13 @@ compartida por toda la suite.
 """
 
 import asyncio
+import inspect
 import io
 from datetime import date
 
 import pytest
 from fastapi import HTTPException, UploadFile
+from fastapi import params as fastapi_params
 from starlette.datastructures import Headers
 
 from app.core.security import generate_token_pair
@@ -28,6 +30,17 @@ from app.models.mensaje_chat_model import MensajeChat
 from app.models.reserva_model import Reserva
 from app.models.user_model import Usuario
 from app.routes import mensaje_chat_route
+
+
+def _llamar(ruta, *args, **kwargs):
+    """Llama una ruta de FastAPI como función normal. Los parámetros que el
+    test no pasa toman el valor por defecto REAL de su Query/Form/File/Header
+    (FastAPI solo los resuelve dentro de una petición HTTP; llamada directa,
+    el "valor por defecto" sería el propio objeto Query(None)/Form(None))."""
+    for nombre, parametro in inspect.signature(ruta).parameters.items():
+        if nombre not in kwargs and isinstance(parametro.default, fastapi_params.Param | fastapi_params.Body):
+            kwargs[nombre] = parametro.default.default
+    return ruta(*args, **kwargs)
 
 
 def _crear_cliente_con_usuario(db, cedula="1000000001"):
@@ -111,8 +124,12 @@ class TestEnvioDeMensajes:
         _cliente, usuario = _crear_cliente_con_usuario(db)
 
         resultado = asyncio.run(
-            mensaje_chat_route.enviar_como_cliente(
-                contenido="Hola, tengo una duda con mi reserva", imagen=None, db=db, current_user=usuario
+            _llamar(
+                mensaje_chat_route.enviar_como_cliente,
+                contenido="Hola, tengo una duda con mi reserva",
+                archivo=None,
+                db=db,
+                current_user=usuario,
             )
         )
 
@@ -125,10 +142,11 @@ class TestEnvioDeMensajes:
         admin = _crear_admin(db)
 
         resultado = asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
                 id_cliente=cliente.id_cliente,
                 contenido="Claro, dime en qué te ayudo",
-                imagen=None,
+                archivo=None,
                 db=db,
                 admin_id=admin.id_usuario,
             )
@@ -149,18 +167,28 @@ class TestAislamientoYPermisos:
         admin = _crear_admin(db)
 
         asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
-                id_cliente=cliente_a.id_cliente, contenido="Para A", imagen=None, db=db, admin_id=admin.id_usuario
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
+                id_cliente=cliente_a.id_cliente,
+                contenido="Para A",
+                archivo=None,
+                db=db,
+                admin_id=admin.id_usuario,
             )
         )
         asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
-                id_cliente=cliente_b.id_cliente, contenido="Para B", imagen=None, db=db, admin_id=admin.id_usuario
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
+                id_cliente=cliente_b.id_cliente,
+                contenido="Para B",
+                archivo=None,
+                db=db,
+                admin_id=admin.id_usuario,
             )
         )
 
-        hilo_a = mensaje_chat_route.get_mi_hilo(after_id=None, db=db, current_user=usuario_a)
-        hilo_b = mensaje_chat_route.get_mi_hilo(after_id=None, db=db, current_user=usuario_b)
+        hilo_a = _llamar(mensaje_chat_route.get_mi_hilo, after_id=None, db=db, current_user=usuario_a)
+        hilo_b = _llamar(mensaje_chat_route.get_mi_hilo, after_id=None, db=db, current_user=usuario_b)
 
         assert [m["contenido"] for m in hilo_a] == ["Para A"]
         assert [m["contenido"] for m in hilo_b] == ["Para B"]
@@ -169,12 +197,14 @@ class TestAislamientoYPermisos:
         empleado = _crear_empleado_sin_cliente(db)
 
         with pytest.raises(HTTPException) as exc_info:
-            mensaje_chat_route.get_mi_hilo(after_id=None, db=db, current_user=empleado)
+            _llamar(mensaje_chat_route.get_mi_hilo, after_id=None, db=db, current_user=empleado)
         assert exc_info.value.status_code == 403
 
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(
-                mensaje_chat_route.enviar_como_cliente(contenido="hola", imagen=None, db=db, current_user=empleado)
+                _llamar(
+                    mensaje_chat_route.enviar_como_cliente, contenido="hola", archivo=None, db=db, current_user=empleado
+                )
             )
         assert exc_info.value.status_code == 403
 
@@ -185,7 +215,9 @@ class TestValidacionDeContenido:
 
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(
-                mensaje_chat_route.enviar_como_cliente(contenido=None, imagen=None, db=db, current_user=usuario)
+                _llamar(
+                    mensaje_chat_route.enviar_como_cliente, contenido=None, archivo=None, db=db, current_user=usuario
+                )
             )
         assert exc_info.value.status_code == 400
 
@@ -203,8 +235,12 @@ class TestValidacionDeContenido:
 
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(
-                mensaje_chat_route.enviar_como_cliente(
-                    contenido=None, imagen=archivo_falso, db=db, current_user=usuario
+                _llamar(
+                    mensaje_chat_route.enviar_como_cliente,
+                    contenido=None,
+                    archivo=archivo_falso,
+                    db=db,
+                    current_user=usuario,
                 )
             )
         assert exc_info.value.status_code == 422
@@ -217,22 +253,40 @@ class TestHilosYPollingIncremental:
         admin = _crear_admin(db)
 
         asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
-                id_cliente=cliente_a.id_cliente, contenido="Primero", imagen=None, db=db, admin_id=admin.id_usuario
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
+                id_cliente=cliente_a.id_cliente,
+                contenido="Primero",
+                archivo=None,
+                db=db,
+                admin_id=admin.id_usuario,
             )
         )
         asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
-                id_cliente=cliente_b.id_cliente, contenido="Segundo", imagen=None, db=db, admin_id=admin.id_usuario
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
+                id_cliente=cliente_b.id_cliente,
+                contenido="Segundo",
+                archivo=None,
+                db=db,
+                admin_id=admin.id_usuario,
             )
         )
         # Mensaje del CLIENTE b, todavía no leído por ningún admin.
         usuario_b = db.query(Usuario).filter(Usuario.id_cliente == cliente_b.id_cliente).first()
         asyncio.run(
-            mensaje_chat_route.enviar_como_cliente(contenido="Respondo", imagen=None, db=db, current_user=usuario_b)
+            _llamar(
+                mensaje_chat_route.enviar_como_cliente,
+                contenido="Respondo",
+                archivo=None,
+                db=db,
+                current_user=usuario_b,
+            )
         )
 
-        resultado = mensaje_chat_route.get_hilos(search=None, skip=0, limit=20, db=db, admin_id=admin.id_usuario)
+        resultado = _llamar(
+            mensaje_chat_route.get_hilos, search=None, skip=0, limit=20, db=db, admin_id=admin.id_usuario
+        )
         hilos = resultado["items"]
 
         assert hilos[0]["id_cliente"] == cliente_b.id_cliente  # el hilo con actividad más reciente va primero
@@ -249,13 +303,21 @@ class TestHilosYPollingIncremental:
         admin = _crear_admin(db)
 
         primero = asyncio.run(
-            mensaje_chat_route.enviar_como_cliente(contenido="uno", imagen=None, db=db, current_user=usuario)
+            _llamar(mensaje_chat_route.enviar_como_cliente, contenido="uno", archivo=None, db=db, current_user=usuario)
         )
-        asyncio.run(mensaje_chat_route.enviar_como_cliente(contenido="dos", imagen=None, db=db, current_user=usuario))
-        asyncio.run(mensaje_chat_route.enviar_como_cliente(contenido="tres", imagen=None, db=db, current_user=usuario))
+        asyncio.run(
+            _llamar(mensaje_chat_route.enviar_como_cliente, contenido="dos", archivo=None, db=db, current_user=usuario)
+        )
+        asyncio.run(
+            _llamar(mensaje_chat_route.enviar_como_cliente, contenido="tres", archivo=None, db=db, current_user=usuario)
+        )
 
-        solo_nuevos = mensaje_chat_route.get_hilo_admin(
-            cliente.id_cliente, after_id=primero["id_mensaje"], db=db, admin_id=admin.id_usuario
+        solo_nuevos = _llamar(
+            mensaje_chat_route.get_hilo_admin,
+            cliente.id_cliente,
+            after_id=primero["id_mensaje"],
+            db=db,
+            admin_id=admin.id_usuario,
         )
 
         assert [m["contenido"] for m in solo_nuevos] == ["dos", "tres"]
@@ -267,16 +329,28 @@ class TestMarcarLeidoYConteos:
         admin = _crear_admin(db)
 
         asyncio.run(
-            mensaje_chat_route.enviar_como_cliente(contenido="del cliente", imagen=None, db=db, current_user=usuario)
+            _llamar(
+                mensaje_chat_route.enviar_como_cliente,
+                contenido="del cliente",
+                archivo=None,
+                db=db,
+                current_user=usuario,
+            )
         )
         asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
-                id_cliente=cliente.id_cliente, contenido="del admin", imagen=None, db=db, admin_id=admin.id_usuario
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
+                id_cliente=cliente.id_cliente,
+                contenido="del admin",
+                archivo=None,
+                db=db,
+                admin_id=admin.id_usuario,
             )
         )
 
         token_admin = _token_bearer(admin.id_usuario, ["admin"])
-        mensaje_chat_route.marcar_leido(
+        _llamar(
+            mensaje_chat_route.marcar_leido,
             mensaje_chat_route.MarcarLeidoRequest(id_cliente=cliente.id_cliente),
             db=db,
             current_user=admin,
@@ -294,19 +368,32 @@ class TestMarcarLeidoYConteos:
         admin = _crear_admin(db)
 
         asyncio.run(
-            mensaje_chat_route.enviar_como_cliente(contenido="del cliente", imagen=None, db=db, current_user=usuario)
+            _llamar(
+                mensaje_chat_route.enviar_como_cliente,
+                contenido="del cliente",
+                archivo=None,
+                db=db,
+                current_user=usuario,
+            )
         )
         asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
-                id_cliente=cliente.id_cliente, contenido="del admin", imagen=None, db=db, admin_id=admin.id_usuario
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
+                id_cliente=cliente.id_cliente,
+                contenido="del admin",
+                archivo=None,
+                db=db,
+                admin_id=admin.id_usuario,
             )
         )
 
         token_admin = _token_bearer(admin.id_usuario, ["admin"])
         token_cliente = _token_bearer(usuario.id_usuario, ["cliente"])
 
-        conteo_admin = mensaje_chat_route.get_no_leidos(db=db, current_user=admin, authorization=token_admin)
-        conteo_cliente = mensaje_chat_route.get_no_leidos(db=db, current_user=usuario, authorization=token_cliente)
+        conteo_admin = _llamar(mensaje_chat_route.get_no_leidos, db=db, current_user=admin, authorization=token_admin)
+        conteo_cliente = _llamar(
+            mensaje_chat_route.get_no_leidos, db=db, current_user=usuario, authorization=token_cliente
+        )
 
         assert conteo_admin["no_leidos"] == 1  # el mensaje del cliente, no leído por ningún admin
         assert conteo_cliente["no_leidos"] == 1  # el mensaje del admin, no leído por el cliente
@@ -326,10 +413,11 @@ class TestCascadaDeEliminacion:
         admin = _crear_admin(db)
 
         asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
                 id_cliente=cliente.id_cliente,
                 contenido="mensaje del admin",
-                imagen=None,
+                archivo=None,
                 db=db,
                 admin_id=admin.id_usuario,
             )
@@ -350,9 +438,10 @@ class TestReservaAsociada:
         reserva = _crear_reserva(db, cliente)
 
         resultado = asyncio.run(
-            mensaje_chat_route.enviar_como_cliente(
+            _llamar(
+                mensaje_chat_route.enviar_como_cliente,
                 contenido="Es sobre esta reserva",
-                imagen=None,
+                archivo=None,
                 id_reserva=reserva.id_reserva,
                 db=db,
                 current_user=usuario,
@@ -370,10 +459,11 @@ class TestReservaAsociada:
         reserva = _crear_reserva(db, cliente)
 
         resultado = asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
                 id_cliente=cliente.id_cliente,
                 contenido="Ya la reviso",
-                imagen=None,
+                archivo=None,
                 id_reserva=reserva.id_reserva,
                 db=db,
                 admin_id=admin.id_usuario,
@@ -387,7 +477,13 @@ class TestReservaAsociada:
         _cliente, usuario = _crear_cliente_con_usuario(db)
 
         resultado = asyncio.run(
-            mensaje_chat_route.enviar_como_cliente(contenido="Sin reserva", imagen=None, db=db, current_user=usuario)
+            _llamar(
+                mensaje_chat_route.enviar_como_cliente,
+                contenido="Sin reserva",
+                archivo=None,
+                db=db,
+                current_user=usuario,
+            )
         )
 
         assert resultado["id_reserva"] is None
@@ -400,9 +496,10 @@ class TestReservaAsociada:
 
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(
-                mensaje_chat_route.enviar_como_cliente(
+                _llamar(
+                    mensaje_chat_route.enviar_como_cliente,
                     contenido="Intento adivinar el id",
-                    imagen=None,
+                    archivo=None,
                     id_reserva=reserva_de_b.id_reserva,
                     db=db,
                     current_user=usuario_a,
@@ -415,8 +512,13 @@ class TestReservaAsociada:
 
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(
-                mensaje_chat_route.enviar_como_cliente(
-                    contenido="Reserva que no existe", imagen=None, id_reserva=999999, db=db, current_user=usuario
+                _llamar(
+                    mensaje_chat_route.enviar_como_cliente,
+                    contenido="Reserva que no existe",
+                    archivo=None,
+                    id_reserva=999999,
+                    db=db,
+                    current_user=usuario,
                 )
             )
         assert exc_info.value.status_code == 404
@@ -432,21 +534,29 @@ class TestBusquedaYPaginacionDeHilos:
         db.commit()
 
         asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
-                id_cliente=cliente_ana.id_cliente, contenido="hola Ana", imagen=None, db=db, admin_id=admin.id_usuario
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
+                id_cliente=cliente_ana.id_cliente,
+                contenido="hola Ana",
+                archivo=None,
+                db=db,
+                admin_id=admin.id_usuario,
             )
         )
         asyncio.run(
-            mensaje_chat_route.enviar_como_admin(
+            _llamar(
+                mensaje_chat_route.enviar_como_admin,
                 id_cliente=cliente_luis.id_cliente,
                 contenido="hola Luis",
-                imagen=None,
+                archivo=None,
                 db=db,
                 admin_id=admin.id_usuario,
             )
         )
 
-        resultado = mensaje_chat_route.get_hilos(search="ana", skip=0, limit=20, db=db, admin_id=admin.id_usuario)
+        resultado = _llamar(
+            mensaje_chat_route.get_hilos, search="ana", skip=0, limit=20, db=db, admin_id=admin.id_usuario
+        )
 
         assert resultado["total"] == 1
         assert resultado["items"][0]["id_cliente"] == cliente_ana.id_cliente
@@ -456,13 +566,22 @@ class TestBusquedaYPaginacionDeHilos:
         clientes = [_crear_cliente_con_usuario(db, cedula=f"100000000{i}")[0] for i in range(3)]
         for cliente in clientes:
             asyncio.run(
-                mensaje_chat_route.enviar_como_admin(
-                    id_cliente=cliente.id_cliente, contenido="hola", imagen=None, db=db, admin_id=admin.id_usuario
+                _llamar(
+                    mensaje_chat_route.enviar_como_admin,
+                    id_cliente=cliente.id_cliente,
+                    contenido="hola",
+                    archivo=None,
+                    db=db,
+                    admin_id=admin.id_usuario,
                 )
             )
 
-        primera_pagina = mensaje_chat_route.get_hilos(search=None, skip=0, limit=2, db=db, admin_id=admin.id_usuario)
-        segunda_pagina = mensaje_chat_route.get_hilos(search=None, skip=2, limit=2, db=db, admin_id=admin.id_usuario)
+        primera_pagina = _llamar(
+            mensaje_chat_route.get_hilos, search=None, skip=0, limit=2, db=db, admin_id=admin.id_usuario
+        )
+        segunda_pagina = _llamar(
+            mensaje_chat_route.get_hilos, search=None, skip=2, limit=2, db=db, admin_id=admin.id_usuario
+        )
 
         assert primera_pagina["total"] == 3
         assert len(primera_pagina["items"]) == 2
@@ -476,7 +595,13 @@ class TestLimiteDeCaracteres:
 
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(
-                mensaje_chat_route.enviar_como_cliente(contenido="x" * 501, imagen=None, db=db, current_user=usuario)
+                _llamar(
+                    mensaje_chat_route.enviar_como_cliente,
+                    contenido="x" * 501,
+                    archivo=None,
+                    db=db,
+                    current_user=usuario,
+                )
             )
         assert exc_info.value.status_code == 400
 
@@ -484,7 +609,9 @@ class TestLimiteDeCaracteres:
         _cliente, usuario = _crear_cliente_con_usuario(db)
 
         resultado = asyncio.run(
-            mensaje_chat_route.enviar_como_cliente(contenido="x" * 500, imagen=None, db=db, current_user=usuario)
+            _llamar(
+                mensaje_chat_route.enviar_como_cliente, contenido="x" * 500, archivo=None, db=db, current_user=usuario
+            )
         )
         assert resultado["contenido"] == "x" * 500
 
@@ -494,8 +621,13 @@ class TestLimiteDeCaracteres:
 
         with pytest.raises(HTTPException) as exc_info:
             asyncio.run(
-                mensaje_chat_route.enviar_como_admin(
-                    id_cliente=cliente.id_cliente, contenido="y" * 501, imagen=None, db=db, admin_id=admin.id_usuario
+                _llamar(
+                    mensaje_chat_route.enviar_como_admin,
+                    id_cliente=cliente.id_cliente,
+                    contenido="y" * 501,
+                    archivo=None,
+                    db=db,
+                    admin_id=admin.id_usuario,
                 )
             )
         assert exc_info.value.status_code == 400
@@ -507,13 +639,17 @@ class TestPaginacionHaciaAtras:
         ids = []
         for i in range(5):
             enviado = asyncio.run(
-                mensaje_chat_route.enviar_como_cliente(
-                    contenido=f"mensaje {i}", imagen=None, db=db, current_user=usuario
+                _llamar(
+                    mensaje_chat_route.enviar_como_cliente,
+                    contenido=f"mensaje {i}",
+                    archivo=None,
+                    db=db,
+                    current_user=usuario,
                 )
             )
             ids.append(enviado["id_mensaje"])
 
-        anteriores = mensaje_chat_route.get_mi_hilo(before_id=ids[3], db=db, current_user=usuario)
+        anteriores = _llamar(mensaje_chat_route.get_mi_hilo, before_id=ids[3], db=db, current_user=usuario)
 
         assert [m["id_mensaje"] for m in anteriores] == ids[:3]
 
@@ -521,7 +657,7 @@ class TestPaginacionHaciaAtras:
         _cliente, usuario = _crear_cliente_con_usuario(db)
 
         with pytest.raises(HTTPException) as exc_info:
-            mensaje_chat_route.get_mi_hilo(after_id=1, before_id=2, db=db, current_user=usuario)
+            _llamar(mensaje_chat_route.get_mi_hilo, after_id=1, before_id=2, db=db, current_user=usuario)
         assert exc_info.value.status_code == 400
 
     def test_admin_tambien_puede_paginar_hacia_atras(self, db):
@@ -530,18 +666,23 @@ class TestPaginacionHaciaAtras:
         ids = []
         for i in range(4):
             enviado = asyncio.run(
-                mensaje_chat_route.enviar_como_admin(
+                _llamar(
+                    mensaje_chat_route.enviar_como_admin,
                     id_cliente=cliente.id_cliente,
                     contenido=f"admin {i}",
-                    imagen=None,
+                    archivo=None,
                     db=db,
                     admin_id=admin.id_usuario,
                 )
             )
             ids.append(enviado["id_mensaje"])
 
-        anteriores = mensaje_chat_route.get_hilo_admin(
-            id_cliente=cliente.id_cliente, before_id=ids[2], db=db, admin_id=admin.id_usuario
+        anteriores = _llamar(
+            mensaje_chat_route.get_hilo_admin,
+            id_cliente=cliente.id_cliente,
+            before_id=ids[2],
+            db=db,
+            admin_id=admin.id_usuario,
         )
 
         assert [m["id_mensaje"] for m in anteriores] == ids[:2]
