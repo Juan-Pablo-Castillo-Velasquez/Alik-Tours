@@ -734,3 +734,26 @@ class TestCrearHotelConHabitaciones:
                     {"id_tipo_habitacion": 1, "numero_habitacion": "1", "precio_noche": 1},
                 ],
             )
+
+
+class TestAgregarHabitacionAHotelExistente:
+    """Bug de producción: "Agregar habitación" en el detalle del hotel
+    fallaba con body.id_hotel: Field required (el panel no lo envía; el
+    hotel viene en la URL)."""
+
+    def test_crea_habitacion_sin_id_hotel_en_el_body(self, db):
+        from app.models.hotel_model import Hotel, TipoHabitacion
+        from app.routes import hotel_route
+        from app.schemas.hotel_schema import HabitacionCreate
+
+        hotel = Hotel(nombre_hotel="Hotel Sena", ciudad="Bogotá", pais="Colombia")
+        tipo = TipoHabitacion(nombre_tipo="Sencilla", capacidad_personas=1)
+        db.add_all([hotel, tipo])
+        db.commit()
+
+        datos = HabitacionCreate(
+            id_tipo_habitacion=tipo.id_tipo_habitacion, numero_habitacion="201", precio_noche=150000
+        )
+        nueva = hotel_route.create_habitacion(hotel.id_hotel, datos, db=db, admin_id=1)
+
+        assert nueva.id_hotel == hotel.id_hotel

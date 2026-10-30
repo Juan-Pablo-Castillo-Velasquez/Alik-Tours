@@ -32,7 +32,12 @@ class TipoHabitacionResponse(BaseModel):
 
 
 class HabitacionCreate(BaseModel):
-    id_hotel: int
+    # El hotel sale de la URL (POST /api/hoteles/{hotel_id}/habitaciones) y
+    # la ruta lo asigna siempre desde ahí. Antes era obligatorio en el body,
+    # pero el panel nunca lo mandaba: "Agregar habitación" fallaba con
+    # "body.id_hotel: Field required". Se acepta (y se ignora) por
+    # compatibilidad con clientes que sí lo envían.
+    id_hotel: int | None = None
     id_tipo_habitacion: int
     numero_habitacion: str = Field(..., min_length=1, max_length=20)
     precio_noche: float = Field(..., ge=0)
