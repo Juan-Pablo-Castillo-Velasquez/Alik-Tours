@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Título SEO -->
-    <title>Alik Tours | Agencia de Viajes y Turismo en Colombia</title>
+    <title>Alik Tours | Agencia de Viajes en Colombia · RNT 224224</title>
 
     <!-- Descripción SEO -->
     <!-- Acortada (antes 188 caracteres / 1165px, por encima del máx. de
@@ -13,13 +13,13 @@
        búsqueda) -- mismo mensaje, sin la enumeración larga del final. -->
     <meta
       name="description"
-      content="Descubre los mejores destinos de Colombia con Alik Tours. Reserva hoteles, paquetes y tours de forma rápida y segura."
+      content="Agencia de viajes Alik Tours (RNT 224224): paquetes y hoteles nacionales e internacionales, viajes personalizados y asesoría personalizada. Viajar para vivir."
     />
 
     <!-- Keywords -->
     <meta
       name="keywords"
-      content="agencia de viajes, turismo Colombia, paquetes turísticos, hoteles, reservas, tours Colombia, viajes nacionales, vacaciones, Alik Tours, destinos turísticos"
+      content="Alik Tours, aliktours, agencia de viajes, agencia de viajes Colombia, paquetes turísticos, viajes nacionales, viajes internacionales, hoteles, viajes personalizados, RNT 224224"
     />
 
     <!-- Robots -->
@@ -35,14 +35,17 @@
     <meta property="og:type" content="website" />
     <meta
       property="og:title"
-      content="Alik Tours | Vive Colombia como Nunca Antes"
+      content="Alik Tours · Agencia de viajes · Viajar Para Vivir"
     />
     <meta
       property="og:description"
-      content="Explora destinos increíbles, reserva hoteles y encuentra experiencias únicas en Colombia con Alik Tours."
+      content="Paquetes y hoteles nacionales e internacionales, viajes personalizados y asesoría real. RNT 224224."
     />
     <meta property="og:url" content="https://alik-tours.vercel.app/" />
     <meta property="og:site_name" content="Alik Tours" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Logo de Alik Tours, agencia de viajes. Viajar Para Vivir. RNT 224224" />
     <meta property="og:locale" content="es_CO" />
     <meta
       property="og:image"
@@ -53,11 +56,11 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="Alik Tours | Agencia de Viajes y Turismo"
+      content="Alik Tours · Agencia de viajes · Viajar Para Vivir"
     />
     <meta
       name="twitter:description"
-      content="Reserva hoteles, paquetes turísticos y experiencias únicas en Colombia."
+      content="Paquetes y hoteles nacionales e internacionales, viajes personalizados y asesoría real. RNT 224224."
     />
     <meta
       name="twitter:image"
@@ -75,23 +78,26 @@
     <meta name="theme-color" content="#6e1832" />
 
     <!-- Favicon -->
-    <!-- SVG primero (vectorial, nitido a cualquier tamaño) con el PNG como
-       respaldo para navegadores que aun no soportan favicon SVG. El
-       propio badge del navbar (Navbar.tsx: cuadrado granate + avion
-       blanco) es el logo oficial -- estos archivos son exactamente ese
-       diseño exportado, no un ícono aparte inventado para la pestaña. -->
-    <link
-      id="favicon-svg"
-      rel="icon"
-      type="image/svg+xml"
-      href="/favicon.svg"
-    />
-    <link id="favicon-png" rel="icon" type="image/png" href="/favicon.png" />
+    <!-- Logo oficial de la agencia (circulo "ALIK TOURS - Viajar Para
+       Vivir"), exportado a PNG desde el archivo de marca. Se mantienen los
+       dos <link> con sus ids porque TemaContext.tsx los cambia en vivo
+       para el favicon de temporada (Halloween). -->
+    <link id="favicon-svg" rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link id="favicon-png" rel="icon" type="image/png" sizes="96x96" href="/favicon.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <!-- Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fraunces: fuente de titulos que ya usaban 14 componentes con
+       fontFamily 'Fraunces' pero que nunca se cargaba (caian en Times New
+       Roman). display=swap: el texto se ve de inmediato con la fuente de
+       respaldo y cambia cuando la fuente termina de bajar. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&display=swap"
+    />
 
     <!-- Contenido estático de respaldo (ver comentario junto al <div id="root">
        más abajo, y el mismo criterio explicado en TemaContext.tsx para el
@@ -249,24 +255,63 @@
     </div>
     <script type="module" src="/src/main.tsx"></script>
     <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "TravelAgency",
-        "name": "Alik Tours",
-        "url": "https://alik-tours.vercel.app",
-        "description": "Agencia de viajes especializada en paquetes turísticos, reservas de hoteles, tours y experiencias en Colombia.",
-        "telephone": "+57-322-812-7104",
-        "address": {
-          "@type": "PostalAddress",
-          "addressCountry": "CO"
-        },
-        "areaServed": "Colombia",
-        "founder": {
-          "@type": "Person",
-          "name": "Juan Pablo Castillo Velásquez",
-          "url": "https://github.com/Juan-Pablo-Castillo-Velasquez"
-        }
-      }
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TravelAgency",
+    "@id": "https://alik-tours.vercel.app/#agencia",
+    "name": "Alik Tours",
+    "alternateName": [
+      "Agencia de viajes Alik Tours",
+      "aliktours"
+    ],
+    "slogan": "Viajar Para Vivir",
+    "url": "https://alik-tours.vercel.app",
+    "logo": "https://alik-tours.vercel.app/logo-alik-tours.png",
+    "image": "https://alik-tours.vercel.app/og-image.jpg",
+    "description": "Agencia de viajes con destinos nacionales e internacionales: paquetes turísticos, hoteles y viajes personalizados con asesoría real.",
+    "telephone": "+57-322-812-7104",
+    "identifier": {
+      "@type": "PropertyValue",
+      "propertyID": "RNT (Registro Nacional de Turismo de Colombia)",
+      "value": "224224"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+57-322-812-7104",
+      "contactType": "customer service",
+      "availableLanguage": [
+        "es"
+      ],
+      "areaServed": "CO"
+    },
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "CO"
+    },
+    "areaServed": "CO",
+    "sameAs": [
+      "https://www.instagram.com/aliktours/"
+    ],
+    "founder": {
+      "@type": "Person",
+      "name": "Juan Pablo Castillo Velásquez",
+      "url": "https://github.com/Juan-Pablo-Castillo-Velasquez"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": "https://alik-tours.vercel.app/#sitio",
+    "name": "Alik Tours",
+    "alternateName": "Alik Tours Agencia de Viajes",
+    "url": "https://alik-tours.vercel.app/",
+    "inLanguage": "es-CO",
+    "publisher": {
+      "@id": "https://alik-tours.vercel.app/#agencia"
+    }
+  }
+]
     </script>
   </body>
 </html>

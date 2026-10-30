@@ -139,7 +139,7 @@ export default function Testimonios() {
             style={{ fontFamily: "'Fraunces', serif", fontWeight: 600 }}
           >
             Todas las experiencias
-            <span className="text-primary"> con AlekTours</span>
+            <span className="text-primary"> con Alik Tours</span>
           </h1>
 
           <div className="flex items-center justify-center gap-3">

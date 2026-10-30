@@ -19,6 +19,7 @@ de producción tal cual contra una base de datos real (aunque en memoria).
 from datetime import date
 
 import pytest
+from fastapi import HTTPException
 
 from app.core.exceptions import (
     HabitacionNoDisponibleError,
@@ -524,3 +525,212 @@ class TestCorreoCancelacionReserva:
         db.refresh(reserva)
         assert reserva.estado == "pendiente"
         assert llamadas == []
+
+
+class TestTransicionesDePago:
+    """Auditoría oct-2026 (P0-2/P0-3): una sola puerta para cambiar el
+    estado de un pago (pago_estado_service) y cobro del saldo tras el
+    anticipo del 50%."""
+
+    _preparar_reserva_y_metodo = TestCorreoConfirmacionReserva._preparar_reserva_y_metodo
+
+    @pytest.fixture(autouse=True)
+    def _sin_correo(self, monkeypatch):
+        async def fake_send(**kwargs):
+            return True
+
+        monkeypatch.setattr(reserva_route.threading, "Thread", _HiloSincrono)
+        monkeypatch.setattr(reserva_route, "send_reservation_confirmation", fake_send)
+
+    def test_anticipo_confirma_y_luego_se_cobra_el_saldo(self, db):
+        _, reserva, metodo, usuario = self._preparar_reserva_y_metodo(db, "tarjeta_credito", "Tarjeta")
+        total = reserva.precio_total
+
+        anticipo = reserva_route.pagar_reserva(
+            reserva.id_reserva,
+            PagarRequest(id_metodo_pago=metodo.id_metodo, tipo_pago="parcial", ultimos4="4242"),
+            db=db,
+            current_user=usuario,
+            authorization=None,
+        )
+        assert anticipo.reserva.estado == "confirmada"
+        assert float(anticipo.pago.monto) == round(total * 0.5, 2)
+        assert anticipo.reserva.saldo_pendiente == pytest.approx(total - round(total * 0.5, 2))
+
+        saldo = reserva_route.pagar_reserva(
+            reserva.id_reserva,
+            PagarRequest(id_metodo_pago=metodo.id_metodo, tipo_pago="saldo", ultimos4="4242"),
+            db=db,
+            current_user=usuario,
+            authorization=None,
+        )
+        assert saldo.pago.estado == "pagado"
+        assert saldo.reserva.saldo_pendiente == 0
+        assert saldo.reserva.total_pagado == pytest.approx(total)
+        # Cada pago aprobado tiene su propio comprobante.
+        assert anticipo.pago.numero_factura != saldo.pago.numero_factura
+
+        with pytest.raises(HTTPException) as exc:
+            reserva_route.pagar_reserva(
+                reserva.id_reserva,
+                PagarRequest(id_metodo_pago=metodo.id_metodo, tipo_pago="saldo", ultimos4="4242"),
+                db=db,
+                current_user=usuario,
+                authorization=None,
+            )
+        assert exc.value.status_code == 409
+
+    def test_segundo_anticipo_no_se_permite(self, db):
+        _, reserva, metodo, usuario = self._preparar_reserva_y_metodo(db, "tarjeta_credito", "Tarjeta")
+        req = PagarRequest(id_metodo_pago=metodo.id_metodo, tipo_pago="parcial", ultimos4="4242")
+        reserva_route.pagar_reserva(reserva.id_reserva, req, db=db, current_user=usuario, authorization=None)
+        with pytest.raises(HTTPException) as exc:
+            reserva_route.pagar_reserva(reserva.id_reserva, req, db=db, current_user=usuario, authorization=None)
+        assert exc.value.status_code == 409
+
+    def test_admin_marca_pagado_confirma_reserva_y_notifica_al_cliente(self, db):
+        from app.models.notificacion_model import Notificacion
+        from app.models.reserva_model import HistorialReserva
+        from app.schemas.reserva_schema import PagoUpdate
+
+        cliente, reserva, metodo, usuario = self._preparar_reserva_y_metodo(db, "transferencia", "Transferencia")
+        pago = PagoRepository.create(
+            db, {"id_reserva": reserva.id_reserva, "id_metodo_pago": metodo.id_metodo, "monto": 300000}
+        )
+
+        actualizado = reserva_route.update_pago(
+            pago.id_pago, PagoUpdate(estado="pagado"), db=db, admin_id=1, current_user=usuario
+        )
+        db.refresh(reserva)
+
+        assert actualizado.estado == "pagado"
+        assert actualizado.numero_factura == f"FAC-{pago.id_pago:06d}"
+        assert reserva.estado == "confirmada"
+        assert db.query(HistorialReserva).filter_by(id_reserva=reserva.id_reserva).count() == 1
+        para_cliente = db.query(Notificacion).filter_by(id_cliente=cliente.id_cliente).all()
+        assert [n.titulo for n in para_cliente] == ["¡Pago aprobado!"]
+        assert db.query(Notificacion).filter(Notificacion.id_cliente.is_(None)).count() == 1
+
+    def test_admin_no_puede_reabrir_un_pago_aprobado(self, db):
+        from app.schemas.reserva_schema import PagoUpdate
+
+        _, reserva, metodo, usuario = self._preparar_reserva_y_metodo(db, "tarjeta_credito", "Tarjeta")
+        resultado = reserva_route.pagar_reserva(
+            reserva.id_reserva,
+            PagarRequest(id_metodo_pago=metodo.id_metodo, tipo_pago="completo", ultimos4="4242"),
+            db=db,
+            current_user=usuario,
+            authorization=None,
+        )
+        with pytest.raises(HTTPException) as exc:
+            reserva_route.update_pago(
+                resultado.pago.id_pago, PagoUpdate(estado="rechazado"), db=db, admin_id=1, current_user=usuario
+            )
+        assert exc.value.status_code == 409
+
+        with pytest.raises(HTTPException) as exc:
+            reserva_route.delete_pago(resultado.pago.id_pago, db=db, admin_id=1)
+        assert exc.value.status_code == 409
+
+    def test_pago_rechazado_no_notifica_al_cliente(self, db):
+        from app.models.notificacion_model import Notificacion
+
+        cliente, reserva, metodo, usuario = self._preparar_reserva_y_metodo(db, "tarjeta_credito", "Tarjeta")
+        reserva_route.pagar_reserva(
+            reserva.id_reserva,
+            PagarRequest(id_metodo_pago=metodo.id_metodo, tipo_pago="completo", ultimos4="0002"),
+            db=db,
+            current_user=usuario,
+            authorization=None,
+        )
+        assert db.query(Notificacion).filter_by(id_cliente=cliente.id_cliente).count() == 0
+
+
+class TestValidacionesDeEntrada:
+    """Auditoría oct-2026 (P1-3/P1-4): celular obligatorio al crear un
+    cliente y años de 4 cifras razonables en las fechas de entrada."""
+
+    def test_cliente_nuevo_exige_celular_valido(self):
+        from pydantic import ValidationError
+
+        from app.schemas.cliente_schema import ClienteCreate
+
+        base = {"nombre": "Ana", "apellido": "Gómez", "cedula": "1020304050"}
+        with pytest.raises(ValidationError):
+            ClienteCreate(**base)
+        with pytest.raises(ValidationError):
+            ClienteCreate(**base, celular="12345")
+        assert ClienteCreate(**base, celular="300 123 4567").celular == "3001234567"
+        assert ClienteCreate(**base, celular="+57 300-123-4567").celular == "3001234567"
+        assert ClienteCreate(**base, celular="+34612345678").celular == "+34612345678"
+
+    def test_editar_cliente_antiguo_sin_celular_no_falla(self):
+        from app.schemas.cliente_schema import ClienteUpdate
+
+        assert ClienteUpdate(celular="").celular is None
+        assert ClienteUpdate(nombre="Ana").celular is None
+
+    def test_fechas_fuera_de_rango_se_rechazan(self):
+        from pydantic import ValidationError
+
+        from app.schemas.reserva_schema import ReservaCreate
+
+        datos = {"id_cliente": 1, "numero_personas": 1, "fecha_inicio": "2026-04-01", "fecha_fin": "2026-04-03"}
+        assert ReservaCreate(**datos).fecha_inicio == date(2026, 4, 1)
+        with pytest.raises(ValidationError):
+            ReservaCreate(**{**datos, "fecha_fin": "9999-12-31"})
+        with pytest.raises(ValidationError):
+            ReservaCreate(**{**datos, "fecha_inicio": "20255-01-01"})
+
+
+class TestCrearHotelConHabitaciones:
+    """Auditoría oct-2026 (P1-6): hotel y habitaciones en una transacción."""
+
+    def test_crea_hotel_y_sus_habitaciones(self, db):
+        from app.models.hotel_model import Habitacion, TipoHabitacion
+        from app.routes import hotel_route
+        from app.schemas.hotel_schema import HotelCreate
+
+        tipo = TipoHabitacion(nombre_tipo="Doble", capacidad_personas=2)
+        db.add(tipo)
+        db.commit()
+        datos = HotelCreate(
+            nombre_hotel="Hotel Prueba",
+            ciudad="Cartagena",
+            descripcion="Frente al mar.",
+            habitaciones=[
+                {"id_tipo_habitacion": tipo.id_tipo_habitacion, "numero_habitacion": "101", "precio_noche": 200000},
+                {"id_tipo_habitacion": tipo.id_tipo_habitacion, "numero_habitacion": "102", "precio_noche": 220000},
+            ],
+        )
+        hotel = hotel_route.create_hotel(datos, db=db, admin_id=1)
+        assert hotel.descripcion == "Frente al mar."
+        assert db.query(Habitacion).filter_by(id_hotel=hotel.id_hotel).count() == 2
+
+    def test_tipo_inexistente_no_crea_nada(self, db):
+        from app.models.hotel_model import Hotel
+        from app.routes import hotel_route
+        from app.schemas.hotel_schema import HotelCreate
+
+        datos = HotelCreate(
+            nombre_hotel="Hotel Fantasma",
+            habitaciones=[{"id_tipo_habitacion": 999, "numero_habitacion": "1", "precio_noche": 1}],
+        )
+        with pytest.raises(HTTPException) as exc:
+            hotel_route.create_hotel(datos, db=db, admin_id=1)
+        assert exc.value.status_code == 422
+        assert db.query(Hotel).filter_by(nombre_hotel="Hotel Fantasma").count() == 0
+
+    def test_numeros_repetidos_se_rechazan(self):
+        from pydantic import ValidationError
+
+        from app.schemas.hotel_schema import HotelCreate
+
+        with pytest.raises(ValidationError):
+            HotelCreate(
+                nombre_hotel="X",
+                habitaciones=[
+                    {"id_tipo_habitacion": 1, "numero_habitacion": "1", "precio_noche": 1},
+                    {"id_tipo_habitacion": 1, "numero_habitacion": "1", "precio_noche": 1},
+                ],
+            )

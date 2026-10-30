@@ -19,6 +19,10 @@ class Usuario(Base):
     foto_perfil = Column(String(255), nullable=True)
     ultimo_login = Column(TIMESTAMP)
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
+    # Evidencia de aceptación de los términos y condiciones al registrarse
+    # (versión del documento y momento). NULL en cuentas anteriores.
+    terminos_version = Column(String(40), nullable=True)
+    terminos_aceptados_en = Column(TIMESTAMP, nullable=True)
 
     # Código corto (6 dígitos) para verificar la cuenta sin depender del
     # enlace del correo -- ver a54ac89a1f9b_agregar_codigo_verificacion.py.

@@ -104,7 +104,7 @@ export default function WhyChooseUs() {
                             <div>
                                 <div className="flex items-center gap-2 text-primary text-xs font-bold tracking-[0.15em] uppercase mb-3">
                                     <span className="w-7 h-px bg-primary" />
-                                    La diferencia Alik tours
+                                    La diferencia Alik Tours
                                 </div>
 
                                 <h3

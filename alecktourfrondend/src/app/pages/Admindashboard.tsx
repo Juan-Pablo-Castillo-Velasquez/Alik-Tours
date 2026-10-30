@@ -566,7 +566,7 @@ export default function AdminDashboard() {
     try {
       // Se guarda la respuesta completa (no solo el estado local) porque el
       // backend puede asignar numero_factura automáticamente en este mismo
-      // PUT (ver _asignar_numero_factura en reserva_route.py) — con un merge
+      // PUT (ver pago_estado_service.py en el backend) — con un merge
       // parcial esa factura nueva no aparecería hasta refrescar la página.
       const actualizado = await apiFetch<Pago>(`/pagos/${id}`, { method: "PUT", body: { estado } });
       setPagos(prev => prev.map(p => p.id_pago === id ? { ...p, ...actualizado } : p));

@@ -54,7 +54,7 @@ export function getEstadoViaje(
  */
 export async function compartirReserva(reserva: any): Promise<"compartido" | "copiado" | "cancelado" | "error"> {
   const partes = [
-    `Mi reserva en AlekTours #ID-${reserva.id_reserva}`,
+    `Mi reserva en Alik Tours #ID-${reserva.id_reserva}`,
     reserva.id_paquete ? `Paquete #${reserva.id_paquete}` : null,
     reserva.fecha_inicio && reserva.fecha_fin
       ? `${fmt(reserva.fecha_inicio)} → ${fmt(reserva.fecha_fin)}`
@@ -69,7 +69,7 @@ export async function compartirReserva(reserva: any): Promise<"compartido" | "co
   if (typeof navigator !== "undefined" && "share" in navigator) {
     try {
       await (navigator as any).share({
-        title: "Mi reserva en AlecTours",
+        title: "Mi reserva en Alik Tours",
         text: texto,
         url,
       });

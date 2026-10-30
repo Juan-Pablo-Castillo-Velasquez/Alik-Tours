@@ -106,6 +106,8 @@ export interface HotelData {
   pais: string;
   correo_electronico: string;
   telefono: string;
+  descripcion?: string | null;
+  politicas?: string | null;
   // GET /hoteles/ ya responde con HotelDetailResponse — estos campos ya
   // viajan en cada hotel de la lista, solo faltaba declararlos acá.
   // total_resenas/calificacion_promedio: reales, calculados en el backend
@@ -129,6 +131,7 @@ export interface Paquete {
   // Ciudad de SALIDA del viaje — distinta de la ciudad de destino (esa sale
   // de los hoteles vinculados al paquete, ver paquete_hotel).
   ciudad_salida?: string | null;
+  condiciones?: string | null;
   // Calculada en el backend (primer hotel vinculado) — null si el paquete
   // todavía no tiene ningún hotel real asociado.
   ciudad_destino?: string | null;

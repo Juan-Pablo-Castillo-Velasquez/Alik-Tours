@@ -6,7 +6,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { Plane } from "lucide-react";
 import { Tema, temaService } from "../services/tema.service";
 
 interface TemaContextType {
@@ -63,8 +62,8 @@ function aplicarFaviconTemporada(tema: Tema | null): void {
     svgLink.href = "/favicon-halloween.png";
     pngLink.href = "/favicon-halloween.png";
   } else {
-    svgLink.type = "image/svg+xml";
-    svgLink.href = "/favicon.svg";
+    svgLink.type = "image/png";
+    svgLink.href = "/icon-192.png";
     pngLink.href = "/favicon.png";
   }
 }
@@ -137,60 +136,62 @@ ${selector} .navbar-surface::before {
   sincronizarThemeColorMeta();
 }
 
+// Último tema activo conocido, guardado en este navegador. Permite pintar
+// el primer render ya con los colores de la temporada sin esperar a la
+// red: antes TemaProvider no mostraba NADA (pantalla "TemaCargando" a
+// pantalla completa) hasta que respondía GET /api/temas/activo, y con el
+// backend en arranque en frío (Render free) eso dejaba el sitio entero
+// bloqueado decenas de segundos. Ahora la página se muestra de inmediato
+// y el tema real se confirma/actualiza en cuanto responde el API.
+const TEMA_CACHE_KEY = "alik:tema-activo";
+
+function leerTemaGuardado(): Tema | null {
+  try {
+    const raw = localStorage.getItem(TEMA_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as Tema) : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarTema(tema: Tema | null): void {
+  try {
+    if (tema) localStorage.setItem(TEMA_CACHE_KEY, JSON.stringify(tema));
+    else localStorage.removeItem(TEMA_CACHE_KEY);
+  } catch {
+    /* almacenamiento no disponible (modo privado): solo se pierde el atajo */
+  }
+}
+
 export function TemaProvider({ children }: { children: ReactNode }) {
-  const [temaActivo, setTemaActivo] = useState<Tema | null>(null);
-  // Antes el sitio se montaba de inmediato con los colores base de
-  // theme.css (temaActivo aún null) y, apenas resolvía GET /temas/activo,
-  // pegaba el cambio a los colores de la temporada activa (ej. Halloween)
-  // -- ese salto de color en pleno primer render se veía como si la
-  // página hubiera cargado "otra" página por error. cargaInicialLista
-  // (distinto de refrescar el tema después, que si debe verse en vivo sin
-  // volver a tapar el sitio) hace que la app no muestre NADA de contenido
-  // hasta que el tema real (o la ausencia de uno) ya esté aplicado -- así
-  // lo primero que ve el usuario ya es el color definitivo.
-  const [cargaInicialLista, setCargaInicialLista] = useState(false);
+  const [temaActivo, setTemaActivo] = useState<Tema | null>(() => {
+    const guardado = leerTemaGuardado();
+    // Se aplica de forma síncrona, antes del primer pintado de la app.
+    aplicarTemaEnDOM(guardado);
+    return guardado;
+  });
 
   const refrescarTemaActivo = useCallback(async () => {
     try {
       const tema = await temaService.getActivo();
       setTemaActivo(tema);
       aplicarTemaEnDOM(tema);
+      guardarTema(tema);
     } catch {
       // Sin ningún tema configurado todavía, o backend no disponible en
-      // este momento (ej. arrancando) -- el sitio se queda con los
-      // colores de marca de theme.css tal cual, nunca se rompe por esto.
-      setTemaActivo(null);
-      aplicarTemaEnDOM(null);
+      // este momento -- el sitio se queda con los colores que ya tiene,
+      // nunca se rompe ni se bloquea por esto.
     }
   }, []);
 
   useEffect(() => {
-    refrescarTemaActivo().finally(() => setCargaInicialLista(true));
+    refrescarTemaActivo();
   }, [refrescarTemaActivo]);
 
   return (
     <TemaContext.Provider value={{ temaActivo, refrescarTemaActivo }}>
-      {cargaInicialLista ? children : <TemaCargando />}
+      {children}
     </TemaContext.Provider>
-  );
-}
-
-// Pantalla de espera mientras se resuelve el tema de temporada real (ver
-// cargaInicialLista arriba) -- usa los tokens base (--background/--primary
-// de theme.css, sin ningún override de temporada) porque su trabajo es
-// justamente no comprometerse todavía con ningún color de temporada.
-// Se autolimita a un instante: en cuanto refrescarTemaActivo resuelve
-// (éxito o error) esta pantalla desaparece y nunca vuelve a aparecer.
-function TemaCargando() {
-  return (
-    <div className="fixed inset-0 z-[10100] flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center animate-pulse">
-          <Plane className="w-6 h-6 text-primary-foreground" />
-        </div>
-        <div className="w-6 h-6 border-2 border-primary/25 border-t-primary rounded-full animate-spin" />
-      </div>
-    </div>
   );
 }
 

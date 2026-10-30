@@ -54,3 +54,15 @@ def delete_pattern(pattern: str):
             redis_client.delete(key)
     except redis.exceptions.RedisError:
         logger.warning("Redis no disponible al invalidar '%s' -- el caché viejo expira solo por su TTL", pattern)
+
+
+def reservar_clave_unica(key: str, ttl_seconds: int = 300) -> bool:
+    """SET NX: True si la clave no existía (primera vez), False si ya
+    estaba. Se usa como candado de idempotencia (ej. un mensaje de chat
+    enviado dos veces por doble clic o reintento). Si Redis no responde
+    devuelve True: la idempotencia es una defensa extra, nunca debe
+    impedir la operación normal."""
+    try:
+        return bool(redis_client.set(key, "1", nx=True, ex=ttl_seconds))
+    except Exception:
+        return True

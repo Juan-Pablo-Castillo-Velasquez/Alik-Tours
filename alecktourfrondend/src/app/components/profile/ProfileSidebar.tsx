@@ -23,7 +23,7 @@ const tabs = [
   { id: "reservas", label: "Mis Reservas", icon: Calendar },
   { id: "favoritos", label: "Favoritos", icon: Heart },
   { id: "mensajes", label: "Mensajes", icon: MessageCircle },
-  { id: "facturas", label: "Facturas", icon: Receipt },
+  { id: "facturas", label: "Comprobantes", icon: Receipt },
   { id: "metodos-pago", label: "Métodos de Pago", icon: Wallet },
   { id: "preferencias", label: "Preferencias", icon: SlidersHorizontal },
   { id: "cuenta", label: "Mi Cuenta", icon: Settings },

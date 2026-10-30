@@ -48,6 +48,8 @@ export interface HotelResponse {
   correo_electronico: string;
   telefono: string;
   imagen_url?: string | null;
+  descripcion?: string | null;
+  politicas?: string | null;
   // Reseñas reales de clientes (calculadas en el backend desde la tabla
   // `resenas`) — total_resenas siempre viene, calificacion_promedio es
   // null si el hotel todavía no tiene ninguna reseña real.

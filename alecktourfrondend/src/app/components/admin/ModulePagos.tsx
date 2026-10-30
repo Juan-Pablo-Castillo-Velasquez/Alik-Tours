@@ -1,3 +1,4 @@
+import DateRangeFilter, { dentroDeRango } from "../shared/DateRangeFilter";
 import { useState, useEffect } from "react";
 import {
   Search, Trash2, Wallet, CheckCircle, Clock, XCircle, CreditCard,
@@ -28,6 +29,16 @@ export interface MetodoPago {
 
 const PAGO_ESTADOS = ["pendiente", "procesando", "pagado", "rechazado", "cancelado"] as const;
 type PagoEstado = typeof PAGO_ESTADOS[number];
+
+// Mismas transiciones que valida el backend (pago_estado_service.py): un
+// pago aprobado, rechazado o cancelado ya no cambia de estado desde aquí.
+const TRANSICIONES_PAGO: Record<PagoEstado, PagoEstado[]> = {
+  pendiente: ["procesando", "pagado", "rechazado", "cancelado"],
+  procesando: ["pagado", "rechazado", "cancelado"],
+  pagado: [],
+  rechazado: [],
+  cancelado: [],
+};
 type EstadoFilter = "todos" | PagoEstado;
 
 // fecha_pago SÍ trae hora real (datetime, no una fecha "pura" como
@@ -92,6 +103,7 @@ export default function ModulePagos({
   clienteIdFiltro = null, reservaIdFiltro = null,
 }: Props) {
   const [search, setSearch] = useState("");
+  const [rangoFecha, setRangoFecha] = useState({ desde: "", hasta: "" });
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>("todos");
 
   // Ver comentario de `estadoInicial` en Props.
@@ -160,16 +172,17 @@ export default function ModulePagos({
       || String(p.id_reserva).includes(q)
       || (p.referencia ?? "").toLowerCase().includes(q)
       || (cliente && `${cliente.nombre} ${cliente.apellido}`.toLowerCase().includes(q));
-    return matchEstado && matchMetodo && matchCliente && matchReserva && matchSearch;
+    const matchFecha = dentroDeRango(p.fecha_pago, rangoFecha.desde, rangoFecha.hasta);
+    return matchEstado && matchMetodo && matchCliente && matchReserva && matchSearch && matchFecha;
   });
 
   const { page, pageCount, slice, setPage } = usePagination(filtered, 8);
 
   const hasActiveFilters = estadoFilter !== "todos" || metodoFilter !== "todos" || search.trim() !== ""
-    || clienteFiltroActivo != null || reservaFiltroActivo != null;
+    || clienteFiltroActivo != null || reservaFiltroActivo != null || rangoFecha.desde !== "" || rangoFecha.hasta !== "";
   function clearFilters() {
     setSearch(""); setEstadoFilter("todos"); setMetodoFilter("todos");
-    setClienteFiltroActivo(null); setReservaFiltroActivo(null);
+    setClienteFiltroActivo(null); setReservaFiltroActivo(null); setRangoFecha({ desde: "", hasta: "" });
   }
 
   // Nombre del cliente filtrado, para el chip "Filtrando por cliente" --
@@ -296,6 +309,8 @@ export default function ModulePagos({
           </Select>
         )}
 
+        <DateRangeFilter desde={rangoFecha.desde} hasta={rangoFecha.hasta} onChange={setRangoFecha} label="Fecha" />
+
         {clienteFiltroNombre && (
           <span className="flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 bg-primary/10 text-primary text-xs font-medium rounded-full">
             Cliente: {clienteFiltroNombre}
@@ -400,13 +415,17 @@ export default function ModulePagos({
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => onDelete(p.id_pago)}
-                          className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
-                          title="Eliminar pago"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {/* Un pago aprobado o con comprobante es registro de dinero
+                            recibido: el backend rechaza borrarlo (409). */}
+                        {p.estado !== "pagado" && !p.numero_factura && (
+                          <button
+                            onClick={() => onDelete(p.id_pago)}
+                            className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
+                            title="Eliminar pago"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                   </td>
                 </tr>
@@ -477,8 +496,13 @@ export default function ModulePagos({
             )}
 
             <label className={labelCls}>Estado del pago</label>
+            {TRANSICIONES_PAGO[editing.estado as PagoEstado]?.length === 0 && (
+              <p className="text-xs text-muted-foreground mb-2">
+                Este pago está en un estado final ({editing.estado}) y ya no se puede cambiar.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-1.5">
-              {PAGO_ESTADOS.map(e => (
+              {PAGO_ESTADOS.filter(e => e === editing.estado || TRANSICIONES_PAGO[editing.estado as PagoEstado]?.includes(e)).map(e => (
                 <button
                   key={e}
                   onClick={() => setNuevoEstado(e)}
@@ -511,7 +535,7 @@ export default function ModulePagos({
             {/* Factura: solo existe (número derivado del id_pago real) una vez
                 que el pago llegó a 'pagado' — ver Pago.numero_factura. */}
             <div className="pt-3 border-t border-border">
-              <label className={labelCls}>Factura</label>
+              <label className={labelCls}>Comprobante de pago</label>
               {editing.numero_factura ? (
                 <button
                   onClick={() => handleDescargarFactura(editing)}

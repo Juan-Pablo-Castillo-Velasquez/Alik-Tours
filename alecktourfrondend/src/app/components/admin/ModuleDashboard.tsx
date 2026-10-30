@@ -75,7 +75,7 @@ function formatMes(mes: string): string {
   return new Date(y, m - 1, 1).toLocaleDateString("es-CO", { month: "short", year: "2-digit" });
 }
 
-// Paleta brand AlekTours: granate, dorado, oscuro, crema, rosa
+// Paleta brand Alik Tours: granate, dorado, oscuro, crema, rosa
 const COLORS = ["#7B1E3A", "#C9A227", "#2E2E2E", "#A13B55", "#E6D3C5", "#a83255"];
 
 const ESTADO_LABELS: Record<string, string> = {
@@ -221,7 +221,7 @@ export default function ModuleDashboard({ setActiveModule, onVerReserva, onFiltr
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
-          <p className="text-muted-foreground text-sm mt-0.5">Qué está pasando hoy en AlekTours y qué necesita tu atención</p>
+          <p className="text-muted-foreground text-sm mt-0.5">Qué está pasando hoy en Alik Tours y qué necesita tu atención</p>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 bg-[#f1e4e8] border border-[rgba(123,30,58,0.2)] rounded-full">
           <div className="w-2 h-2 bg-[#7B1E3A] rounded-full animate-pulse" />

@@ -7,7 +7,7 @@ import { useSeoMeta } from "../hooks/useSeoMeta";
 export default function PrivacyPolicy() {
   useSeoMeta({
     title: "Política de Privacidad",
-    description: "Cómo AlekTours recolecta, usa y protege tus datos personales, incluyendo el uso de almacenamiento local del navegador.",
+    description: "Cómo Alik Tours recolecta, usa y protege tus datos personales, incluyendo el uso de almacenamiento local del navegador.",
     path: "/privacy",
   });
 
@@ -61,7 +61,7 @@ export default function PrivacyPolicy() {
               <h2 className="text-lg font-semibold text-foreground">3. Cookies y almacenamiento local</h2>
             </div>
             <div className="space-y-2.5 pl-12 text-sm text-muted-foreground leading-relaxed">
-              <p>AlekTours usa el almacenamiento local de tu navegador (localStorage), no cookies de terceros para publicidad. Concretamente guardamos:</p>
+              <p>Alik Tours usa el almacenamiento local de tu navegador (localStorage), no cookies de terceros para publicidad. Concretamente guardamos:</p>
               <ul className="list-disc list-inside space-y-1 ml-1">
                 <li>Tu sesión (token de acceso) para que no tengas que iniciar sesión en cada página.</li>
                 <li>Los datos básicos de tu cuenta (usuario, nombre, roles) para mostrarlos sin pedirlos de nuevo al servidor.</li>
@@ -109,7 +109,7 @@ export default function PrivacyPolicy() {
         </div>
 
         <p className="text-xs text-muted-foreground/70 mt-10 leading-relaxed">
-          Este documento describe en lenguaje claro qué datos maneja AlekTours hoy y cómo. Antes de tratarlo
+          Este documento describe en lenguaje claro qué datos maneja Alik Tours hoy y cómo. Antes de tratarlo
           como política definitiva frente a una autoridad de protección de datos, te recomendamos que lo
           revise un abogado especializado en tratamiento de datos personales (en Colombia, Ley 1581 de 2012).
         </p>

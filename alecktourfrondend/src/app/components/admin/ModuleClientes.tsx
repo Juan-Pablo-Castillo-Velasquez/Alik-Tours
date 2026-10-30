@@ -361,7 +361,7 @@ export default function ModuleClientes({
             <div>
               <label className={labelCls}>Celular</label>
               <input value={form.celular} onChange={e => setForm({ ...form, celular: e.target.value })}
-                className={inputCls} placeholder="+57..." />
+                className={inputCls} placeholder="3001234567" inputMode="tel" required={editingId == null} />
             </div>
           </div>
           <div>
@@ -383,7 +383,8 @@ export default function ModuleClientes({
           </div>
           <div>
             <label className={labelCls}>Fecha de nacimiento</label>
-            <input type="date" value={form.fecha_nacimiento}
+            <input type="date"
+                max="2100-12-31" value={form.fecha_nacimiento}
               onChange={e => setForm({ ...form, fecha_nacimiento: e.target.value })}
               className={inputCls} />
           </div>

@@ -4,7 +4,7 @@ import { Cookie } from "lucide-react";
 
 const STORAGE_KEY = "cookie_consent_ack";
 
-// Aviso honesto de almacenamiento local: AlekTours no usa cookies de
+// Aviso honesto de almacenamiento local: Alik Tours no usa cookies de
 // publicidad de terceros, solo localStorage esencial (sesión, tema —
 // ver PrivacyPolicy.tsx sección 3). Por eso este banner no ofrece un
 // falso "rechazar" que en realidad no cambiaría nada técnicamente; solo

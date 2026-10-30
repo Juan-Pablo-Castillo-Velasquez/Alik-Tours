@@ -36,7 +36,7 @@ from email.mime.text import MIMEText
 
 from app.core.config import settings
 
-# Paleta de marca AlecTours (la misma que --primary/--gold en theme.css,
+# Paleta de marca Alik Tours (la misma que --primary/--gold en theme.css,
 # ver comentario "BRAND (GRANATE AGENCIA)") -- se repite como literales
 # hex en vez de variables CSS porque los clientes de correo (Gmail,
 # Outlook, Apple Mail...) no soportan `var(--x)` de forma confiable.
@@ -221,7 +221,7 @@ def _email_shell(subject: str, preheader: str, content_html: str) -> str:
     cada función de este archivo traía su propia plantilla suelta
     (Arial genérico, colores random como azul #007bff o verde #28a745
     sin relación con la marca), y solo send_verification_email tenía la
-    identidad visual real de AlecTours. Ahora todas comparten esta
+    identidad visual real de Alik Tours. Ahora todas comparten esta
     misma "cáscara", así que un cambio de marca futuro se hace en un
     solo lugar.
 
@@ -261,7 +261,7 @@ def _email_shell(subject: str, preheader: str, content_html: str) -> str:
                     </table>
                   </td>
                   <td valign="middle" align="left">
-                    <div style="font-family:Georgia,'Times New Roman',serif; font-size:24px; font-weight:700; color:#ffffff; letter-spacing:-0.3px; line-height:1.1;">AlecTours</div>
+                    <div style="font-family:Georgia,'Times New Roman',serif; font-size:24px; font-weight:700; color:#ffffff; letter-spacing:-0.3px; line-height:1.1;">Alik Tours</div>
                     <div style="font-family:Helvetica,Arial,sans-serif; font-size:10px; font-weight:600; color:#e7b9c5; letter-spacing:1.5px; text-transform:uppercase; margin-top:4px;">Agencia de viajes y turismo</div>
                   </td>
                 </tr>
@@ -281,7 +281,7 @@ def _email_shell(subject: str, preheader: str, content_html: str) -> str:
           <tr>
             <td style="background-color:{_CARD_ALT_BG}; padding:24px 40px; text-align:center;">
               <p style="margin:0; font-family:Helvetica,Arial,sans-serif; font-size:12px; color:{_FOOTER_TEXT};">
-                Con cariño, el equipo de <strong style="color:{_GARNET};">AlecTours</strong> ✈️
+                Con cariño, el equipo de <strong style="color:{_GARNET};">Alik Tours</strong> ✈️
               </p>
             </td>
           </tr>
@@ -318,20 +318,20 @@ async def send_welcome_email(
     """
     Envía un email de bienvenida a un nuevo usuario.
     """
-    subject = "¡Bienvenido a AlecTours!"
+    subject = "¡Bienvenido a Alik Tours!"
     nombre_seguro = html.escape(name) if name else ""
 
     body = f"""
 Hola {name},
 
-¡Bienvenido a AlecTours! Tu cuenta ha sido creada exitosamente.
+¡Bienvenido a Alik Tours! Tu cuenta ha sido creada exitosamente.
 
 Ya puedes explorar destinos, armar tu itinerario y reservar hoteles y paquetes desde tu cuenta.
 
 Ingresa aquí: {base_url}/login
 
 Saludos,
-El equipo de AlecTours
+El equipo de Alik Tours
     """.strip()
 
     content_html = f"""
@@ -339,7 +339,7 @@ El equipo de AlecTours
                 ¡Bienvenido a bordo, {nombre_seguro}! 🎉
               </h1>
               <p style="margin:0 0 24px 0; font-size:15px; line-height:1.6; color:{_BODY_TEXT};">
-                Tu cuenta en <strong style="color:{_GARNET};">AlecTours</strong> ya está lista. Desde ahora puedes explorar destinos, armar tu itinerario y reservar hoteles y paquetes en minutos.
+                Tu cuenta en <strong style="color:{_GARNET};">Alik Tours</strong> ya está lista. Desde ahora puedes explorar destinos, armar tu itinerario y reservar hoteles y paquetes en minutos.
               </p>
 {_boton("Iniciar sesión", f"{base_url}/login")}
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -352,7 +352,7 @@ El equipo de AlecTours
     """.strip()
 
     html_body = _email_shell(
-        subject, "Tu cuenta en AlecTours ya está lista. Empieza a explorar destinos.", content_html
+        subject, "Tu cuenta en Alik Tours ya está lista. Empieza a explorar destinos.", content_html
     )
 
     return await send_email(email, subject, body, html_body)
@@ -367,7 +367,7 @@ async def send_verification_email(
 ) -> bool:
     """
     Envía el correo de verificación de registro con la identidad visual de
-    AlecTours (granate + dorado, la misma paleta que --primary/--gold en
+    Alik Tours (granate + dorado, la misma paleta que --primary/--gold en
     theme.css) en vez de la plantilla generica de Arial + boton azul que
     traia antes. `username` es opcional (compatibilidad hacia atras con
     quien ya llamaba esta funcion sin ese dato) -- sin el, el saludo
@@ -390,7 +390,7 @@ async def send_verification_email(
     nombre_seguro = html.escape(username) if username else None
     saludo_nombre_html = f", {nombre_seguro}" if nombre_seguro else ""
 
-    subject = "Confirma tu correo para activar tu cuenta - AlecTours"
+    subject = "Confirma tu correo para activar tu cuenta - Alik Tours"
 
     codigo_texto_plano = (
         f"""
@@ -407,7 +407,7 @@ Ese código vence en 15 minutos.
     body = f"""
 Hola{saludo_nombre_texto},
 
-¡Gracias por crear tu cuenta en AlecTours! Solo falta un paso: confirma
+¡Gracias por crear tu cuenta en Alik Tours! Solo falta un paso: confirma
 tu correo electrónico para activarla del todo.
 
 Verifica tu correo aquí:
@@ -417,7 +417,7 @@ Este enlace expira en 24 horas. Si tú no creaste esta cuenta, puedes
 ignorar este mensaje con tranquilidad.
 
 Saludos,
-El equipo de AlecTours
+El equipo de Alik Tours
     """.strip()
 
     codigo_html = (
@@ -443,7 +443,7 @@ El equipo de AlecTours
                 Ya casi estás dentro
               </h1>
               <p style="margin:0 0 20px 0; font-size:15px; line-height:1.6; color:{_BODY_TEXT};">
-                Hola{saludo_nombre_html}, gracias por crear tu cuenta en <strong style="color:{_GARNET};">AlecTours</strong>. Solo falta un paso: confirma tu correo para activarla y empezar a reservar tus próximos viajes.
+                Hola{saludo_nombre_html}, gracias por crear tu cuenta en <strong style="color:{_GARNET};">Alik Tours</strong>. Solo falta un paso: confirma tu correo para activarla y empezar a reservar tus próximos viajes.
               </p>
 {_boton("Verificar mi correo", verification_link)}
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
@@ -472,7 +472,7 @@ El equipo de AlecTours
 
     html_body = _email_shell(
         subject,
-        "Confirma tu correo para activar tu cuenta en AlecTours. El enlace expira en 24 horas.",
+        "Confirma tu correo para activar tu cuenta en Alik Tours. El enlace expira en 24 horas.",
         content_html,
     )
 
@@ -485,7 +485,7 @@ async def send_password_reset_email(
     base_url: str = os.getenv("FRONTEND_URL", "http://localhost:5173"),
 ) -> bool:
     reset_link = f"{base_url}/reset-password?token={reset_token}"
-    subject = "Restablecer contraseña - AlecTours"
+    subject = "Restablecer contraseña - Alik Tours"
     body = f"""
 Haz clic en el siguiente enlace para crear una nueva contraseña:
 {reset_link}
@@ -494,7 +494,7 @@ Este enlace expira en 24 horas. Si tú no solicitaste este cambio, ignora
 este correo -- tu contraseña actual sigue funcionando sin cambios.
 
 Saludos,
-El equipo de AlecTours
+El equipo de Alik Tours
     """.strip()
 
     content_html = f"""
@@ -502,7 +502,7 @@ El equipo de AlecTours
                 Restablece tu contraseña
               </h1>
               <p style="margin:0 0 24px 0; font-size:15px; line-height:1.6; color:{_BODY_TEXT};">
-                Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong style="color:{_GARNET};">AlecTours</strong>. Haz clic en el botón para crear una nueva.
+                Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong style="color:{_GARNET};">Alik Tours</strong>. Haz clic en el botón para crear una nueva.
               </p>
 {_boton("Crear nueva contraseña", reset_link)}
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
@@ -529,7 +529,7 @@ El equipo de AlecTours
 
     html_body = _email_shell(
         subject,
-        "Restablece tu contraseña de AlecTours. Este enlace expira en 24 horas.",
+        "Restablece tu contraseña de Alik Tours. Este enlace expira en 24 horas.",
         content_html,
     )
 
@@ -549,7 +549,7 @@ async def send_reservation_confirmation(
     """
     Envía confirmación de reserva.
     """
-    subject = f"Confirmación de Reserva #{reservation_id} - AlecTours"
+    subject = f"Confirmación de Reserva #{reservation_id} - Alik Tours"
     nombre_seguro = html.escape(guest_name) if guest_name else ""
     hotel_seguro = html.escape(hotel_name) if hotel_name else ""
 
@@ -565,10 +565,10 @@ Detalles:
 - Check-out: {check_out}
 - Total: ${total_price:,.2f}
 
-Gracias por elegir AlecTours.
+Gracias por elegir Alik Tours.
 
 Saludos,
-El equipo de AlecTours
+El equipo de Alik Tours
     """.strip()
 
     content_html = f"""
@@ -576,7 +576,7 @@ El equipo de AlecTours
                 ¡Tu reserva está confirmada! 🎉
               </h1>
               <p style="margin:0 0 20px 0; font-size:15px; line-height:1.6; color:{_BODY_TEXT};">
-                Hola <strong>{nombre_seguro}</strong>, gracias por reservar con <strong style="color:{_GARNET};">AlecTours</strong>. Aquí está el resumen de tu viaje:
+                Hola <strong>{nombre_seguro}</strong>, gracias por reservar con <strong style="color:{_GARNET};">Alik Tours</strong>. Aquí está el resumen de tu viaje:
               </p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0; border:1px solid #f0e5e8; border-radius:10px; overflow:hidden;">
@@ -610,7 +610,7 @@ El equipo de AlecTours
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr><td style="border-top:1px solid #f0e5e8; padding-top:20px;">
                   <p style="margin:0; font-size:12px; line-height:1.6; color:{_MUTED_LIGHT};">
-                    Gracias por elegir AlecTours para tu próxima aventura. ¡Buen viaje! ✈️
+                    Gracias por elegir Alik Tours para tu próxima aventura. ¡Buen viaje! ✈️
                   </p>
                 </td></tr>
               </table>
@@ -618,7 +618,7 @@ El equipo de AlecTours
 
     html_body = _email_shell(
         subject,
-        f"Tu reserva #{reservation_id} en {hotel_name or 'AlecTours'} está confirmada.",
+        f"Tu reserva #{reservation_id} en {hotel_name or 'Alik Tours'} está confirmada.",
         content_html,
     )
 
@@ -631,7 +631,7 @@ async def send_cancellation_email(
     """
     Envía confirmación de cancelación de reserva.
     """
-    subject = f"Cancelación de Reserva #{reservation_id} - AlecTours"
+    subject = f"Cancelación de Reserva #{reservation_id} - Alik Tours"
     nombre_seguro = html.escape(guest_name) if guest_name else ""
 
     refund_text = f"\nReembolso: ${refund_amount:,.2f}" if refund_amount else ""
@@ -645,7 +645,7 @@ Tu reserva #{reservation_id} ha sido cancelada.
 Si tienes dudas, contacta a nuestro equipo.
 
 Saludos,
-El equipo de AlecTours
+El equipo de Alik Tours
     """.strip()
 
     refund_html = (
@@ -689,7 +689,7 @@ El equipo de AlecTours
               </table>
     """.strip()
 
-    html_body = _email_shell(subject, f"Tu reserva #{reservation_id} en AlecTours fue cancelada.", content_html)
+    html_body = _email_shell(subject, f"Tu reserva #{reservation_id} en Alik Tours fue cancelada.", content_html)
 
     return await send_email(email, subject, body, html_body)
 
@@ -758,14 +758,14 @@ Mensaje:
     await send_email(settings.MAIL_FROM, subject_interno, body_interno, html_interno)
 
     # 2) Confirmación automática al usuario
-    subject_confirmacion = "Recibimos tu mensaje - AlecTours"
+    subject_confirmacion = "Recibimos tu mensaje - Alik Tours"
     body_confirmacion = f"""
 Hola {nombre},
 
 Gracias por escribirnos. Hemos recibido tu mensaje sobre "{asunto}" y un asesor te responderá a este correo en menos de 2 horas hábiles.
 
 Saludos,
-El equipo de AlecTours
+El equipo de Alik Tours
     """.strip()
 
     content_confirmacion = f"""
@@ -778,7 +778,7 @@ El equipo de AlecTours
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
                 <tr>
                   <td style="background-color:{_WARNING_BG}; border-radius:8px; padding:10px 14px;">
-                    <span style="font-family:Helvetica,Arial,sans-serif; font-size:13px; color:{_WARNING_TEXT};">🕑 Un asesor de AlecTours te responderá a este correo en menos de 2 horas hábiles.</span>
+                    <span style="font-family:Helvetica,Arial,sans-serif; font-size:13px; color:{_WARNING_TEXT};">🕑 Un asesor de Alik Tours te responderá a este correo en menos de 2 horas hábiles.</span>
                   </td>
                 </tr>
               </table>

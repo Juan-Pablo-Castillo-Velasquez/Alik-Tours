@@ -101,7 +101,7 @@ export default function Benefits() {
               </motion.div>
 
               <h1 className="text-6xl font-bold mb-6 tracking-tight">
-                AlekTours Rewards
+                Alik Tours Rewards
               </h1>
               <p className="text-2xl text-primary-foreground/90 max-w-3xl mx-auto font-light">
                 Viaja más, ahorra más. Gana puntos en cada viaje y disfruta de beneficios exclusivos
@@ -118,7 +118,7 @@ export default function Benefits() {
               <div>
                 <p className="font-semibold text-foreground text-sm">Próximamente</p>
                 <p className="text-muted-foreground text-sm mt-1">
-                  AlekTours Rewards todavía no está activo. Lo de abajo es un adelanto de cómo
+                  Alik Tours Rewards todavía no está activo. Lo de abajo es un adelanto de cómo
                   funcionará — por ahora ninguna reserva acumula puntos ni existen niveles reales.
                 </p>
               </div>
@@ -237,7 +237,7 @@ export default function Benefits() {
                 ¿Quieres ser de los primeros en enterarte?
               </h2>
               <p className="text-xl mb-8 text-primary-foreground/90 font-light max-w-2xl mx-auto">
-                Crea tu cuenta y te avisaremos en cuanto AlekTours Rewards esté disponible.
+                Crea tu cuenta y te avisaremos en cuanto Alik Tours Rewards esté disponible.
               </p>
               <motion.a
                 whileHover={{ scale: 1.05 }}

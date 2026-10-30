@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.cache import reservar_clave_unica
 from app.core.database import get_db
 from app.core.deps import get_current_usuario, usuario_es_staff
 from app.core.file_validation import validar_y_leer_archivo
@@ -152,9 +153,11 @@ async def enviar_como_admin(
     contenido: str | None = Form(None),
     archivo: UploadFile | None = File(None),
     id_reserva: int | None = Form(None, description="Reserva de la que se está hablando, opcional"),
+    client_msg_id: str | None = Form(None, max_length=64, description="Id de idempotencia generado por el frontend"),
     db: Session = Depends(get_db),
     admin_id: int = Depends(require_empleado),
 ):
+    _exigir_mensaje_no_repetido(admin_id, client_msg_id)
     _validar_contenido_o_archivo(contenido, archivo)
     _validar_reserva_del_cliente(db, id_reserva, id_cliente)
     imagen_url, archivo_url, archivo_nombre = (
@@ -171,6 +174,17 @@ async def enviar_como_admin(
         archivo_nombre=archivo_nombre,
         id_reserva=id_reserva,
     )
+
+
+def _exigir_mensaje_no_repetido(id_usuario: int, client_msg_id: str | None) -> None:
+    """Idempotencia del envío: el frontend genera un id por mensaje
+    (client_msg_id) y lo reutiliza si reintenta. Un segundo POST con el
+    mismo id en 5 minutos se rechaza con 409 en vez de guardar el mensaje
+    dos veces (causa de mensajes duplicados en el chat del cliente)."""
+    # isinstance: si se llama a la ruta como función (tests) sin el parámetro,
+    # el valor por defecto es el objeto Form(None), no un str.
+    if isinstance(client_msg_id, str) and client_msg_id and not reservar_clave_unica(f"chat:idem:{id_usuario}:{client_msg_id}"):
+        raise HTTPException(status_code=409, detail="Este mensaje ya fue enviado")
 
 
 # ===================== CLIENTE (su propio hilo) =====================
@@ -196,10 +210,12 @@ async def enviar_como_cliente(
     contenido: str | None = Form(None),
     archivo: UploadFile | None = File(None),
     id_reserva: int | None = Form(None, description="Reserva de la que se está hablando, opcional"),
+    client_msg_id: str | None = Form(None, max_length=64, description="Id de idempotencia generado por el frontend"),
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_usuario),
 ):
     id_cliente = _exigir_cliente(current_user)
+    _exigir_mensaje_no_repetido(current_user.id_usuario, client_msg_id)
     _validar_contenido_o_archivo(contenido, archivo)
     _validar_reserva_del_cliente(db, id_reserva, id_cliente)
     imagen_url, archivo_url, archivo_nombre = (

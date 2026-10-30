@@ -1,4 +1,5 @@
-import { Plane } from "lucide-react";
+import BrandLogo from "./BrandLogo";
+import { BRAND } from "../config/brand";
 import { Link } from "react-router";
 import HalloweenAccentDiscreto from "./HalloweenAccentDiscreto";
 import { useTema } from "../context/TemaContext";
@@ -11,7 +12,7 @@ export default function Footer() {
     empresa: [
       { name: "Inicio", href: "/" },
       { name: "Viajes Corporativos", href: "/corporate" },
-      { name: "Alik tours Rewards", href: "/benefits" },
+      { name: "Alik Tours Rewards", href: "/benefits" },
       { name: "Contacto", href: "/contact" },
     ],
     soporte: [
@@ -41,10 +42,10 @@ export default function Footer() {
           {/* Brand + Newsletter Column */}
           <div className="col-span-1 lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-5 group w-fit">
-              <div className="w-10 h-10 bg-gradient-to-br from-[var(--gold,#D9B25B)] to-[#B8912E] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all">
-                <Plane className="w-5 h-5 text-[#2E2611]" />
-              </div>
-              <span className="text-2xl font-bold text-white">alik tours</span>
+              <span className="bg-white rounded-full p-0.5 shadow-lg group-hover:shadow-xl transition-all">
+                <BrandLogo size={44} />
+              </span>
+              <span className="text-2xl font-bold text-white">{BRAND.name}</span>
             </Link>
 
             <p
@@ -108,7 +109,7 @@ export default function Footer() {
             className="text-sm text-center md:text-left"
             style={{ color: "rgba(243,228,232,0.55)" }}
           >
-            © {currentYear} Alik tours. Todos los derechos reservados.
+            © {currentYear} {BRAND.name}. Todos los derechos reservados. · RNT {BRAND.rnt}
           </p>
           <div className="flex gap-6 text-sm">
             <Link to="/terms" className="footer-link">

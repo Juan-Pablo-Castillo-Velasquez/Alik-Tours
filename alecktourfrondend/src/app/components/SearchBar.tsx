@@ -245,6 +245,7 @@ export default function SearchBar() {
               <Segment label="Entrada" icon={Calendar}>
                 <input
                   type="date"
+                max="2100-12-31"
                   value={startDate}
                   min={todayStr}
                   onChange={(e) => setStartDate(e.target.value)}
@@ -259,6 +260,7 @@ export default function SearchBar() {
               <Segment label="Salida" icon={Calendar}>
                 <input
                   type="date"
+                max="2100-12-31"
                   value={endDate}
                   min={startDate || todayStr}
                   onChange={(e) => setEndDate(e.target.value)}

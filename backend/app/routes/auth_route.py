@@ -67,7 +67,9 @@ def send_email_in_thread(email: str, token: str, username: str | None = None, co
 
 @router.post("/register", response_model=dict, status_code=201)
 def register(data: UsuarioCreate, db: Session = Depends(get_db)):
-    result = register_user(db, data.username, data.correo_electronico, data.password)
+    result = register_user(
+        db, data.username, data.correo_electronico, data.password, terminos_version=data.terminos_version
+    )
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
 

@@ -256,7 +256,7 @@ export default function Contact() {
                         </p>
                       )}
 
-                      {/* Botón de Envío Animado - Identidad AlekTours */}
+                      {/* Botón de Envío Animado - Identidad Alik Tours */}
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -299,7 +299,7 @@ export default function Contact() {
                       </h3>
                       <p className="text-muted-foreground max-w-md mx-auto mb-8">
                         Gracias por escribirnos. Hemos registrado tu solicitud
-                        en el sistema de AlekTours y un asesor te responderá al
+                        en el sistema de Alik Tours y un asesor te responderá al
                         correo electrónico en menos de 2 horas.
                       </p>
                       <motion.button

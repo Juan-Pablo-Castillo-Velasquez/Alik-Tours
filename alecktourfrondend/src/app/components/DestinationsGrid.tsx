@@ -97,7 +97,7 @@ export default function DestinationsGrid() {
                             especial. */}
                         <img
                             src={esHalloween ? "/img/imagenpromocional-halloween.png" : "/img/imagenpromocional-removebg-preview.png"}
-                            alt={esHalloween ? "Personajes de Halloween de Alik tours" : "Viajera promocional"}
+                            alt={esHalloween ? "Personajes de Halloween de Alik Tours" : "Viajera promocional"}
                             className="w-full h-full object-contain object-bottom drop-shadow-2xl [mask-image:linear-gradient(to_top,transparent_0%,black_15%)]"
                             style={{ maxHeight: "450px" }}
                         />

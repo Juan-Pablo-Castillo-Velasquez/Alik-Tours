@@ -8,7 +8,9 @@ import { Cliente, ESTADO_COLOR, Pago, Reserva, inputCls, resolveFotoUrl } from "
 import { generarFacturaPdf } from "../../utils/generarFacturaPdf";
 import {
   MENSAJE_CONTENIDO_MAX_LENGTH,
+  fusionarMensajes,
   mensajeChatService,
+  nuevoClientMsgId,
   type HiloResumen,
   type MensajeChat,
 } from "../../services/mensajeChat.service";
@@ -82,6 +84,10 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mensajesRef = useRef<MensajeChat[]>([]);
+  // Candado síncrono de envío (doble Enter) y bandera de "hilo cargado":
+  // el polling no corre mientras se carga el hilo de otro cliente.
+  const enviandoRef = useRef(false);
+  const hiloListoRef = useRef(false);
   mensajesRef.current = mensajes;
   const hilosRef = useRef<HiloResumen[]>([]);
   hilosRef.current = hilos;
@@ -230,6 +236,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
   useEffect(() => {
     if (idClienteActivo == null) return;
     let vivo = true;
+    hiloListoRef.current = false;
     setMensajesLoading(true);
     setIdReservaSeleccionada(null);
     setBusquedaReserva("");
@@ -238,12 +245,16 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
       .getHilo(idClienteActivo)
       .then((data) => {
         if (!vivo) return;
+        // Al cambiar de cliente se REEMPLAZA el hilo (no se fusiona con el anterior).
         setMensajes(data);
         setHayMasAnteriores(data.length >= LIMITE_HISTORIAL);
       })
       .catch(() => {})
       .finally(() => {
-        if (vivo) setMensajesLoading(false);
+        if (vivo) {
+          hiloListoRef.current = true;
+          setMensajesLoading(false);
+        }
       });
     mensajeChatService.marcarLeido(idClienteActivo).then(() => cargarHilos(false)).catch(() => {});
     return () => {
@@ -258,12 +269,15 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
   useEffect(() => {
     if (idClienteActivo == null) return;
     const interval = setInterval(async () => {
+      if (!hiloListoRef.current) return;
       const actuales = mensajesRef.current;
       const ultimoId = actuales.length ? actuales[actuales.length - 1].id_mensaje : undefined;
       try {
-        const nuevos = await mensajeChatService.getHilo(idClienteActivo, { afterId: ultimoId });
+        const nuevos = (await mensajeChatService.getHilo(idClienteActivo, { afterId: ultimoId })).filter(
+          (m) => m.id_cliente === idClienteActivo,
+        );
         if (nuevos.length > 0) {
-          setMensajes((prev) => [...prev, ...nuevos]);
+          setMensajes((prev) => fusionarMensajes(prev, nuevos));
           if (nuevos.some((m) => m.remitente_tipo === "cliente")) {
             mensajeChatService.marcarLeido(idClienteActivo).then(() => cargarHilos(false)).catch(() => {});
           }
@@ -288,7 +302,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
       const anteriores = await mensajeChatService.getHilo(idClienteActivo, { beforeId: mensajes[0].id_mensaje });
       setHayMasAnteriores(anteriores.length >= LIMITE_HISTORIAL);
       if (anteriores.length > 0) {
-        setMensajes((prev) => [...anteriores, ...prev]);
+        setMensajes((prev) => fusionarMensajes(prev, anteriores));
         requestAnimationFrame(() => {
           if (contenedor) contenedor.scrollTop = contenedor.scrollHeight - scrollHeightAntes;
         });
@@ -308,7 +322,8 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
   const excedeLimite = texto.length > MENSAJE_CONTENIDO_MAX_LENGTH;
 
   const enviar = async () => {
-    if (idClienteActivo == null || (!texto.trim() && !archivo) || excedeLimite) return;
+    if (idClienteActivo == null || (!texto.trim() && !archivo) || excedeLimite || enviandoRef.current) return;
+    enviandoRef.current = true;
     setEnviando(true);
     try {
       const nuevo = await mensajeChatService.enviarComoAdmin(
@@ -316,14 +331,16 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
         texto.trim() || undefined,
         archivo ?? undefined,
         idReservaSeleccionada ?? undefined,
+        nuevoClientMsgId(),
       );
-      setMensajes((prev) => [...prev, nuevo]);
+      setMensajes((prev) => fusionarMensajes(prev, [nuevo]));
       setTexto("");
       limpiarArchivo();
       cargarHilos(false);
     } catch {
       // el texto/archivo quedan como estaban para que el admin pueda reintentar
     } finally {
+      enviandoRef.current = false;
       setEnviando(false);
     }
   };
@@ -695,7 +712,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                                     <Receipt className="w-3 h-3" /> {p.numero_factura}
                                   </button>
                                 ) : (
-                                  <span className="flex-shrink-0 text-[10px] text-muted-foreground">Sin factura</span>
+                                  <span className="flex-shrink-0 text-[10px] text-muted-foreground">Sin comprobante</span>
                                 )}
                               </div>
                             ))}

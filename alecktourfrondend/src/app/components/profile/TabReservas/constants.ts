@@ -63,38 +63,30 @@ export const filtroOpciones: {
   value: FiltroEstado;
   label: string;
   icon: any;
-  activeClass: string;
 }[] = [
   {
     value: "todas",
     label: "Todas",
     icon: Filter,
-    activeClass: "bg-primary text-primary-foreground border-primary",
   },
   {
     value: "confirmada",
     label: "Confirmadas",
     icon: CheckCircle,
-    activeClass:
-      "bg-success/10 text-success border-success/30",
   },
   {
     value: "pendiente",
     label: "Pendientes",
     icon: AlertCircle,
-    activeClass:
-      "bg-warning/10 text-warning border-warning/30",
   },
   {
     value: "finalizada",
     label: "Finalizadas",
     icon: Plane,
-    activeClass: "bg-muted text-foreground border-border",
   },
   {
     value: "cancelada",
     label: "Canceladas",
     icon: XCircle,
-    activeClass: "bg-destructive/10 text-destructive border-destructive/30",
   },
 ];

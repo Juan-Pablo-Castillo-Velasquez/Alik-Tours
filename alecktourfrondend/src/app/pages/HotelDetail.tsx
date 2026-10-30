@@ -243,7 +243,7 @@ export default function HotelDetail() {
   useSeoMeta({
     title: hotel ? `${hotel.nombre_hotel} en ${hotel.ciudad}` : "Hotel",
     description: hotel
-      ? `Reserva ${hotel.nombre_hotel} en ${hotel.ciudad}, ${hotel.pais} con Alik tours.${
+      ? `Reserva ${hotel.nombre_hotel} en ${hotel.ciudad}, ${hotel.pais} con Alik Tours.${
           hotel.calificacion ? ` Calificación ${hotel.calificacion}/5.` : ""
         } Tarifas y disponibilidad real, reserva segura en línea.`
       : undefined,
@@ -460,24 +460,41 @@ export default function HotelDetail() {
                 <h2 className="text-2xl font-semibold mb-4">
                   Acerca de este alojamiento
                 </h2>
-                <div className="prose prose-sm md:prose-base dark:prose-invert text-muted-foreground">
-                  <p>
-                    Ubicado estratégicamente en <strong>{hotel.ciudad}</strong>,{" "}
-                    {hotel.nombre_hotel} ofrece una experiencia excepcional que
-                    combina comodidad moderna con la calidez del servicio local.
-                    Ideal tanto para estancias de negocios como para escapadas
-                    de turismo.
-                  </p>
-                  <p className="mt-4">
-                    Nuestros huéspedes destacan la limpieza, la atención del
-                    personal y nuestra ubicación privilegiada cerca de los
-                    principales puntos de interés. Siéntete como en casa
-                    mientras descubres lo mejor de {hotel.pais}.
-                  </p>
+                {/* Descripción propia del hotel (administrada en el panel).
+                    Antes se mostraba el mismo texto genérico para todos
+                    los hoteles ("ubicación privilegiada", "nuestros
+                    huéspedes destacan la limpieza..."), sin respaldo. */}
+                <div className="text-muted-foreground leading-relaxed space-y-4">
+                  {hotel.descripcion ? (
+                    hotel.descripcion
+                      .split(/\n{2,}/)
+                      .map((parrafo, i) => (
+                        <p key={i} className="whitespace-pre-line">
+                          {parrafo}
+                        </p>
+                      ))
+                  ) : (
+                    <p>
+                      {hotel.nombre_hotel} está en <strong>{hotel.ciudad}</strong>
+                      {hotel.pais ? `, ${hotel.pais}` : ""}
+                      {hotel.direccion ? ` (${hotel.direccion})` : ""}. Consulta abajo las
+                      habitaciones disponibles y lo que incluye.
+                    </p>
+                  )}
                 </div>
               </section>
 
               <hr className="border-border" />
+
+              {hotel.politicas && (
+                <>
+                  <section>
+                    <h2 className="text-2xl font-semibold mb-4">Políticas del hotel</h2>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{hotel.politicas}</p>
+                  </section>
+                  <hr className="border-border" />
+                </>
+              )}
 
               {/* Servicios y Amenidades — tabla con lo que realmente incluye
                   este hotel (hotel.hotel_caracteristicas, dato real, no un
@@ -661,7 +678,7 @@ export default function HotelDetail() {
                               {Number(hab.precio_noche).toLocaleString("es-CO")}
                             </p>
                             <p className="text-[11px] text-muted-foreground mb-4">
-                              Incluye impuestos y cargos
+                              El total con fechas se muestra antes de pagar
                             </p>
 
                             <button
@@ -731,7 +748,7 @@ export default function HotelDetail() {
                             />
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-foreground truncate">
-                                {r.nombre_cliente ?? "Huésped Alik tours"}
+                                {r.nombre_cliente ?? "Huésped Alik Tours"}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {formatFechaResena(r.fecha_creacion)}

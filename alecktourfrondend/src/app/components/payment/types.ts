@@ -63,7 +63,7 @@ export function isNequiValueValid(v: NequiPaymentValue): boolean {
   return /^3\d{9}$/.test(v.celular.trim());
 }
 
-// Nequi real de AlekTours al que el cliente transfiere en la simulación
+// Nequi real de Alik Tours al que el cliente transfiere en la simulación
 // (ver NequiPayment.tsx / NequiConfirmar.tsx) -- no hay pasarela conectada,
 // así que el flujo es "transfiere a este número y confírmalo aquí" como
 // hacen de verdad muchos negocios chicos en Colombia sin pasarela.

@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { BRAND } from "../config/brand";
 
 // Antes importaba Pago/Reserva/Cliente de admin/types.ts -- funcionaba
 // mientras el único llamador era ModulePagos.tsx (admin), pero esos tipos
@@ -64,18 +65,20 @@ export function generarFacturaPdf(pago: FacturaPago, reserva?: FacturaReserva, c
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(...GOLD);
-  doc.text("Alik tours", marginX, y);
+  doc.text(BRAND.name, marginX, y);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(...MUTED);
   y += 7;
-  doc.text("Agencia de Viajes y Turismo · www.Alik-tours.com", marginX, y);
+  doc.text(`Agencia de viajes · RNT ${BRAND.rnt} · ${BRAND.telefono}`, marginX, y);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   doc.setTextColor(...INK);
-  doc.text(`Factura ${pago.numero_factura ?? `#${pago.id_pago}`}`, 190, 22, { align: "right" });
+  doc.text("Comprobante de pago", 190, 22, { align: "right" });
+  doc.setFontSize(10);
+  doc.text(pago.numero_factura ?? `#${pago.id_pago}`, 190, 28, { align: "right" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
@@ -153,9 +156,9 @@ export function generarFacturaPdf(pago: FacturaPago, reserva?: FacturaReserva, c
   doc.setFontSize(8);
   doc.setTextColor(160, 160, 160);
   doc.text(
-    "Documento generado automáticamente a partir del registro de pago en AlecTours; sirve como constancia de la transacción.",
+    "Comprobante de pago generado a partir del registro de la transacción en Alik Tours. NO es una factura electrónica de venta (DIAN).",
     marginX, 280, { maxWidth: 170 },
   );
 
-  doc.save(`${pago.numero_factura ?? `factura-pago-${pago.id_pago}`}.pdf`);
+  doc.save(`comprobante-pago-${pago.numero_factura ?? pago.id_pago}.pdf`);
 }

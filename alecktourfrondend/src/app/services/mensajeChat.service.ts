@@ -72,12 +72,37 @@ export interface HilosPaginados {
   limit: number;
 }
 
-function construirFormData(contenido?: string, archivo?: File, idReserva?: number): FormData {
+function construirFormData(contenido?: string, archivo?: File, idReserva?: number, clientMsgId?: string): FormData {
   const fd = new FormData();
   if (contenido) fd.append("contenido", contenido);
   if (archivo) fd.append("archivo", archivo);
   if (idReserva != null) fd.append("id_reserva", String(idReserva));
+  // Id de idempotencia: el backend rechaza (409) un segundo envío con el
+  // mismo id, así un doble clic o un reintento no guardan dos mensajes.
+  if (clientMsgId) fd.append("client_msg_id", clientMsgId);
   return fd;
+}
+
+/** Id único por intento de envío (se reutiliza solo si se reintenta el mismo). */
+export function nuevoClientMsgId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+/**
+ * Une mensajes nuevos a la lista sin repetir ninguno (por id_mensaje) y en
+ * orden. El polling cada 5 s y la respuesta del POST de envío pueden traer
+ * el MISMO mensaje: antes ambos se concatenaban y el mensaje aparecía dos
+ * veces. No es un filtro visual: es la reconciliación de dos fuentes que
+ * describen el mismo registro de la base de datos.
+ */
+export function fusionarMensajes(actuales: MensajeChat[], nuevos: MensajeChat[]): MensajeChat[] {
+  if (nuevos.length === 0) return actuales;
+  const porId = new Map<number, MensajeChat>();
+  for (const m of actuales) porId.set(m.id_mensaje, m);
+  for (const m of nuevos) porId.set(m.id_mensaje, m);
+  return Array.from(porId.values()).sort((a, b) => a.id_mensaje - b.id_mensaje);
 }
 
 // Opciones de paginación de un hilo -- afterId para polling incremental
@@ -119,8 +144,8 @@ export const mensajeChatService = {
   getHilo: (idCliente: number, opts?: OpcionesHilo) =>
     apiFetch<MensajeChat[]>(`/mensajes/hilos/${idCliente}${construirQueryHilo(opts)}`),
 
-  enviarComoAdmin: (idCliente: number, contenido?: string, archivo?: File, idReserva?: number) => {
-    const fd = construirFormData(contenido, archivo, idReserva);
+  enviarComoAdmin: (idCliente: number, contenido?: string, archivo?: File, idReserva?: number, clientMsgId?: string) => {
+    const fd = construirFormData(contenido, archivo, idReserva, clientMsgId);
     fd.append("id_cliente", String(idCliente));
     return apiFetch<MensajeChat>("/mensajes/enviar", { method: "POST", body: fd });
   },
@@ -128,10 +153,10 @@ export const mensajeChatService = {
   // ── Cliente (su propio hilo) ─────────────────────────────────────────
   getMiHilo: (opts?: OpcionesHilo) => apiFetch<MensajeChat[]>(`/mensajes/me${construirQueryHilo(opts)}`),
 
-  enviarComoCliente: (contenido?: string, archivo?: File, idReserva?: number) =>
+  enviarComoCliente: (contenido?: string, archivo?: File, idReserva?: number, clientMsgId?: string) =>
     apiFetch<MensajeChat>("/mensajes/me/enviar", {
       method: "POST",
-      body: construirFormData(contenido, archivo, idReserva),
+      body: construirFormData(contenido, archivo, idReserva, clientMsgId),
     }),
 
   // ── Compartidos por ambos roles ──────────────────────────────────────

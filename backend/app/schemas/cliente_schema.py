@@ -1,6 +1,8 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.schemas.validadores import Celular, FechaValida
 
 
 class ClienteCreate(BaseModel):
@@ -8,7 +10,10 @@ class ClienteCreate(BaseModel):
     apellido: str = Field(..., min_length=1, max_length=100)
     cedula: str = Field(..., min_length=1, max_length=20)
     correo: EmailStr | None = None
-    celular: str | None = Field(None, max_length=20)
+    # Obligatorio para clientes NUEVOS (sin él no se puede contactar al
+    # viajero por su reserva). Los clientes existentes sin celular no se
+    # tocan: ClienteResponse sigue aceptando None.
+    celular: Celular
     direccion: str | None = Field(None, max_length=255)
     # El formato correcto ("Calle 45 #12-34") se valida en el frontend
     # (RegisterModal.tsx) -- acá solo se acota longitud, mismo criterio ya
@@ -19,21 +24,29 @@ class ClienteCreate(BaseModel):
     codigo_postal: str | None = Field(None, max_length=10)
     ciudad: str | None = Field(None, max_length=100)
     pais: str | None = Field(None, max_length=100)
-    fecha_nacimiento: date | None = None
+    fecha_nacimiento: FechaValida | None = None
 
 
 class ClienteUpdate(BaseModel):
     nombre: str | None = None
     apellido: str | None = None
     correo: EmailStr | None = None
-    celular: str | None = None
+    # Opcional al editar (None = no cambia), pero si se envía debe ser válido.
+    celular: Celular | None = None
     direccion: str | None = None
     barrio: str | None = None
     departamento: str | None = None
     codigo_postal: str | None = None
     ciudad: str | None = None
     pais: str | None = None
-    fecha_nacimiento: date | None = None
+    fecha_nacimiento: FechaValida | None = None
+
+    @field_validator("celular", mode="before")
+    @classmethod
+    def celular_vacio_es_sin_cambio(cls, v):
+        # Formularios de edición de clientes antiguos mandan "" cuando el
+        # cliente nunca tuvo celular: eso no debe bloquear la edición.
+        return None if isinstance(v, str) and not v.strip() else v
 
 
 class ClienteResponse(BaseModel):
@@ -72,8 +85,8 @@ class EmpleadoCreate(BaseModel):
     direccion: str | None = Field(None, max_length=255)
     ciudad: str | None = Field(None, max_length=100)
     pais: str | None = Field(None, max_length=100)
-    fecha_nacimiento: date | None = None
-    fecha_contratacion: date
+    fecha_nacimiento: FechaValida | None = None
+    fecha_contratacion: FechaValida
 
 
 class EmpleadoUpdate(BaseModel):
@@ -84,7 +97,7 @@ class EmpleadoUpdate(BaseModel):
     direccion: str | None = None
     ciudad: str | None = None
     pais: str | None = None
-    fecha_nacimiento: date | None = None
+    fecha_nacimiento: FechaValida | None = None
     activo: bool | None = None
 
 

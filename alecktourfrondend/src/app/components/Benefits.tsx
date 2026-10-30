@@ -16,7 +16,7 @@ const perks = [
   {
     icon: HeadphonesIcon,
     title: "Asesoría humana, siempre",
-    desc: "Un asesor AlekTours te acompaña antes, durante y después del viaje. Sin bots que no resuelven.",
+    desc: "Un asesor Alik Tours te acompaña antes, durante y después del viaje. Sin bots que no resuelven.",
   },
   {
     icon: ShieldCheck,
@@ -57,7 +57,7 @@ export default function Benefits() {
           <div className="flex items-center justify-center gap-2 mb-3">
             <span className="h-px w-8 bg-[var(--chart-2)]" />
             <span className="text-primary text-xs font-bold uppercase tracking-[0.2em]">
-              Beneficios AlekTours
+              Beneficios Alik Tours
             </span>
             <span className="h-px w-8 bg-[var(--chart-2)]" />
           </div>

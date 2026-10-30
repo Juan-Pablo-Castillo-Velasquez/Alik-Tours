@@ -10,6 +10,7 @@ from app.core.exceptions import HotelDependencyError, NotFoundError
 from app.core.file_validation import validar_y_leer_archivo
 from app.core.image_storage import borrar_imagen, guardar_imagen
 from app.core.security import require_admin
+from app.models.hotel_model import Habitacion, Hotel, TipoHabitacion
 from app.repositories.hotel_repository import (
     CaracteristicaRepository,
     HabitacionRepository,
@@ -61,6 +62,7 @@ def get_hotels(
     fecha_checkout: date | None = Query(
         None, description="Filtra a hoteles con disponibilidad real hasta esta fecha (requiere fecha_checkin)"
     ),
+    q: str | None = Query(None, max_length=100, description="Busca por nombre del hotel, ciudad o país"),
     db: Session = Depends(get_db),
 ):
     """Obtiene lista de hoteles. Cacheada 2 min (30s si se filtra por fechas,
@@ -79,12 +81,13 @@ def get_hotels(
     if fecha_checkin and fecha_checkout and fecha_checkout <= fecha_checkin:
         raise HTTPException(status_code=400, detail="fecha_checkout debe ser posterior a fecha_checkin")
 
-    cache_key = f"hoteles:list:{skip}:{limit}:{fecha_checkin}:{fecha_checkout}"
+    q = (q or "").strip() or None
+    cache_key = f"hoteles:list:{skip}:{limit}:{fecha_checkin}:{fecha_checkout}:{(q or '').lower()}"
     cached = get_cached(cache_key)
     if cached is not None:
         return cached
 
-    hoteles = HotelRepository.get_all(db, skip, limit, fecha_checkin, fecha_checkout)
+    hoteles = HotelRepository.get_all(db, skip, limit, fecha_checkin, fecha_checkout, q=q)
     data = [HotelDetailResponse.model_validate(h).model_dump(mode="json") for h in hoteles]
     set_cached(cache_key, data, ttl_seconds=30 if fecha_checkin else 120)
     return data
@@ -175,8 +178,31 @@ def get_fechas_ocupadas(hotel_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=HotelResponse, status_code=201)
 def create_hotel(hotel: HotelCreate, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
-    """Crea un nuevo hotel"""
-    nuevo = HotelRepository.create(db, hotel.dict())
+    """Crea un hotel y, opcionalmente, sus habitaciones en UNA transacción:
+    si cualquier habitación es inválida (tipo inexistente, número repetido)
+    no se guarda nada -- nunca queda un hotel a medio crear. Antes las
+    habitaciones solo se podían agregar una por una después de crear el
+    hotel."""
+    datos = hotel.dict(exclude={"habitaciones"})
+    habitaciones = hotel.habitaciones or []
+
+    tipos_validos = {t.id_tipo_habitacion for t in db.query(TipoHabitacion.id_tipo_habitacion).all()}
+    invalidos = sorted({h.id_tipo_habitacion for h in habitaciones} - tipos_validos)
+    if invalidos:
+        raise HTTPException(status_code=422, detail=f"Tipo de habitación inexistente: {invalidos}")
+
+    try:
+        nuevo = Hotel(**datos)
+        db.add(nuevo)
+        db.flush()
+        for h in habitaciones:
+            db.add(Habitacion(id_hotel=nuevo.id_hotel, **h.dict()))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error(f"No se pudo crear el hotel: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="No se pudo crear el hotel; no se guardó ningún dato") from e
+    db.refresh(nuevo)
     delete_pattern(HOTELES_CACHE_PATTERN)
     return nuevo
 

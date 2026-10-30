@@ -52,7 +52,7 @@ export default function PrivacidadModal({
                 Política de Privacidad
               </h2>
               <p className="text-primary-foreground/70 text-xs">
-                AlekTours — Última actualización: junio 2025
+                Alik Tours — Última actualización: junio 2025
               </p>
             </div>
           </div>
@@ -94,7 +94,7 @@ export default function PrivacidadModal({
                 Enviarte notificaciones sobre tus viajes y ofertas
                 personalizadas.
               </li>
-              <li>Gestionar tu cuenta y el programa AlekTours Rewards.</li>
+              <li>Gestionar tu cuenta y el programa Alik Tours Rewards.</li>
               <li>Mejorar nuestros servicios mediante análisis de uso.</li>
             </ul>
           </Section>
@@ -143,7 +143,7 @@ export default function PrivacidadModal({
           <Section title="8. Cambios en esta política">
             Podemos actualizar esta política periódicamente. Te notificaremos
             cualquier cambio relevante mediante un aviso en la plataforma o por
-            correo electrónico. El uso continuado de AlekTours tras los cambios
+            correo electrónico. El uso continuado de Alik Tours tras los cambios
             implica tu aceptación.
           </Section>
 

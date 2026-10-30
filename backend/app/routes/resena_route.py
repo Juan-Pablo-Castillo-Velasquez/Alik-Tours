@@ -63,7 +63,7 @@ def _inicial_apellido(cliente) -> str:
 def _shape_resena(r: Resena) -> dict:
     """Formato compartido por /destacadas y el listado paginado: lo que
     consume directamente el frontend (tarjetas de testimonios)."""
-    nombre = f"{r.cliente.nombre} {_inicial_apellido(r.cliente)}".strip() if r.cliente else "Viajero AlecTours"
+    nombre = f"{r.cliente.nombre} {_inicial_apellido(r.cliente)}".strip() if r.cliente else "Viajero Alik Tours"
     return {
         "id": r.id_resena,
         "name": nombre,
@@ -74,12 +74,12 @@ def _shape_resena(r: Resena) -> dict:
         ),
         "quote": r.comentario,
         "rating": r.calificacion,
-        "trip": r.hotel.nombre_hotel if r.hotel else "AlecTours",
+        "trip": r.hotel.nombre_hotel if r.hotel else "Alik Tours",
         "avatar": r.foto_url
         or _avatar_url(
             f"{r.cliente.nombre} {r.cliente.apellido}".strip()
             if r.cliente and r.cliente.apellido
-            else "Viajero AlecTours"
+            else "Viajero Alik Tours"
         ),
         "fecha": r.fecha_creacion.isoformat() if r.fecha_creacion else None,
     }
@@ -174,7 +174,7 @@ def get_resenas_hotel(id_hotel: int, db: Session = Depends(get_db)):
             fecha_creacion=r.fecha_creacion,
             nombre_cliente=f"{r.cliente.nombre} {_inicial_apellido(r.cliente)}".strip()
             if r.cliente
-            else "Viajero AlecTours",
+            else "Viajero Alik Tours",
         )
         for r in resenas
     ]

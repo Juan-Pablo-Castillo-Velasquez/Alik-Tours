@@ -580,7 +580,7 @@ export default function PackageDetail() {
                         />
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-foreground truncate">
-                            {r.nombre_cliente ?? "Huésped Alik tours"}
+                            {r.nombre_cliente ?? "Huésped Alik Tours"}
                           </p>
                         </div>
                         <div className="ml-auto flex gap-0.5 shrink-0">
@@ -627,7 +627,7 @@ export default function PackageDetail() {
 
             {/* Antes de reservar — el equivalente real de "Términos y
                 condiciones" / "Políticas de cancelación" de cualquier OTA,
-                pero con la política real de AlekTours (ver
+                pero con la política real de Alik Tours (ver
                 TermsAndConditions.tsx): acá no hay una cancelación con
                 100% de penalidad fija por fecha, es una solicitud que un
                 asesor revisa y resuelve caso por caso. */}
@@ -643,10 +643,23 @@ export default function PackageDetail() {
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
                     El precio se congela solo cuando el pago queda aprobado — total o el
-                    anticipo que elijas. Aceptamos tarjeta de crédito o débito, PSE, Nequi y
-                    PayPal.
+                    anticipo del 50% que elijas (el saldo se paga después). En línea aceptamos
+                    Nequi y PayPal.
                   </AccordionContent>
                 </AccordionItem>
+                {pkg.condiciones && (
+                  <AccordionItem value="condiciones">
+                    <AccordionTrigger>
+                      <span className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+                        Condiciones de este paquete
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground whitespace-pre-line">
+                      {pkg.condiciones}
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
                 <AccordionItem value="cancelacion">
                   <AccordionTrigger>
                     <span className="flex items-center gap-2">
@@ -656,7 +669,7 @@ export default function PackageDetail() {
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
                     Puedes solicitar la cancelación desde tu perfil después de reservar. Un
-                    asesor de Alik tours revisa cada solicitud y te confirma las condiciones de
+                    asesor de Alik Tours revisa cada solicitud y te confirma las condiciones de
                     reembolso según el hotel y el tiempo restante hasta el viaje.
                   </AccordionContent>
                 </AccordionItem>

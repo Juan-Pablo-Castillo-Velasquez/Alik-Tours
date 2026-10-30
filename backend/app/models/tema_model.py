@@ -15,7 +15,7 @@ class Tema(Base):
     Solo un tema puede estar `activo` a la vez (lo garantiza
     TemaRepository.activar, no una constraint de base de datos). El tema
     con `es_predeterminado=True` representa los colores actuales de marca
-    de AlecTours (granate + dorado) y no se puede eliminar -- siempre debe
+    de Alik Tours (granate + dorado) y no se puede eliminar -- siempre debe
     quedar al menos un tema de respaldo si el admin borra los demás.
 
     Cada color se guarda en versión clara/oscura (mismo criterio que

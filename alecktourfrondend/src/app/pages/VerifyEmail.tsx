@@ -44,7 +44,7 @@ export default function VerifyEmail() {
               <CheckCircle className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
             </div>
             <h2 className="text-2xl font-black text-foreground mb-2 tracking-tight">¡Email verificado!</h2>
-            <p className="text-sm text-muted-foreground mb-8">Tu cuenta de AlecTours está lista. Ya puedes iniciar sesión y planear tu próximo destino.</p>
+            <p className="text-sm text-muted-foreground mb-8">Tu cuenta de Alik Tours está lista. Ya puedes iniciar sesión y planear tu próximo destino.</p>
 
             <button onClick={() => navigate('/login')}
               className="w-full py-4 bg-gradient-to-r from-primary to-primary/70 text-primary-foreground font-bold uppercase text-xs tracking-widest rounded-xl hover:opacity-95 shadow-md transform active:scale-[0.98] transition-all cursor-pointer">

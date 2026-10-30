@@ -26,6 +26,10 @@ class Paquete(Base):
     # para los paquetes sin portada propia todavía). Ver POST
     # /paquetes/{id}/imagen en reserva_route.py.
     imagen_url = Column(String(255), nullable=True)
+    # Condiciones del paquete (requisitos, cambios, no reembolsables,
+    # documentos...) administradas desde el panel. Nullable: se omite en
+    # la vista pública si está vacío.
+    condiciones = Column(Text, nullable=True)
 
     paquete_servicios = relationship("PaqueteServicio", back_populates="paquete", cascade="all, delete-orphan")
     paquete_hotel = relationship("PaqueteHotel", back_populates="paquete", cascade="all, delete-orphan")
@@ -108,6 +112,11 @@ class Reserva(Base):
         String(20), CheckConstraint("estado IN ('pendiente', 'confirmada', 'cancelada', 'finalizada')"), nullable=False
     )
     canal_origen = Column(String(20), CheckConstraint("canal_origen IN ('web', 'empleado', 'telefono')"), default="web")
+    # Versión de los términos aceptada por el cliente al reservar y cuándo
+    # (evidencia de consentimiento). NULL en reservas anteriores o creadas
+    # por un asesor.
+    terminos_version = Column(String(40), nullable=True)
+    terminos_aceptados_en = Column(TIMESTAMP, nullable=True)
 
     cliente = relationship("Cliente", back_populates="reservas")
     empleado = relationship("Empleado", back_populates="reservas")
@@ -126,6 +135,16 @@ class Reserva(Base):
         total = sum((rh.precio_acordado or 0) for rh in self.reserva_habitaciones)
         total += sum((rs.precio_acordado or 0) for rs in self.reserva_servicios)
         return float(total)
+
+    @property
+    def total_pagado(self) -> float:
+        """Suma de los pagos aprobados ('pagado') de esta reserva."""
+        return float(sum((p.monto or 0) for p in self.pagos if p.estado == "pagado"))
+
+    @property
+    def saldo_pendiente(self) -> float:
+        """Lo que falta por pagar (0 si ya está cubierta)."""
+        return max(round(self.precio_total - self.total_pagado, 2), 0.0)
 
     @property
     def nombre_paquete(self):

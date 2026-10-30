@@ -106,6 +106,24 @@ class HotelCaracteristicaResponse(BaseModel):
         from_attributes = True
 
 
+class HabitacionNuevaEnHotel(BaseModel):
+    """Habitación que se crea junto con el hotel (POST /api/hoteles/) --
+    mismos campos y reglas que HabitacionCreate, sin id_hotel (todavía no
+    existe)."""
+
+    id_tipo_habitacion: int
+    numero_habitacion: str = Field(..., min_length=1, max_length=20)
+    precio_noche: float = Field(..., ge=0)
+    estado: str = Field(default="disponible")
+
+    @field_validator("estado")
+    @classmethod
+    def validate_estado(cls, v):
+        if v not in ["disponible", "ocupada", "mantenimiento"]:
+            raise ValueError("estado debe ser: disponible, ocupada o mantenimiento")
+        return v
+
+
 class HotelCreate(BaseModel):
     nombre_hotel: str = Field(..., min_length=1, max_length=100)
     calificacion: int | None = Field(None, ge=1, le=5)
@@ -115,6 +133,20 @@ class HotelCreate(BaseModel):
     codigo_postal: str | None = Field(None, max_length=20)
     correo_electronico: str | None = Field(None, max_length=100)
     telefono: str | None = Field(None, max_length=20)
+    descripcion: str | None = Field(None, max_length=5000)
+    politicas: str | None = Field(None, max_length=5000)
+    # Opcional: habitaciones creadas en la MISMA transacción que el hotel
+    # (o se crea todo, o nada).
+    habitaciones: list[HabitacionNuevaEnHotel] | None = None
+
+    @field_validator("habitaciones")
+    @classmethod
+    def numeros_unicos(cls, v):
+        if v:
+            numeros = [h.numero_habitacion.strip().lower() for h in v]
+            if len(numeros) != len(set(numeros)):
+                raise ValueError("Hay números de habitación repetidos")
+        return v
 
 
 class HotelUpdate(BaseModel):
@@ -126,6 +158,8 @@ class HotelUpdate(BaseModel):
     codigo_postal: str | None = None
     correo_electronico: str | None = None
     telefono: str | None = None
+    descripcion: str | None = Field(None, max_length=5000)
+    politicas: str | None = Field(None, max_length=5000)
 
 
 class HotelResponse(BaseModel):
@@ -139,6 +173,8 @@ class HotelResponse(BaseModel):
     correo_electronico: str | None
     telefono: str | None
     imagen_url: str | None = None
+    descripcion: str | None = None
+    politicas: str | None = None
     # Reseñas reales de clientes (propiedades calculadas en el modelo Hotel a
     # partir de la tabla `resenas`) — nunca cifras inventadas en el frontend.
     total_resenas: int = 0

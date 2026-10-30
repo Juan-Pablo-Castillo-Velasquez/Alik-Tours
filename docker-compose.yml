@@ -111,6 +111,11 @@ services:
       - ./alecktourfrondend:/app
       - /app/node_modules
 
+    # Destino del proxy de desarrollo de Vite (ver vite.config.ts): dentro
+    # de la red de Docker el backend se llama "backend", no localhost.
+    environment:
+      API_PROXY_TARGET: http://backend:8000
+
     depends_on:
       - backend
 

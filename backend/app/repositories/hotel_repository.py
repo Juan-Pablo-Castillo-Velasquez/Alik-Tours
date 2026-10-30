@@ -1,7 +1,7 @@
 import unicodedata
 from datetime import date
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.exceptions import HotelDependencyError, NotFoundError
@@ -21,7 +21,7 @@ def _sin_tildes(texto: str) -> str:
 
 class HotelRepository:
     @staticmethod
-    def get_all(db: Session, skip: int = 0, limit: int = 10, fecha_checkin=None, fecha_checkout=None):
+    def get_all(db: Session, skip: int = 0, limit: int = 10, fecha_checkin=None, fecha_checkout=None, q=None):
         # GET /hoteles/ responde con HotelDetailResponse (habitaciones +
         # hotel_caracteristicas) y además expone total_resenas/
         # calificacion_promedio (propiedades sobre Hotel.resenas) para cada
@@ -36,6 +36,14 @@ class HotelRepository:
             selectinload(Hotel.resenas),
             selectinload(Hotel.imagenes),
         )
+
+        if q:
+            # Búsqueda en la base de datos (panel de admin y buscador): por
+            # nombre, ciudad o país, sin distinguir mayúsculas.
+            patron = f"%{q}%"
+            query = query.filter(
+                or_(Hotel.nombre_hotel.ilike(patron), Hotel.ciudad.ilike(patron), Hotel.pais.ilike(patron))
+            )
 
         if fecha_checkin and fecha_checkout:
             # BUG real corregido: el buscador público (SearchBar/SearchResults)

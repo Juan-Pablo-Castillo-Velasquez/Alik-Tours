@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -377,6 +379,10 @@ class ReservaRepository:
             )
             habitaciones_validadas.append((h, habitacion))
 
+        if reserva_data.get("terminos_version"):
+            reserva_data["terminos_aceptados_en"] = datetime.now(UTC).replace(tzinfo=None)
+        else:
+            reserva_data.pop("terminos_version", None)
         reserva = Reserva(**reserva_data, estado="pendiente")
         db.add(reserva)
         db.flush()  # asigna id_reserva sin cerrar la transacción

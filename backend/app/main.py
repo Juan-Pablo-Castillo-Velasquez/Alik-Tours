@@ -79,7 +79,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 app = FastAPI(
-    title="AlecTours API",
+    title="Alik Tours API",
     description="API para gestión de hoteles y reservas",
     version="1.0.0",
     docs_url="/docs",
@@ -202,4 +202,4 @@ app.mount("/uploads", StaticFiles(directory=_UPLOADS_DIR), name="uploads")
 
 @app.get("/")
 def root():
-    return {"message": "API Alik tours funcionando"}
+    return {"message": "API Alik Tours funcionando"}

@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { BRAND } from "../../config/brand";
 import { Download, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { ClienteResponse } from "../../services/cliente.service";
@@ -31,25 +32,6 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
     }
   };
 
-  // Helper para convertir el QR a Base64 usando tu color Granate (#7B1E3A -> RGB: 123-30-58)
-  const getQRBase64 = (text: string): Promise<string> => {
-    return new Promise((resolve) => {
-      const url = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(text)}&color=123-30-58`;
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        if (ctx) ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL("image/jpeg"));
-      };
-      img.onerror = () => resolve("");
-      img.src = url;
-    });
-  };
-
   const descargarPDF = async (
     detalle: ReservaDetail,
     pagos: PagoResponse[] = [],
@@ -72,11 +54,11 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
-    doc.text("AlekTours", margin, 16);
+    doc.text(BRAND.name, margin, 16);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.text("VIVE TU PRÓXIMA AVENTURA", margin, 21);
+    doc.text(BRAND.slogan.toUpperCase(), margin, 21);
     doc.text(
       `Emisión: ${new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}`,
       margin,
@@ -318,27 +300,21 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
       );
     }
 
-    // ── 4. GENERACIÓN DE QR + FOOTER CORPORATIVO ─────────────────────────────
-    const qrString = `Aliktours|RES-${detalle.id_reserva}|PAQ-${detalle.id_paquete}|CC-${clienteData.cedula}`;
-    const qrBase64 = await getQRBase64(qrString);
-
-    if (qrBase64) {
-      doc.addImage(qrBase64, "JPEG", W - margin - 26, 234, 26, 26);
-    }
-
+    // ── 4. NOTA LEGAL ───────────────────────────────────────────────────────
+    // Antes había un QR "para validación automática en el counter o
+    // aeropuerto" que no validaba nada y, además, enviaba la cédula del
+    // cliente en la URL de un servicio externo (api.qrserver.com) para
+    // dibujarlo. Se retira: este documento es un resumen informativo.
     doc.setTextColor(107, 107, 107);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
     doc.text(
-      "Escanea este código QR en el counter o aeropuerto para la validación automática de tu pasadía/itinerario.",
+      "Resumen informativo de tu reserva. No es una factura electrónica de venta ni reemplaza el comprobante de pago.",
       margin,
       244,
+      { maxWidth: W - margin * 2 },
     );
-    doc.text(
-      "Documento digital verificado de forma segura a través del servidor centralizado de Alik tours.",
-      margin,
-      247.5,
-    );
+    doc.text(`${BRAND.name} · RNT ${BRAND.rnt}`, margin, 249);
 
     // Barra de cierre en gris profundo elegante (evitando negro plano)
     doc.setFillColor(46, 46, 46); // #2E2E2E
@@ -348,7 +324,7 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     doc.text(
-      "¡Gracias por confiar en AlekTours para descubrir el mundo!",
+      "¡Gracias por confiar en Alik Tours para descubrir el mundo!",
       W / 2,
       281,
       { align: "center" },
@@ -358,13 +334,13 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
     doc.text(
-      "Soporte Global: info@Aliktours.com  |  Bogotá, Colombia",
+      `Atención: ${BRAND.telefono}  |  ${BRAND.siteUrl.replace("https://", "")}`,
       W / 2,
       286,
       { align: "center" },
     );
 
-    doc.save(`Comprobante_Reserva_${detalle.id_reserva}.pdf`);
+    doc.save(`Resumen_Reserva_${detalle.id_reserva}.pdf`);
   };
 
   return (
@@ -379,7 +355,7 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
         <Download className="w-3.5 h-3.5" />
       )}
       <span>
-        {loading ? "Compilando comprobante..." : "Descargar comprobante"}
+        {loading ? "Generando resumen..." : "Descargar resumen"}
       </span>
     </button>
   );

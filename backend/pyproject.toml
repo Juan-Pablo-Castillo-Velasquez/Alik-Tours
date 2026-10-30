@@ -23,7 +23,7 @@ exclude = [
     # Archivo de referencia (no es una ruta activa, nunca se importa) que
     # es en su mayoría un docstring gigante con snippets de ejemplo — su
     # contenido está fuera del alcance de un linter de código real.
-    "app/core/examples.py",
+    "scripts/ejemplos_correo.py",
 ]
 
 [tool.ruff.lint]

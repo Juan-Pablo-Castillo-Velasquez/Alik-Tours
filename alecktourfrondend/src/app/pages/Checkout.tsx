@@ -1,3 +1,5 @@
+import { TERMINOS_VERSION } from "../content/terminos";
+import { esCelularValido } from "../utils/validaciones";
 import { Bed, Calendar, CheckCircle2, CreditCard, Eye, EyeOff, IdCard, Lock, Mail, MapPin, Phone, Shield, ShieldCheck, Smartphone, Sparkles, User, Users, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -114,6 +116,9 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [paymentOption, setPaymentOption] = useState<'full' | 'partial'>('full');
+  // Aceptación expresa de los términos antes de pagar (casilla nunca
+  // marcada por defecto; la versión aceptada se guarda con la reserva).
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
 
   // ── Datos por método de pago (nunca se envía el número completo de
   //    tarjeta al backend, solo los últimos 4 — ver construirDatosMetodo) ──
@@ -201,7 +206,7 @@ export default function Checkout() {
     nombres.trim().length > 1 &&
     apellidos.trim().length > 1 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim()) &&
-    celular.replace(/\D/g, '').length >= 7 &&
+    esCelularValido(celular) &&
     cedula.trim().length >= 5;
 
   const construirDatosMetodo = () => {
@@ -440,6 +445,10 @@ export default function Checkout() {
       toast.error('Revisa los datos del método de pago elegido.');
       return;
     }
+    if (!aceptaTerminos) {
+      toast.error('Debes aceptar los términos y condiciones para confirmar la reserva.');
+      return;
+    }
     if (securityPin.length < 4) {
       toast.error('Ingresa tu PIN de seguridad (mínimo 4 dígitos).');
       return;
@@ -496,6 +505,7 @@ export default function Checkout() {
           fecha_inicio: fechaInicio,
           fecha_fin: fechaFin,
           numero_personas: people,
+          terminos_version: TERMINOS_VERSION,
           habitaciones: [
             {
               id_habitacion: habitacion.id_habitacion,
@@ -716,7 +726,7 @@ export default function Checkout() {
 
                   <div className="p-6 md:p-8">
                     <h2 className="text-xl font-medium text-foreground mb-1">Información del viajero</h2>
-                    <p className="text-xs text-muted-foreground mb-5">Estos datos vienen de tu perfil registrado en AlekTours.</p>
+                    <p className="text-xs text-muted-foreground mb-5">Estos datos vienen de tu perfil registrado en Alik Tours.</p>
 
                     <div className="flex items-start gap-3 bg-input-background border border-border/60 rounded-xl p-4 mb-5">
                       <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
@@ -847,14 +857,16 @@ export default function Checkout() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label htmlFor="checkout-checkin" className="block text-xs font-medium text-muted-foreground mb-1.5">Check-in</label>
-                      <input id="checkout-checkin" type="date" required value={fechaInicio}
+                      <input id="checkout-checkin" type="date"
+                max="2100-12-31" required value={fechaInicio}
                         min={new Date().toISOString().split('T')[0]}
                         onChange={(e) => setFechaInicio(e.target.value)}
                         className="w-full px-3 py-2.5 rounded-xl border border-border bg-input-background text-foreground text-sm focus:ring-2 focus:ring-primary/40 focus:outline-none" />
                     </div>
                     <div>
                       <label htmlFor="checkout-checkout" className="block text-xs font-medium text-muted-foreground mb-1.5">Check-out</label>
-                      <input id="checkout-checkout" type="date" required value={fechaFin}
+                      <input id="checkout-checkout" type="date"
+                max="2100-12-31" required value={fechaFin}
                         min={fechaInicio || new Date().toISOString().split('T')[0]}
                         onChange={(e) => setFechaFin(e.target.value)}
                         className="w-full px-3 py-2.5 rounded-xl border border-border bg-input-background text-foreground text-sm focus:ring-2 focus:ring-primary/40 focus:outline-none" />
@@ -1340,6 +1352,24 @@ export default function Checkout() {
                 </button>
               ) : (
                 <div className="flex flex-col items-end gap-1.5">
+                  <label className="flex items-start gap-2 text-xs text-muted-foreground max-w-[340px] text-left cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={aceptaTerminos}
+                      onChange={(e) => setAceptaTerminos(e.target.checked)}
+                      className="mt-0.5 accent-[var(--primary)]"
+                    />
+                    <span>
+                      He leído y acepto los{' '}
+                      <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">
+                        términos y condiciones
+                      </a>{' '}
+                      (versión {TERMINOS_VERSION}) y la{' '}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">
+                        política de privacidad
+                      </a>.
+                    </span>
+                  </label>
                   {(!metodoValido || !pinCompletado) && (
                     <p className="text-[11px] text-muted-foreground">
                       {!metodoValido
@@ -1348,7 +1378,7 @@ export default function Checkout() {
                     </p>
                   )}
                   <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                    type="submit" disabled={isProcessing || paymentStatus === 'processing' || paymentStatus === 'approved' || paymentStatus === 'pendiente_verificacion'}
+                    type="submit" disabled={!aceptaTerminos || isProcessing || paymentStatus === 'processing' || paymentStatus === 'approved' || paymentStatus === 'pendiente_verificacion'}
                     className="min-w-[220px] py-3.5 px-6 bg-primary text-primary-foreground text-sm font-semibold rounded-xl border border-transparent shadow-md hover:opacity-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden">
                     <span className="relative flex items-center justify-center gap-2.5">
                       {isProcessing ? 'Garantizando transacciones...' : (

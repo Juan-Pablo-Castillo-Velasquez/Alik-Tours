@@ -1,3 +1,5 @@
+import { TERMINOS_VERSION } from "../content/terminos";
+import { esCelularValido, MENSAJE_CELULAR, normalizarCelular } from "../utils/validaciones";
 import {
     AlertCircle, ArrowLeft, ArrowRight, Building2, Calendar, Check, CreditCard,
     Eye, EyeOff, Lock, Mail, MapPin, Phone, Pencil, Plane, RefreshCw, ShieldCheck, User, X,
@@ -244,8 +246,10 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
             e.confirmPassword = "Las contraseñas no coinciden";
         if (formData.cedula && !/^\d{6,12}$/.test(formData.cedula))
             e.cedula = "Solo números, 6–12 dígitos";
-        if (formData.celular && !/^\d{7,10}$/.test(formData.celular))
-            e.celular = "Solo números, 7–10 dígitos";
+        if (!formData.celular.trim())
+            e.celular = "El celular es obligatorio";
+        else if (!esCelularValido(formData.celular))
+            e.celular = MENSAJE_CELULAR;
         if (formData.fecha_nacimiento && calcAge(formData.fecha_nacimiento) < 18)
             e.fecha_nacimiento = "Debes ser mayor de 18 años";
         if (formData.direccion && !DIRECCION_REGEX.test(formData.direccion.trim()))
@@ -273,7 +277,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
         formData.ciudad.trim().length > 0 &&
         formData.fecha_nacimiento.length > 0 &&
         calcAge(formData.fecha_nacimiento) >= 18 &&
-        (formData.celular === "" || /^\d{7,10}$/.test(formData.celular)) &&
+        esCelularValido(formData.celular) &&
         (formData.direccion.trim() === "" || DIRECCION_REGEX.test(formData.direccion.trim()));
 
     const isFormValid = step1Valid && step2Valid && acceptedTerms;
@@ -333,6 +337,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 username,
                 correo_electronico: formData.correo_electronico,
                 password: formData.password,
+                terminos_version: TERMINOS_VERSION,
             });
             // Auto-login: el registro devuelve un access_token (rol cliente).
             // Se guarda para que crear/vincular el cliente (que exigen sesión)
@@ -347,7 +352,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 body: {
                     nombre: formData.nombre, apellido: formData.apellido,
                     cedula: formData.cedula, correo: formData.correo_electronico,
-                    celular: formData.celular, direccion: formData.direccion,
+                    celular: normalizarCelular(formData.celular), direccion: formData.direccion,
                     barrio: formData.barrio, departamento: formData.departamento,
                     codigo_postal: formData.codigo_postal,
                     ciudad: formData.ciudad, pais: formData.pais,
@@ -406,7 +411,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 verificado: tokens.verificado,
                 activo: tokens.activo,
             });
-            toast.success("¡Cuenta verificada! Bienvenido a AlekTours.");
+            toast.success("¡Cuenta verificada! Bienvenido a Alik Tours.");
             handleClose();
             navigate("/profile");
         } catch (err: any) {
@@ -485,7 +490,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                             : <Plane className="w-6 h-6 text-primary-foreground transform -rotate-12" />}
                                     </div>
                                     <div>
-                                        <p className="text-primary-foreground/70 text-[11px] font-bold tracking-widest uppercase">AlekTours</p>
+                                        <p className="text-primary-foreground/70 text-[11px] font-bold tracking-widest uppercase">Alik Tours</p>
                                         <AnimatePresence mode="wait">
                                             <motion.h1
                                                 key={step}
@@ -668,10 +673,10 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                             placeholder="1020304050" required inputMode="numeric"
                                                             className={inputBase("cedula")} />
                                                     </Field>
-                                                    <Field label="Celular" icon={<Phone className="w-4 h-4" />} error={fieldError("celular")} optional>
+                                                    <Field label="Celular" icon={<Phone className="w-4 h-4" />} error={fieldError("celular")}>
                                                         <input type="tel" name="celular" value={formData.celular}
                                                             onChange={handleChange} onBlur={handleBlur}
-                                                            placeholder="3001234567" inputMode="numeric" autoComplete="tel"
+                                                            placeholder="3001234567" inputMode="tel" autoComplete="tel" required
                                                             className={inputBase("celular")} />
                                                     </Field>
                                                 </div>
@@ -699,7 +704,8 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                         </select>
                                                     </Field>
                                                     <Field label="Fecha de nacimiento" icon={<Calendar className="w-4 h-4" />} error={fieldError("fecha_nacimiento")}>
-                                                        <input type="date" name="fecha_nacimiento" value={formData.fecha_nacimiento}
+                                                        <input type="date"
+                max="2100-12-31" name="fecha_nacimiento" value={formData.fecha_nacimiento}
                                                             onChange={handleChange} onBlur={handleBlur}
                                                             required className={inputBase("fecha_nacimiento") + " text-foreground"} />
                                                     </Field>
@@ -820,7 +826,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                             className="text-primary hover:underline font-bold transition-colors">
                                                             Política de Privacidad
                                                         </button>{" "}
-                                                        de AlekTours
+                                                        de Alik Tours
                                                     </span>
                                                 </label>
 

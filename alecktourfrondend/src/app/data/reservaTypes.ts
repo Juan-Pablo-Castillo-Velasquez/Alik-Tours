@@ -9,6 +9,9 @@ export interface ReservaResponse {
   numero_personas: number;
   estado: 'pendiente' | 'confirmada' | 'cancelada' | 'finalizada';
   precio_total?: number;
+  /** Suma de pagos aprobados y lo que falta por pagar (backend). */
+  total_pagado?: number;
+  saldo_pendiente?: number;
   // Nombre del paquete y ciudad/país del hotel — resueltos por el backend
   // (Reserva.nombre_paquete / Reserva.destino) para no mostrar solo el
   // id_paquete crudo en el historial de reservas.
@@ -44,6 +47,8 @@ export interface ReservaCreate {
   // NUEVO: si se está reservando una habitación de hotel, va aquí.
   // El precio NO se manda desde el frontend: el backend lo calcula con el precio real de la BD.
   habitaciones?: HabitacionReservaCreate[];
+  /** Versión de los términos aceptada en el checkout (content/terminos.ts). */
+  terminos_version?: string;
 }
 
 export interface ReservaUpdate extends Partial<ReservaCreate> { }

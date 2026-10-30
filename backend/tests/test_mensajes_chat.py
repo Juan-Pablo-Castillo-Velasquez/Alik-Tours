@@ -545,3 +545,24 @@ class TestPaginacionHaciaAtras:
         )
 
         assert [m["id_mensaje"] for m in anteriores] == ids[:2]
+
+
+def test_mensaje_con_mismo_client_msg_id_no_se_guarda_dos_veces(monkeypatch):
+    """Auditoría oct-2026 (P1-1): un reintento o doble Enter con el mismo
+    client_msg_id se rechaza con 409 en vez de duplicar el mensaje."""
+    claves = set()
+
+    def fake_reservar(clave, ttl_seconds=300):
+        if clave in claves:
+            return False
+        claves.add(clave)
+        return True
+
+    monkeypatch.setattr(mensaje_chat_route, "reservar_clave_unica", fake_reservar)
+    mensaje_chat_route._exigir_mensaje_no_repetido(7, "abc-123")
+    with pytest.raises(HTTPException) as exc:
+        mensaje_chat_route._exigir_mensaje_no_repetido(7, "abc-123")
+    assert exc.value.status_code == 409
+    # Otro usuario con el mismo id, o sin id, no se bloquea.
+    mensaje_chat_route._exigir_mensaje_no_repetido(8, "abc-123")
+    mensaje_chat_route._exigir_mensaje_no_repetido(7, None)

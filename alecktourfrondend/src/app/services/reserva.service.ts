@@ -86,7 +86,7 @@ export interface ReservaDetail {
 
 export interface PagarRequest {
   id_metodo_pago: number;
-  tipo_pago: 'completo' | 'parcial';
+  tipo_pago: 'completo' | 'parcial' | 'saldo';
   // Cuando se paga con un método guardado (billetera del cliente), se envía
   // su id para que el backend valide y use la info REAL del método guardado
   // en lugar de confiar en los campos de pago que mande el navegador.

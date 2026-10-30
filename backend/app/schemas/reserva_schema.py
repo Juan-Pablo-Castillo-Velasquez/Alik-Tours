@@ -2,6 +2,8 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.validadores import FechaValida
+
 from app.schemas.hotel_schema import ImagenGaleriaResponse
 
 
@@ -34,6 +36,7 @@ class PaqueteCreate(BaseModel):
     # Ciudad de salida del viaje (vuelo/transporte) — distinta de la ciudad
     # de destino, que se deriva de los hoteles reales vinculados.
     ciudad_salida: str | None = Field(None, max_length=100)
+    condiciones: str | None = Field(None, max_length=5000)
     hoteles: list[PaqueteHotelInput] | None = None
     servicios: list[PaqueteServicioInput] | None = None
 
@@ -45,6 +48,7 @@ class PaqueteUpdate(BaseModel):
     precio_base: float | None = Field(None, ge=0)
     activo: bool | None = None
     ciudad_salida: str | None = Field(None, max_length=100)
+    condiciones: str | None = Field(None, max_length=5000)
     # None = no tocar servicios ya vinculados; [] = quitar todos — mismo
     # patrón exclude_unset ya usado para "hoteles".
     servicios: list[PaqueteServicioInput] | None = None
@@ -62,6 +66,7 @@ class PaqueteResponse(BaseModel):
     precio_base: float
     activo: bool
     ciudad_salida: str | None = None
+    condiciones: str | None = None
     # Calculada (Paquete.ciudad_destino), no una columna — ver el property
     # en el modelo. None si el paquete no tiene ningún hotel vinculado.
     ciudad_destino: str | None = None
@@ -172,8 +177,8 @@ class HabitacionReservaCreate(BaseModel):
     """Una habitación específica que el cliente quiere reservar dentro de la reserva."""
 
     id_habitacion: int
-    fecha_checkin: date
-    fecha_checkout: date
+    fecha_checkin: FechaValida
+    fecha_checkout: FechaValida
 
     @field_validator("fecha_checkout")
     @classmethod
@@ -197,9 +202,12 @@ class ReservaCreate(BaseModel):
     id_cliente: int
     id_empleado: int | None = None
     id_paquete: int | None = None
-    fecha_inicio: date
-    fecha_fin: date
+    fecha_inicio: FechaValida
+    fecha_fin: FechaValida
     numero_personas: int = Field(..., gt=0)
+    # Versión de los términos aceptada en el checkout (evidencia de
+    # consentimiento); la fecha la pone el servidor.
+    terminos_version: str | None = Field(None, max_length=40)
     # NUEVO: habitaciones reales que se están reservando (precio se calcula en backend, no se confía en el frontend)
     habitaciones: list[HabitacionReservaCreate] | None = None
 
@@ -213,8 +221,8 @@ class ReservaCreate(BaseModel):
 
 class ReservaUpdate(BaseModel):
     id_paquete: int | None = None
-    fecha_inicio: date | None = None
-    fecha_fin: date | None = None
+    fecha_inicio: FechaValida | None = None
+    fecha_fin: FechaValida | None = None
     numero_personas: int | None = Field(None, gt=0)
     estado: str | None = None
 
@@ -237,6 +245,10 @@ class ReservaResponse(BaseModel):
     numero_personas: int
     estado: str
     precio_total: float = 0
+    # Suma de pagos aprobados y lo que falta por pagar (Reserva.total_pagado /
+    # Reserva.saldo_pendiente) -- para mostrar "Pagar saldo" tras el anticipo.
+    total_pagado: float = 0
+    saldo_pendiente: float = 0
     # Nombre del paquete y destino (ciudad/país del hotel), calculados en
     # Reserva.nombre_paquete / Reserva.destino — para que el historial de
     # reservas del frontend no tenga que mostrar solo el id_paquete crudo.
@@ -305,8 +317,9 @@ class PagarRequest(BaseModel):
     @field_validator("tipo_pago")
     @classmethod
     def validate_tipo_pago(cls, v):
-        if v not in ("completo", "parcial"):
-            raise ValueError("tipo_pago debe ser: completo o parcial")
+        # 'saldo' = lo que falta tras el anticipo del 50% (ver pagar_reserva).
+        if v not in ("completo", "parcial", "saldo"):
+            raise ValueError("tipo_pago debe ser: completo, parcial o saldo")
         return v
 
 

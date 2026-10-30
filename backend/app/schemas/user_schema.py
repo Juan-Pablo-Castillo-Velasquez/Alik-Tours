@@ -1,13 +1,16 @@
 # schemas/user_schema.py
 
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UsuarioCreate(BaseModel):
     username: str
     correo_electronico: EmailStr
     password: str
+    # Versión de los términos y condiciones que el usuario aceptó de forma
+    # expresa (casilla sin marcar por defecto en el registro).
+    terminos_version: str | None = Field(None, max_length=40)
 
 
 class UsuarioLogin(BaseModel):

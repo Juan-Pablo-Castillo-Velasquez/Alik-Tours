@@ -465,13 +465,15 @@ export default function ModuleCrearReserva({ clientes, paquetes, hoteles, onSubm
             <div className={`${card} grid grid-cols-1 sm:grid-cols-3 gap-4`}>
               <div>
                 <label className={labelCls}>Fecha inicio</label>
-                <input type="date" value={form.fecha_inicio}
+                <input type="date"
+                max="2100-12-31" value={form.fecha_inicio}
                   onChange={(e) => setForm({ ...form, fecha_inicio: e.target.value })}
                   className={inputCls} required />
               </div>
               <div>
                 <label className={labelCls}>Fecha fin</label>
-                <input type="date" value={form.fecha_fin}
+                <input type="date"
+                max="2100-12-31" value={form.fecha_fin}
                   onChange={(e) => setForm({ ...form, fecha_fin: e.target.value })}
                   className={inputCls} required />
               </div>

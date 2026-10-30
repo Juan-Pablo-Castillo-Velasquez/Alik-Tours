@@ -146,7 +146,7 @@ export default function TravelInfo() {
       <div className="min-h-screen bg-background transition-colors duration-300">
         <Navbar />
 
-        {/* Hero Section - Granate de AlecTours usando variables */}
+        {/* Hero Section - Granate de Alik Tours usando variables */}
         <section className="relative py-20 overflow-hidden bg-gradient-to-br from-primary to-primary/80">
           <div className="absolute inset-0">
             <motion.div

@@ -18,13 +18,15 @@ import { AnimatePresence, motion } from "motion/react";
 import { resolveFotoUrl, inputCls } from "../admin/types";
 import {
   MENSAJE_CONTENIDO_MAX_LENGTH,
+  fusionarMensajes,
   mensajeChatService,
+  nuevoClientMsgId,
   type MensajeChat,
 } from "../../services/mensajeChat.service";
 import type { ReservaResponse } from "../../data/reservaTypes";
 import { fmt } from "./TabReservas/utils";
 
-// Chat privado con el equipo de Alik tours -- un solo hilo continuo (no uno
+// Chat privado con el equipo de Alik Tours -- un solo hilo continuo (no uno
 // por reserva); cualquier admin puede responder. Solo polling cada 5s
 // (sin websockets, mismo criterio que ModuleMensajes.tsx del panel admin).
 const POLL_MENSAJES_MS = 5000;
@@ -72,16 +74,26 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mensajesRef = useRef<MensajeChat[]>([]);
   mensajesRef.current = mensajes;
+  // Candado síncrono de envío: `enviando` es estado de React y no se
+  // actualiza entre dos pulsaciones rápidas de Enter, así que no basta.
+  const enviandoRef = useRef(false);
+  // El polling no arranca hasta tener el historial inicial: sin esto, un
+  // ciclo que corría antes de la carga pedía el hilo completo (afterId
+  // indefinido) y lo concatenaba encima del mismo historial.
+  const cargaInicialListaRef = useRef(false);
 
   useEffect(() => {
     mensajeChatService
       .getMiHilo()
       .then((data) => {
-        setMensajes(data);
+        setMensajes((prev) => fusionarMensajes(prev, data));
         setHayMasAnteriores(data.length >= LIMITE_HISTORIAL);
       })
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => {
+        cargaInicialListaRef.current = true;
+        setLoading(false);
+      });
     // Abrir la pestaña ya cuenta como "leer" los mensajes del admin.
     mensajeChatService.marcarLeido().catch(() => {});
   }, []);
@@ -98,12 +110,13 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
 
   useEffect(() => {
     const interval = setInterval(async () => {
+      if (!cargaInicialListaRef.current) return;
       const actuales = mensajesRef.current;
       const ultimoId = actuales.length ? actuales[actuales.length - 1].id_mensaje : undefined;
       try {
         const nuevos = await mensajeChatService.getMiHilo({ afterId: ultimoId });
         if (nuevos.length > 0) {
-          setMensajes((prev) => [...prev, ...nuevos]);
+          setMensajes((prev) => fusionarMensajes(prev, nuevos));
           if (nuevos.some((m) => m.remitente_tipo === "admin")) {
             mensajeChatService.marcarLeido().catch(() => {});
           }
@@ -128,7 +141,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
       const anteriores = await mensajeChatService.getMiHilo({ beforeId: mensajes[0].id_mensaje });
       setHayMasAnteriores(anteriores.length >= LIMITE_HISTORIAL);
       if (anteriores.length > 0) {
-        setMensajes((prev) => [...anteriores, ...prev]);
+        setMensajes((prev) => fusionarMensajes(prev, anteriores));
         // Mantiene la posición visual del scroll -- sin esto, insertar
         // mensajes arriba deja al cliente viendo un punto distinto del hilo.
         requestAnimationFrame(() => {
@@ -155,20 +168,23 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
   };
 
   const enviar = async () => {
-    if ((!texto.trim() && !archivo) || excedeLimite) return;
+    if ((!texto.trim() && !archivo) || excedeLimite || enviandoRef.current) return;
+    enviandoRef.current = true;
     setEnviando(true);
     try {
       const nuevo = await mensajeChatService.enviarComoCliente(
         texto.trim() || undefined,
         archivo ?? undefined,
         idReservaSeleccionada ?? undefined,
+        nuevoClientMsgId(),
       );
-      setMensajes((prev) => [...prev, nuevo]);
+      setMensajes((prev) => fusionarMensajes(prev, [nuevo]));
       setTexto("");
       limpiarArchivo();
     } catch {
       // el texto/archivo quedan como estaban para poder reintentar
     } finally {
+      enviandoRef.current = false;
       setEnviando(false);
     }
   };
@@ -201,7 +217,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
                   <MessageCircle className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
                   <h3 className="text-base font-bold text-foreground tracking-tight">Aún no tienes mensajes</h3>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto mt-1 mb-4">
-                    Cuéntanos qué necesitas -- te responderá el equipo de Alik tours.
+                    Cuéntanos qué necesitas -- te responderá el equipo de Alik Tours.
                   </p>
                   <div className="flex flex-wrap items-center justify-center gap-2 max-w-sm">
                     {CATEGORIAS_INICIALES.map(({ icon: Icon, label, texto: textoPlantilla }) => (
@@ -240,7 +256,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
                     <div key={m.id_mensaje} className={`flex ${m.remitente_tipo === "cliente" ? "justify-end" : "justify-start"}`}>
                       <div className="max-w-[80%] sm:max-w-[70%] flex flex-col gap-1">
                         {m.remitente_tipo === "admin" && (
-                          <span className="text-[11px] text-muted-foreground px-1">{m.remitente_nombre ?? "Alik tours"}</span>
+                          <span className="text-[11px] text-muted-foreground px-1">{m.remitente_nombre ?? "Alik Tours"}</span>
                         )}
                         <div
                           className={`rounded-2xl px-3.5 py-2.5 ${

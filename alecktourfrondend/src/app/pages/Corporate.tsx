@@ -40,16 +40,6 @@ export default function Corporate() {
     }
   }
 
-  const partners = [
-    { name: "Bancolombia", logo: "🏦" },
-    { name: "Éxito", logo: "🛒" },
-    { name: "Falabella", logo: "🏬" },
-    { name: "Avianca", logo: "✈️" },
-    { name: "EPM", logo: "⚡" },
-    { name: "Grupo Nutresa", logo: "🍫" },
-    { name: "Bavaria", logo: "🍺" },
-    { name: "Cementos Argos", logo: "🏗️" },
-  ];
 
   // Gradients actualizados a variables de Tailwind (primary y secondary)
   const benefits = [
@@ -181,41 +171,6 @@ export default function Corporate() {
           </div>
         </section>
 
-        {/* Partners Section */}
-        <section className="py-20 bg-background">
-          <div className="max-w-7xl mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl font-bold text-foreground mb-4">
-                Empresas que confían en nosotros
-              </h2>
-              <p className="text-xl text-muted-foreground">
-                Más de 500 empresas en Colombia ya son parte de Alik tours
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {partners.map((partner, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.1 }}
-                  className="bg-card rounded-2xl p-8 flex flex-col items-center justify-center hover:shadow-lg transition-all border border-border"
-                >
-                  <div className="text-5xl mb-3">{partner.logo}</div>
-                  <p className="text-center font-semibold text-card-foreground">{partner.name}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* Benefits Section */}
         <section className="py-20 bg-muted/30">

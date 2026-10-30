@@ -22,6 +22,7 @@ export interface PaqueteResponse {
   // ciudad de destino, que se deriva de los hoteles reales vinculados
   // (ver PaqueteDetalleResponse.hoteles[].ciudad).
   ciudad_salida?: string | null;
+  condiciones?: string | null;
   // Calculada en el backend (primer hotel vinculado) — null si el paquete
   // todavía no tiene ningún hotel real asociado.
   ciudad_destino?: string | null;

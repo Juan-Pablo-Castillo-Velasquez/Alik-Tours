@@ -101,8 +101,7 @@ export default function Testimonials() {
             </h2>
 
             <p className="mt-3 text-muted-foreground text-sm md:text-base max-w-xl leading-relaxed">
-              Miles de viajeros han confiado en AlekTours para convertir sus
-              planes de viaje en experiencias inolvidables.
+              Opiniones reales de viajeros que reservaron con Alik Tours.
             </p>
           </div>
 
@@ -154,7 +153,7 @@ export default function Testimonials() {
                   Todavía no hay reseñas destacadas
                 </p>
                 <p className="text-muted-foreground text-xs max-w-xs">
-                  Sé de los primeros en compartir tu experiencia de viaje con AlekTours.
+                  Sé de los primeros en compartir tu experiencia de viaje con Alik Tours.
                 </p>
               </div>
             )}
@@ -353,10 +352,10 @@ export default function Testimonials() {
               </div>
               <div>
                 <p className="text-foreground text-xs font-bold">
-                  Miles de viajeros
+                  Reseñas verificadas
                 </p>
                 <p className="text-muted-foreground text-[10px]">
-                  Ya viajaron con nosotros
+                  Solo de clientes con reserva
                 </p>
               </div>
             </div>

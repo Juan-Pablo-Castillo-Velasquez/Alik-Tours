@@ -150,6 +150,25 @@ const ReservaCard = forwardRef<HTMLDivElement, Props>(function ReservaCard(
           </div>
         </div>
 
+        {/* Saldo tras el anticipo del 50%: el backend ya acepta pagarlo
+            (tipo_pago "saldo"); mientras tanto el cliente lo coordina con
+            su asesor, que lo registra desde el panel. */}
+        {reserva.estado === "confirmada" && Number(reserva.saldo_pendiente ?? 0) > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 mb-4">
+            <span className="text-xs text-foreground">
+              Pagado ${Number(reserva.total_pagado ?? 0).toLocaleString("es-CO")} · <strong>Saldo pendiente ${Number(reserva.saldo_pendiente).toLocaleString("es-CO")} COP</strong>
+            </span>
+            {onHablarDeReserva && (
+              <button
+                onClick={onHablarDeReserva}
+                className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+              >
+                Coordinar pago del saldo
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Acciones principales */}
         <div className="flex flex-wrap items-center justify-between border-t border-border/60 pt-4 gap-2">
           <div className="flex items-center gap-2">

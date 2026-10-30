@@ -27,7 +27,7 @@ from app.core.mail import send_reservation_confirmation
 from app.core.security import require_admin, require_empleado
 from app.models.hotel_model import Hotel, HotelCaracteristica
 from app.models.metodo_pago_guardado_model import MetodoPagoGuardado
-from app.models.reserva_model import HistorialReserva, MetodoPago, Pago, Paquete, PaqueteHotel, PaqueteServicio
+from app.models.reserva_model import MetodoPago, Pago, Paquete, PaqueteHotel, PaqueteServicio
 from app.models.servicio_model import Servicio
 from app.models.user_model import Usuario
 from app.repositories.reserva_repository import (
@@ -64,7 +64,7 @@ from app.schemas.reserva_schema import (
     ReservaUpdate,
 )
 from app.services import payment_service
-from app.services.notificacion_service import crear_notificacion
+from app.services.pago_estado_service import TransicionPagoInvalida, cambiar_estado_pago, total_pagado
 from app.services.reserva_detail_service import ReservaDetailService
 
 router = APIRouter(prefix="/api", tags=["Reservas, Paquetes y Pagos"])
@@ -105,24 +105,6 @@ def _borrar_comprobante_si_existe(comprobante_url: str | None) -> None:
             os.remove(ruta)
 
 
-def _asignar_numero_factura(db: Session, pago: Pago) -> None:
-    """Genera el número de factura la primera vez que un pago llega a
-    'pagado' — se deriva directamente del id_pago real (FAC-000123), nunca
-    de un consecutivo aparte inventado. No hace nada si el pago ya tiene
-    número o si no está pagado (evita facturar un pago rechazado/pendiente)."""
-    if pago.estado == "pagado" and not pago.numero_factura:
-        pago.numero_factura = f"FAC-{pago.id_pago:06d}"
-        db.commit()
-        db.refresh(pago)
-        crear_notificacion(
-            db,
-            tipo="pago",
-            titulo=f"Pago aprobado — Reserva #{pago.id_reserva}",
-            mensaje=f"Pago #{pago.id_pago} ({pago.numero_factura}) por ${pago.monto:,.0f} confirmado.",
-            id_referencia=pago.id_reserva,
-        )
-
-
 def _enviar_confirmacion_reserva_en_hilo(
     email: str | None,
     reserva_id: int,
@@ -156,7 +138,7 @@ def _enviar_confirmacion_reserva_en_hilo(
                 send_reservation_confirmation(
                     email=email,
                     reservation_id=reserva_id,
-                    hotel_name=hotel_name or "AlecTours",
+                    hotel_name=hotel_name or "Alik Tours",
                     check_in=check_in,
                     check_out=check_out,
                     total_price=total_price,
@@ -167,6 +149,20 @@ def _enviar_confirmacion_reserva_en_hilo(
             logger.error(f"No se pudo enviar el correo de confirmacion de la reserva #{reserva_id}: {e}")
 
     threading.Thread(target=_run, daemon=True).start()
+
+
+def _notificar_confirmacion(reserva) -> None:
+    """Correo de confirmación de la reserva (en hilo aparte, best-effort)."""
+    cliente = reserva.cliente
+    _enviar_confirmacion_reserva_en_hilo(
+        email=cliente.correo if cliente else None,
+        reserva_id=reserva.id_reserva,
+        hotel_name=reserva.hotel_nombre,
+        check_in=str(reserva.fecha_inicio) if reserva.fecha_inicio else "",
+        check_out=str(reserva.fecha_fin) if reserva.fecha_fin else "",
+        total_price=reserva.precio_total,
+        guest_name=f"{cliente.nombre} {cliente.apellido}".strip() if cliente else "Cliente",
+    )
 
 
 # ===================== PAQUETES CRUD =====================
@@ -283,6 +279,7 @@ def get_paquete_detalle(paquete_id: int, db: Session = Depends(get_db)):
         precio_base=float(paquete.precio_base),
         activo=paquete.activo,
         ciudad_salida=paquete.ciudad_salida,
+        condiciones=paquete.condiciones,
         imagen_url=paquete.imagen_url,
         destinos=destinos,
         hoteles=hoteles,
@@ -662,10 +659,14 @@ def pagar_reserva(
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
     exigir_propietario_o_admin(current_user, reserva.id_cliente, authorization)
 
-    if reserva.estado != "pendiente":
+    # Se puede pagar una reserva 'pendiente' (primer pago) o una
+    # 'confirmada' que todavía tiene saldo (anticipo del 50% ya pagado).
+    # Antes, tras el anticipo la reserva quedaba 'confirmada' y este
+    # chequeo rechazaba cualquier pago nuevo: el saldo nunca se podía cobrar.
+    if reserva.estado not in ("pendiente", "confirmada"):
         raise HTTPException(
             status_code=409,
-            detail=f"Esta reserva ya está en estado '{reserva.estado}', no se puede pagar de nuevo",
+            detail=f"Esta reserva está en estado '{reserva.estado}', no admite pagos",
         )
 
     # Idempotencia (Fase 1 del plan de mejora): un pago async (PSE/Nequi) deja
@@ -722,66 +723,61 @@ def pagar_reserva(
             status_code=422,
             detail="Esta reserva no tiene habitaciones ni servicios asociados, no hay nada que cobrar",
         )
-    monto = total if data.tipo_pago == "completo" else round(total * 0.5, 2)
+    pagado = total_pagado(reserva)
+    saldo = round(total - pagado, 2)
+    if saldo <= 0:
+        raise HTTPException(status_code=409, detail="Esta reserva ya está pagada en su totalidad")
+
+    if data.tipo_pago == "parcial":
+        # El anticipo del 50% (mismo cálculo de siempre) solo aplica como
+        # primer pago.
+        if pagado > 0:
+            raise HTTPException(status_code=409, detail="El anticipo ya fue pagado; ahora corresponde pagar el saldo")
+        monto = round(total * 0.5, 2)
+    else:
+        # 'completo' o 'saldo': lo que falta por pagar (el total si es el
+        # primer pago). Nunca un monto propuesto por el navegador.
+        monto = saldo
+    concepto = {"parcial": "anticipo (50%)", "saldo": "saldo", "completo": "completo"}[data.tipo_pago]
 
     rechazo_simulado = payment_service.debe_simular_rechazo(metodo.codigo, datos_simulacion)
     es_async = payment_service.es_pago_asincrono(metodo.codigo)
-
-    if es_async:
-        estado_pago = "procesando"
-    elif rechazo_simulado:
-        estado_pago = "rechazado"
-    else:
-        estado_pago = "pagado"
 
     pago = Pago(
         id_reserva=reserva_id,
         id_metodo_pago=data.id_metodo_pago,
         monto=monto,
         referencia=f"PAY-{uuid.uuid4().hex[:10].upper()}",
-        estado=estado_pago,
+        estado="pendiente",
         simular_rechazo=rechazo_simulado,
         celular_nequi=getattr(datos_simulacion, "celular", None) if metodo.codigo == "nequi" else None,
     )
     db.add(pago)
+    db.flush()
 
-    if not es_async:
-        estado_anterior = reserva.estado
-        if not rechazo_simulado:
-            reserva.estado = "confirmada"
-            comentario = f"Pago {data.tipo_pago} aprobado (simulado) por ${monto:,.0f}"
-        else:
-            comentario = f"Pago {data.tipo_pago} rechazado (simulado) por ${monto:,.0f}"
-        db.add(
-            HistorialReserva(
-                id_reserva=reserva_id,
-                estado_anterior=estado_anterior,
-                estado_nuevo=reserva.estado,
-                comentarios=comentario,
-            )
+    estado_reserva_antes = reserva.estado
+    if es_async:
+        cambiar_estado_pago(db, pago, reserva, "procesando", "")
+    elif rechazo_simulado:
+        cambiar_estado_pago(
+            db, pago, reserva, "rechazado", f"Pago {concepto} rechazado (simulado) por ${monto:,.0f}"
         )
+    else:
+        cambiar_estado_pago(db, pago, reserva, "pagado", f"Pago {concepto} aprobado (simulado) por ${monto:,.0f}")
 
     db.commit()
     db.refresh(pago)
     db.refresh(reserva)
-    _asignar_numero_factura(db, pago)
     delete_pattern(RESERVAS_CACHE_PATTERN)
     delete_pattern(PAGOS_CACHE_PATTERN)
     # KPIs del dashboard dependen de reservas/pagos — invalida también su
     # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
     delete_pattern("kpi:dashboard:resumen")
 
-    if reserva.estado == "confirmada":
-        cliente = reserva.cliente
-        _enviar_confirmacion_reserva_en_hilo(
-            email=cliente.correo if cliente else None,
-            reserva_id=reserva.id_reserva,
-            hotel_name=reserva.hotel_nombre,
-            check_in=str(reserva.fecha_inicio) if reserva.fecha_inicio else "",
-            check_out=str(reserva.fecha_fin) if reserva.fecha_fin else "",
-            total_price=reserva.precio_total,
-            guest_name=f"{cliente.nombre} {cliente.apellido}".strip() if cliente else "Cliente",
-        )
+    # El correo de confirmación sale solo cuando la reserva PASA a confirmada
+    # (no al pagar el saldo de una que ya lo estaba).
+    if estado_reserva_antes != "confirmada" and reserva.estado == "confirmada":
+        _notificar_confirmacion(reserva)
 
     return PagarResponse(pago=pago, reserva=reserva)
 
@@ -831,46 +827,30 @@ def confirmar_pago(
     else:
         exigir_propietario_o_admin(current_user, reserva.id_cliente, authorization)
 
-    estado_anterior = reserva.estado
-
+    estado_reserva_antes = reserva.estado
     if pago.simular_rechazo:
-        pago.estado = "rechazado"
-        comentario = f"Pago confirmado como rechazado (simulado) por ${pago.monto:,.0f}"
-    else:
-        pago.estado = "pagado"
-        reserva.estado = "confirmada"
-        comentario = f"Pago confirmado y aprobado (simulado) por ${pago.monto:,.0f}"
-
-    db.add(
-        HistorialReserva(
-            id_reserva=reserva.id_reserva,
-            estado_anterior=estado_anterior,
-            estado_nuevo=reserva.estado,
-            comentarios=comentario,
+        cambiar_estado_pago(
+            db, pago, reserva, "rechazado", f"Pago confirmado como rechazado (simulado) por ${pago.monto:,.0f}"
         )
-    )
+    else:
+        cambiar_estado_pago(
+            db,
+            pago,
+            reserva,
+            "pagado",
+            f"Pago confirmado y aprobado (simulado) por ${pago.monto:,.0f}",
+            id_empleado=current_user.id_empleado,
+        )
 
     db.commit()
     db.refresh(pago)
     db.refresh(reserva)
-    _asignar_numero_factura(db, pago)
     delete_pattern(RESERVAS_CACHE_PATTERN)
     delete_pattern(PAGOS_CACHE_PATTERN)
-    # KPIs del dashboard dependen de reservas/pagos — invalida también su
-    # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
     delete_pattern("kpi:dashboard:resumen")
 
-    if reserva.estado == "confirmada":
-        cliente = reserva.cliente
-        _enviar_confirmacion_reserva_en_hilo(
-            email=cliente.correo if cliente else None,
-            reserva_id=reserva.id_reserva,
-            hotel_name=reserva.hotel_nombre,
-            check_in=str(reserva.fecha_inicio) if reserva.fecha_inicio else "",
-            check_out=str(reserva.fecha_fin) if reserva.fecha_fin else "",
-            total_price=reserva.precio_total,
-            guest_name=f"{cliente.nombre} {cliente.apellido}".strip() if cliente else "Cliente",
-        )
+    if estado_reserva_antes != "confirmada" and reserva.estado == "confirmada":
+        _notificar_confirmacion(reserva)
 
     return PagarResponse(pago=pago, reserva=reserva)
 
@@ -1018,24 +998,72 @@ def create_pago(pago: PagoCreate, db: Session = Depends(get_db), admin_id: int =
 
 
 @router.put("/pagos/{pago_id}", response_model=PagoResponse)
-def update_pago(pago_id: int, pago: PagoUpdate, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
-    """Actualiza un pago existente"""
-    db_pago = PagoRepository.get_by_id(db, pago_id)
+def update_pago(
+    pago_id: int,
+    pago: PagoUpdate,
+    db: Session = Depends(get_db),
+    admin_id: int = Depends(require_admin),
+    current_user: Usuario = Depends(get_current_usuario),
+):
+    """Actualiza un pago desde el panel. Un cambio de estado pasa por las
+    mismas reglas que el flujo del cliente (pago_estado_service): marcar
+    'pagado' confirma la reserva, deja historial, asigna comprobante y
+    notifica; los estados finales no se reabren. El monto solo se puede
+    corregir mientras el pago no esté resuelto."""
+    db_pago = db.query(Pago).filter(Pago.id_pago == pago_id).with_for_update().first()
     if not db_pago:
         raise HTTPException(status_code=404, detail="Pago no encontrado")
-    actualizado = PagoRepository.update(db, pago_id, pago.dict(exclude_unset=True))
-    _asignar_numero_factura(db, actualizado)
+    cambios = pago.dict(exclude_unset=True)
+
+    if cambios.get("monto") is not None and float(cambios["monto"]) != float(db_pago.monto):
+        if db_pago.estado not in ("pendiente", "procesando"):
+            raise HTTPException(
+                status_code=409, detail=f"No se puede cambiar el monto de un pago en estado '{db_pago.estado}'"
+            )
+        db_pago.monto = cambios["monto"]
+    if cambios.get("referencia") is not None:
+        db_pago.referencia = cambios["referencia"]
+
+    nuevo_estado = cambios.get("estado")
+    estado_reserva_antes = None
+    reserva = None
+    if nuevo_estado and nuevo_estado != db_pago.estado:
+        reserva = ReservaRepository.get_by_id_for_update(db, db_pago.id_reserva)
+        estado_reserva_antes = reserva.estado
+        try:
+            cambiar_estado_pago(
+                db,
+                db_pago,
+                reserva,
+                nuevo_estado,
+                f"Pago #{db_pago.id_pago} marcado como '{nuevo_estado}' desde el panel por ${db_pago.monto:,.0f}",
+                id_empleado=current_user.id_empleado,
+            )
+        except TransicionPagoInvalida as e:
+            db.rollback()
+            raise HTTPException(status_code=409, detail=str(e)) from e
+
+    db.commit()
+    db.refresh(db_pago)
     delete_pattern(PAGOS_CACHE_PATTERN)
     delete_pattern(RESERVAS_CACHE_PATTERN)  # el estado de pago se ve en la tabla de Reservas
-    # KPIs del dashboard dependen de reservas/pagos — invalida también su
-    # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
     delete_pattern("kpi:dashboard:resumen")
-    return actualizado
+    if reserva is not None and estado_reserva_antes != "confirmada" and reserva.estado == "confirmada":
+        _notificar_confirmacion(reserva)
+    return db_pago
 
 
 @router.delete("/pagos/{pago_id}")
 def delete_pago(pago_id: int, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
-    """Elimina un pago"""
+    """Elimina un pago. Un pago aprobado (o con comprobante emitido) no se
+    borra: es el registro de un dinero recibido y su trazabilidad debe
+    quedar. Para revertir una venta se usa la cancelación de la reserva."""
+    existente = PagoRepository.get_by_id(db, pago_id)
+    if existente and (existente.estado == "pagado" or existente.numero_factura):
+        raise HTTPException(
+            status_code=409,
+            detail="No se puede eliminar un pago aprobado o con comprobante emitido",
+        )
     try:
         PagoRepository.delete(db, pago_id)
         delete_pattern(PAGOS_CACHE_PATTERN)

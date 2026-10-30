@@ -4,6 +4,7 @@ import {
   Eye, Plus, X, Clock, Loader2, DoorOpen, ImageIcon, ImagePlus,
 } from "lucide-react";
 import { HotelData, inputCls, labelCls, resolveFotoUrl } from "./types";
+import { apiFetch } from "../../api/v1/api";
 import { hotelService, TipoHabitacionResponse, HabitacionResponse } from "../../services/hotel.service";
 import AdminModal from "./ui/AdminModal";
 import StatCard from "./ui/StatCard";
@@ -17,8 +18,14 @@ import { usePagination } from "../../hooks/usePagination";
 
 const EMPTY_FORM = {
   nombre_hotel: "", calificacion: "3", ciudad: "",
-  pais: "", correo_electronico: "", telefono: ""
+  pais: "", correo_electronico: "", telefono: "",
+  descripcion: "", politicas: "",
 };
+
+// Habitación que se crea junto con el hotel (POST /hoteles/ con
+// `habitaciones`, todo en una sola transacción en el backend).
+type HabitacionNueva = { id_tipo_habitacion: string; numero_habitacion: string; precio_noche: string; estado: string };
+const HABITACION_NUEVA_VACIA: HabitacionNueva = { id_tipo_habitacion: "", numero_habitacion: "", precio_noche: "", estado: "disponible" };
 
 const EMPTY_HAB_FORM = { id_tipo_habitacion: "", numero_habitacion: "", precio_noche: "", estado: "disponible" };
 
@@ -36,7 +43,13 @@ interface Props {
 
 export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, onHabitacionesChanged }: Props) {
   const [search, setSearch] = useState("");
+  // Resultados de la búsqueda en la base de datos (GET /hoteles/?q=...).
+  // null = sin búsqueda activa: se usa la lista que ya cargó el panel.
+  const [resultadosBusqueda, setResultadosBusqueda] = useState<HotelData[] | null>(null);
+  const [buscando, setBuscando] = useState(false);
+  const [errorBusqueda, setErrorBusqueda] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [habitacionesNuevas, setHabitacionesNuevas] = useState<HabitacionNueva[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -59,15 +72,43 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
   // registradas o todas ocupadas/en mantenimiento) sin abrir cada uno.
   const [disponibilidadFilter, setDisponibilidadFilter] = useState<"todos" | "con_disponible" | "sin_disponible">("todos");
 
-  const filtered = hoteles.filter(h => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || h.nombre_hotel.toLowerCase().includes(q) || h.ciudad?.toLowerCase().includes(q);
+  // Búsqueda en el servidor con espera de 300 ms entre teclas: antes se
+  // filtraba solo sobre los primeros 300 hoteles cargados en el navegador.
+  useEffect(() => {
+    const q = search.trim();
+    if (q.length < 2) {
+      setResultadosBusqueda(null);
+      setErrorBusqueda(null);
+      return;
+    }
+    let vigente = true;
+    const timer = setTimeout(async () => {
+      setBuscando(true);
+      try {
+        const data = await apiFetch<HotelData[]>(`/hoteles/?limit=300&q=${encodeURIComponent(q)}`);
+        if (vigente) {
+          setResultadosBusqueda(data);
+          setErrorBusqueda(null);
+        }
+      } catch (e: any) {
+        if (vigente) setErrorBusqueda(e?.message || "No se pudo buscar");
+      } finally {
+        if (vigente) setBuscando(false);
+      }
+    }, 300);
+    return () => {
+      vigente = false;
+      clearTimeout(timer);
+    };
+  }, [search, hoteles]);
+
+  const filtered = (resultadosBusqueda ?? hoteles).filter(h => {
     const matchCiudad = ciudadFilter === "todos" || h.ciudad === ciudadFilter;
     const matchPais = paisFilter === "todos" || h.pais === paisFilter;
     const tieneDisponible = (h.habitaciones ?? []).some(hab => hab.estado === "disponible");
     const matchDisponibilidad = disponibilidadFilter === "todos"
       || (disponibilidadFilter === "con_disponible" ? tieneDisponible : !tieneDisponible);
-    return matchSearch && matchCiudad && matchPais && matchDisponibilidad;
+    return matchCiudad && matchPais && matchDisponibilidad;
   });
 
   const { page, pageCount, slice, setPage } = usePagination(filtered, 8);
@@ -92,8 +133,10 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
     setEditingId(h.id_hotel);
     setForm({
       nombre_hotel: h.nombre_hotel, calificacion: String(h.calificacion), ciudad: h.ciudad,
-      pais: h.pais, correo_electronico: h.correo_electronico ?? "", telefono: h.telefono ?? ""
+      pais: h.pais, correo_electronico: h.correo_electronico ?? "", telefono: h.telefono ?? "",
+      descripcion: h.descripcion ?? "", politicas: h.politicas ?? "",
     });
+    setHabitacionesNuevas([]);
     setMsg(null);
     setImagenFile(null);
     setImagenPreview(resolveFotoUrl(h.imagen_url) ?? null);
@@ -104,6 +147,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
     setModalOpen(false);
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setHabitacionesNuevas([]);
     setMsg(null);
     setImagenFile(null);
     setImagenPreview(null);
@@ -120,8 +164,28 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
+    const datos: any = {
+      ...form,
+      descripcion: form.descripcion.trim() || null,
+      politicas: form.politicas.trim() || null,
+      calificacion: parseInt(form.calificacion),
+      imagenFile,
+    };
+    if (!editingId && habitacionesNuevas.length > 0) {
+      const incompleta = habitacionesNuevas.some(h => !h.id_tipo_habitacion || !h.numero_habitacion.trim() || h.precio_noche === "");
+      if (incompleta) {
+        setMsg({ type: "err", text: "Completa tipo, número y precio de cada habitación, o quita las filas vacías." });
+        return;
+      }
+      datos.habitaciones = habitacionesNuevas.map(h => ({
+        id_tipo_habitacion: Number(h.id_tipo_habitacion),
+        numero_habitacion: h.numero_habitacion.trim(),
+        precio_noche: Number(h.precio_noche),
+        estado: h.estado,
+      }));
+    }
     try {
-      await onSubmit({ ...form, calificacion: parseInt(form.calificacion), imagenFile }, editingId ?? undefined);
+      await onSubmit(datos, editingId ?? undefined);
       closeModal();
     } catch (err: any) {
       setMsg({ type: "err", text: err.message || "Error al guardar hotel" });
@@ -307,11 +371,16 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por nombre o ciudad..."
+            placeholder="Buscar por nombre, ciudad o país..."
             className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl text-sm outline-none
               bg-card text-foreground placeholder:text-muted-foreground/60
               focus:ring-2 focus:ring-primary/40 focus:border-transparent"
           />
+          {(buscando || errorBusqueda) && (
+            <p className={`absolute -bottom-5 left-1 text-[11px] ${errorBusqueda ? "text-destructive" : "text-muted-foreground"}`}>
+              {errorBusqueda ?? "Buscando en la base de datos..."}
+            </p>
+          )}
         </div>
         <Select value={ciudadFilter} onValueChange={setCiudadFilter}>
           <SelectTrigger className="w-auto min-w-[140px] h-auto py-2 bg-card border-border text-xs">
@@ -520,6 +589,58 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
               onChange={e => setForm({ ...form, correo_electronico: e.target.value })}
               className={inputCls} placeholder="info@hotel.com" />
           </div>
+          <div>
+            <label className={labelCls}>Descripción del hotel</label>
+            <textarea value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })}
+              className={`${inputCls} min-h-[90px]`} maxLength={5000}
+              placeholder="Qué hace especial a este hotel, ubicación, ambiente..." />
+          </div>
+          <div>
+            <label className={labelCls}>Políticas (opcional)</label>
+            <textarea value={form.politicas} onChange={e => setForm({ ...form, politicas: e.target.value })}
+              className={`${inputCls} min-h-[70px]`} maxLength={5000}
+              placeholder="Check-in/check-out, mascotas, niños, cancelación del hotel..." />
+          </div>
+
+          {!editingId && (
+            <div className="rounded-xl border border-border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className={labelCls}>Habitaciones (opcional)</span>
+                <button type="button"
+                  onClick={() => setHabitacionesNuevas(prev => [...prev, { ...HABITACION_NUEVA_VACIA }])}
+                  className="text-xs font-semibold text-primary hover:underline">
+                  + Agregar habitación
+                </button>
+              </div>
+              {habitacionesNuevas.length === 0 && (
+                <p className="text-xs text-muted-foreground">También puedes agregarlas después desde el detalle del hotel.</p>
+              )}
+              {habitacionesNuevas.map((hab, i) => {
+                const set = (campo: keyof HabitacionNueva, valor: string) =>
+                  setHabitacionesNuevas(prev => prev.map((h, j) => (j === i ? { ...h, [campo]: valor } : h)));
+                return (
+                  <div key={i} className="grid grid-cols-[1fr_70px_90px_auto] gap-2 items-center">
+                    <select value={hab.id_tipo_habitacion} onChange={e => set("id_tipo_habitacion", e.target.value)}
+                      className={inputCls} aria-label="Tipo de habitación">
+                      <option value="">Tipo...</option>
+                      {tiposHabitacion.map(t => (
+                        <option key={t.id_tipo_habitacion} value={t.id_tipo_habitacion}>{t.nombre_tipo}</option>
+                      ))}
+                    </select>
+                    <input value={hab.numero_habitacion} onChange={e => set("numero_habitacion", e.target.value)}
+                      className={inputCls} placeholder="N.º" aria-label="Número de habitación" maxLength={20} />
+                    <input type="number" min={0} value={hab.precio_noche} onChange={e => set("precio_noche", e.target.value)}
+                      className={inputCls} placeholder="$/noche" aria-label="Precio por noche" />
+                    <button type="button" onClick={() => setHabitacionesNuevas(prev => prev.filter((_, j) => j !== i))}
+                      className="text-xs text-destructive hover:underline px-1" aria-label="Quitar habitación">
+                      Quitar
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <button type="submit" disabled={loading}
             className="w-full py-2.5 bg-gradient-to-r from-primary to-[#A13B55] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 text-sm">
             {loading ? "Guardando..." : editingId ? "Guardar cambios" : "Registrar hotel"}

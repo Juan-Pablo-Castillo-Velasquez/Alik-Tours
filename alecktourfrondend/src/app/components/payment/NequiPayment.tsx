@@ -1,6 +1,6 @@
 // components/payment/NequiPayment.tsx
 // Flujo simulado de Nequi: el cliente transfiere de verdad (o simula que
-// lo hace) al Nequi real de AlekTours (ver NEQUI_DESTINO) y después lo
+// lo hace) al Nequi real de Alik Tours (ver NEQUI_DESTINO) y después lo
 // confirma en NequiConfirmar.tsx -- no depende de CardPayment, PSEPayment
 // ni PayPalPayment.
 import { useState } from "react";

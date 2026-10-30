@@ -9,14 +9,25 @@ def crear_notificacion(
     titulo: str,
     mensaje: str | None = None,
     id_referencia: int | None = None,
+    id_cliente: int | None = None,
+    commit: bool = True,
 ) -> None:
     """Crea una notificación real para el admin, llamada desde el punto
     exacto donde ocurre el evento (nueva solicitud de cancelación, mensaje
     de contacto, solicitud corporativa, pago aprobado...) — nunca con datos
     inventados. Sin caché: el conteo de no leídas debe reflejar el estado
     real al instante, no un valor con TTL."""
-    db.add(Notificacion(tipo=tipo, titulo=titulo, mensaje=mensaje, id_referencia=id_referencia))
-    db.commit()
+    # id_cliente=None -> notificación interna del panel (admin/asesores).
+    # id_cliente=N -> notificación para ese cliente (campana de su cuenta).
+    # commit=False cuando el evento forma parte de una transacción mayor
+    # (ver pago_estado_service.py): se guarda junto con el resto o nada.
+    db.add(
+        Notificacion(
+            tipo=tipo, titulo=titulo, mensaje=mensaje, id_referencia=id_referencia, id_cliente=id_cliente
+        )
+    )
+    if commit:
+        db.commit()
 
 
 def get_actividad_cliente(db: Session, id_cliente: int, limit: int = 30) -> list[dict]:
@@ -27,14 +38,12 @@ def get_actividad_cliente(db: Session, id_cliente: int, limit: int = 30) -> list
     cancelación (solicitudes_cancelacion) — ordenadas por fecha, más
     reciente primero. No crea ninguna tabla/columna nueva.
 
-    Deliberadamente NO incluye (porque requeriría una migración):
+    Deliberadamente NO incluye:
       - Cambios de contraseña: Usuario no tiene columna de fecha/evento para
         esto — hoy solo se confirma al instante con un toast (ver
         TabCuenta.tsx handleActualizarPassword), no queda historial.
-      - Anuncios generales del admin: Notificacion (notificacion_model.py)
-        no tiene id_cliente — es 100% interna del panel de admin, no hay
-        forma de saber a qué cliente(s) dirigir un aviso sin agregar esa
-        columna (o una tabla de destinatarios).
+    Además incluye las notificaciones persistidas dirigidas a este cliente
+    (Notificacion.id_cliente), como "¡Pago aprobado!".
     """
     from app.repositories.reserva_detail_repository import ReservaDetailRepository
     from app.repositories.solicitud_cancelacion_repository import SolicitudCancelacionRepository
@@ -73,6 +82,26 @@ def get_actividad_cliente(db: Session, id_cliente: int, limit: int = 30) -> list
                 "mensaje": sol.comentario_resolucion,
                 "fecha": sol.fecha_resolucion,
                 "id_referencia": sol.id_reserva,
+            }
+        )
+
+    # Notificaciones dirigidas a este cliente (ej. "¡Pago aprobado!", ver
+    # pago_estado_service.py).
+    propias = (
+        db.query(Notificacion)
+        .filter(Notificacion.id_cliente == id_cliente)
+        .order_by(Notificacion.fecha_creacion.desc())
+        .limit(limit)
+        .all()
+    )
+    for n in propias:
+        items.append(
+            {
+                "tipo": n.tipo,
+                "titulo": n.titulo,
+                "mensaje": n.mensaje,
+                "fecha": n.fecha_creacion,
+                "id_referencia": n.id_referencia,
             }
         )
 

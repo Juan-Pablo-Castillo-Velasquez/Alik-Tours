@@ -7,6 +7,7 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
     func,
 )
@@ -34,6 +35,10 @@ class Hotel(Base):
     # tienen ninguna hasta que un admin suba una (ver
     # POST /api/hoteles/{id}/imagen).
     imagen_url = Column(String(255), nullable=True)
+    # Descripción y políticas propias de cada hotel (texto libre del panel).
+    # Nullable: la vista pública omite la sección si está vacía.
+    descripcion = Column(Text, nullable=True)
+    politicas = Column(Text, nullable=True)
 
     habitaciones = relationship("Habitacion", back_populates="hotel", cascade="all, delete-orphan")
     hotel_caracteristicas = relationship("HotelCaracteristica", back_populates="hotel", cascade="all, delete-orphan")

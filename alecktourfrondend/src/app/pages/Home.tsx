@@ -7,7 +7,6 @@ import Hero from "../components/Hero";
 import Navbar from "../components/Navbar";
 import Newsletter from "../components/Newsletter";
 import OffersHighlight from "../components/OffersHighlight";
-import PromoBar from "../components/PromoBar";
 import PromocionAccordeon from "../components/PromocionAccordeon";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import Testimonials from "../components/Testimonials";
@@ -16,15 +15,14 @@ import { useSeoMeta } from "../hooks/useSeoMeta";
 
 export default function Home() {
   useSeoMeta({
-    title: "Agencia de Viajes y Turismo en Colombia",
+    title: "Agencia de Viajes en Colombia · RNT 224224",
     description:
-      "Descubre los mejores destinos de Colombia con Alik tours. Reserva hoteles, paquetes y tours de forma rápida y segura.",
+      "Agencia de viajes Alik Tours (RNT 224224): paquetes y hoteles nacionales e internacionales, viajes personalizados y asesoría personalizada. Viajar para vivir.",
     path: "/",
   });
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-clip">
-      <PromoBar />
       <Navbar />
       <Hero />
       <BannersPromocionales />

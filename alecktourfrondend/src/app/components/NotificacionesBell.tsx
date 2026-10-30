@@ -1,4 +1,4 @@
-import { Bell, Calendar, Loader2, XCircle } from "lucide-react";
+import { Bell, Calendar, CircleCheck, Loader2, XCircle } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
@@ -14,6 +14,7 @@ interface Props {
 const TIPO_ICON: Record<string, typeof Calendar> = {
   reserva: Calendar,
   cancelacion: XCircle,
+  pago: CircleCheck,
 };
 
 // Mismo cálculo de tiempo relativo que ya usa ModuleNotificaciones.tsx del

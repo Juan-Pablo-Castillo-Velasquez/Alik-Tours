@@ -16,7 +16,8 @@ def listar_notificaciones(
     db: Session = Depends(get_db),
     admin_id: int = Depends(require_empleado),
 ):
-    query = db.query(Notificacion)
+    # Solo las internas del panel: las de clientes (id_cliente) se ven en su cuenta.
+    query = db.query(Notificacion).filter(Notificacion.id_cliente.is_(None))
     if solo_no_leidas:
         query = query.filter(Notificacion.leido.is_(False))
     return query.order_by(Notificacion.fecha_creacion.desc()).limit(limit).all()
@@ -24,13 +25,15 @@ def listar_notificaciones(
 
 @router.get("/no-leidas/conteo")
 def contar_no_leidas(db: Session = Depends(get_db), admin_id: int = Depends(require_empleado)):
-    total = db.query(Notificacion).filter(Notificacion.leido.is_(False)).count()
+    total = db.query(Notificacion).filter(Notificacion.id_cliente.is_(None), Notificacion.leido.is_(False)).count()
     return {"total": total}
 
 
 @router.put("/leer-todas")
 def marcar_todas_leidas(db: Session = Depends(get_db), admin_id: int = Depends(require_empleado)):
-    db.query(Notificacion).filter(Notificacion.leido.is_(False)).update({"leido": True})
+    db.query(Notificacion).filter(Notificacion.id_cliente.is_(None), Notificacion.leido.is_(False)).update(
+        {"leido": True}, synchronize_session=False
+    )
     db.commit()
     return {"message": "Todas las notificaciones marcadas como leídas"}
 

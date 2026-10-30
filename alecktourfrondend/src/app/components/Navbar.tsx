@@ -1,3 +1,5 @@
+import BrandLogo from "./BrandLogo";
+import { BRAND } from "../config/brand";
 import {
   Building2,
   ChevronDown,
@@ -112,26 +114,11 @@ export default function Navbar() {
             <div className="col-start-1 flex items-center gap-3 shrink-0">
               <Link to="/" className="flex items-center gap-3 group">
                 <motion.div
-                  whileHover={{
-                    scale: 1.06,
-                    rotate: 3,
-                  }}
+                  whileHover={{ scale: 1.06, rotate: 3 }}
                   whileTap={{ scale: 0.96 }}
-                  className="
-                  relative
-                  w-11 h-11
-                  rounded-[14px]
-                  flex items-center justify-center
-                  bg-primary
-                  text-primary-foreground
-                  shadow-sm
-                  shadow-primary/15
-                  overflow-hidden
-                "
+                  className="relative"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
-
-                  <Plane className="relative w-[19px] h-[19px]" />
+                  <BrandLogo size={48} />
                 </motion.div>
 
                 <div className="leading-none">
@@ -146,13 +133,13 @@ export default function Navbar() {
                       fontWeight: 800,
                     }}
                   >
-                    {/* Nombre de marca real: coincide con el <title> del sitio
+                    {/* Nombre de marca en texto (BRAND.name, config/brand.ts): coincide con el <title> del sitio
                       (index.html) y con SITE_NAME en useSeoMeta.ts. El navbar
-                      antes decía "AlekTours" (sin la segunda "c") -- una marca
+                      antes decía "Alik Tours" (sin la segunda "c") -- una marca
                       que se escribe distinto en su propio logo que en la
                       pestaña del navegador resta confianza, así que se unifica
                       acá con el nombre oficial. */}
-                    Alik tours
+                    {BRAND.name}
                   </div>
 
                   <div

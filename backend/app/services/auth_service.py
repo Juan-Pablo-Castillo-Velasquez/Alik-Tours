@@ -42,7 +42,7 @@ def _generar_y_guardar_codigo(db: Session, user) -> str:
     return codigo
 
 
-def register_user(db: Session, username: str, email: str, password: str):
+def register_user(db: Session, username: str, email: str, password: str, terminos_version: str | None = None):
     existing_user = get_user_by_username(db, username)
     if existing_user:
         return {"error": "El nombre de usuario ya existe"}
@@ -61,6 +61,9 @@ def register_user(db: Session, username: str, email: str, password: str):
         "activo": True,
         "verificado": False,
     }
+    if terminos_version:
+        user_data["terminos_version"] = terminos_version
+        user_data["terminos_aceptados_en"] = datetime.now(UTC).replace(tzinfo=None)
     user = create_user(db, user_data)
     # El enlace del correo se conserva (algunas personas prefieren darle
     # clic en vez de teclear un código), y ADEMÁS se genera el código de 6

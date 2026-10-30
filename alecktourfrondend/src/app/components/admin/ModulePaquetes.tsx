@@ -25,6 +25,9 @@ const EMPTY_FORM = {
   // vinculados. Sin esto no había forma de avisar que un paquete armado
   // para salir de Bogotá no le sirve tal cual a un cliente de Barranquilla.
   ciudad_salida: "",
+  // Condiciones propias del paquete (requisitos, cambios, no reembolsables,
+  // documentos). Opcional: la ficha pública omite la sección si está vacía.
+  condiciones: "",
   // paquete_hotel ya existía en el modelo (lo usa la página pública de
   // detalle vía GET /paquetes/{id}/detalle) pero no había forma de
   // editarlo desde el admin — todo paquete nuevo quedaba sin ningún hotel
@@ -182,7 +185,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
     setForm({
       nombre_paquete: p.nombre_paquete, descripcion: p.descripcion ?? "",
       duracion_dias: String(p.duracion_dias ?? 1), precio_base: String(p.precio_base ?? ""),
-      activo: p.activo, ciudad_salida: p.ciudad_salida ?? "", hoteles: [], servicios: [],
+      activo: p.activo, ciudad_salida: p.ciudad_salida ?? "", condiciones: p.condiciones ?? "", hoteles: [], servicios: [],
     });
     setMsg(null);
     setImagenFile(null);
@@ -271,6 +274,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
           duracion_dias: parseInt(form.duracion_dias),
           precio_base: parseFloat(form.precio_base),
           ciudad_salida: form.ciudad_salida.trim() || null,
+          condiciones: form.condiciones.trim() || null,
           hoteles: form.hoteles.map((h) => ({
             id_hotel: h.id_hotel,
             noches_incluidas: h.noches_incluidas ? parseInt(h.noches_incluidas, 10) : null,
@@ -503,6 +507,12 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
             <label className={labelCls}>Descripción</label>
             <textarea value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })}
               className={inputCls + " resize-none"} rows={3} placeholder="Descripción del paquete..." />
+          </div>
+          <div>
+            <label className={labelCls}>Condiciones (opcional)</label>
+            <textarea value={form.condiciones} onChange={e => setForm({ ...form, condiciones: e.target.value })}
+              className={inputCls + " resize-none"} rows={3} maxLength={5000}
+              placeholder="Documentos requeridos, cambios, servicios no reembolsables..." />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

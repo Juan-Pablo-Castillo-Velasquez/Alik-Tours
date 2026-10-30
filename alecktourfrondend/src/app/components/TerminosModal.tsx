@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { TERMINOS_ES_BORRADOR, TERMINOS_FECHA, TERMINOS_SECCIONES, TERMINOS_VERSION } from "../content/terminos";
 import ModalBackdrop from "./ui/ModalBackdrop";
 
 interface TerminosModalProps {
@@ -58,7 +59,7 @@ export default function TerminosModal({ isOpen, onClose }: TerminosModalProps) {
                             </div>
                             <div>
                                 <h2 className="text-white font-semibold text-xl tracking-tight">Términos y Condiciones</h2>
-                                <p className="text-white/80 text-xs font-medium mt-0.5">AlekTours — Última actualización: junio 2025</p>
+                                <p className="text-white/80 text-xs font-medium mt-0.5">Alik Tours · RNT 224224 · {TERMINOS_FECHA}</p>
                             </div>
                         </div>
 
@@ -75,65 +76,18 @@ export default function TerminosModal({ isOpen, onClose }: TerminosModalProps) {
 
                     {/* ── Contenido Semántico ── */}
                     <div className="modal-scrollbar overflow-y-auto px-6 py-8 flex-1 text-sm bg-card space-y-8">
-                        <Section title="1. Aceptación de los términos">
-                            Al registrarte y utilizar los servicios de <strong className="text-foreground font-bold">AlekTours</strong>, aceptas cumplir con estos Términos y
-                            Condiciones. Si no estás de acuerdo con alguna parte, te pedimos que no uses nuestra plataforma.
-                        </Section>
-
-                        <Section title="2. Uso del servicio">
-                            AlekTours te permite buscar, comparar y reservar destinos y paquetes turísticos. El uso de la plataforma
-                            está destinado exclusivamente a fines personales y no comerciales. Queda prohibido:
-                            <ul className="grid grid-cols-1 gap-2 mt-4 text-muted-foreground">
-                                <li className="flex items-start gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-1.5 shrink-0"></div>
-                                    <span>Usar la plataforma con fines fraudulentos o ilegales.</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-1.5 shrink-0"></div>
-                                    <span>Compartir credenciales de acceso con terceros.</span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-1.5 shrink-0"></div>
-                                    <span>Reproducir o redistribuir contenido sin autorización.</span>
-                                </li>
-                            </ul>
-                        </Section>
-
-                        <Section title="3. Reservas y pagos">
-                            Las reservas realizadas a través de AlekTours están sujetas a disponibilidad. Los precios pueden variar
-                            según la temporada y disponibilidad. Al confirmar una reserva, aceptas el cargo total indicado al momento
-                            del pago.
-                        </Section>
-
-                        <Section title="4. Cancelaciones y reembolsos">
-                            Las políticas de cancelación varían según el proveedor del servicio. AlekTours gestionará las solicitudes
-                            de cancelación, pero no garantiza reembolsos automáticos. Te recomendamos revisar las condiciones
-                            específicas de cada reserva antes de confirmar.
-                        </Section>
-
-                        <Section title="5. Programa de puntos AlekTours Rewards">
-                            Los puntos acumulados a través del programa de fidelidad son propiedad de AlekTours y pueden ser
-                            modificados o cancelados en cualquier momento. No tienen valor monetario fuera de la plataforma y no son
-                            transferibles.
-                        </Section>
-
-                        <Section title="6. Limitación de responsabilidad">
-                            AlekTours actúa como intermediario entre el usuario y los proveedores de servicios turísticos. No nos
-                            hacemos responsables por cancelaciones, cambios o inconvenientes causados directamente por aerolíneas,
-                            hoteles u otros proveedores.
-                        </Section>
-
-                        <Section title="7. Modificaciones">
-                            Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios serán notificados
-                            a través de la plataforma y entrarán en vigor al momento de su publicación.
-                        </Section>
-
-                        <Section title="8. Contacto">
-                            Si tienes dudas sobre estos términos, puedes contactarnos en{" "}
-                            <a href="mailto:soporte@alektours.com" className="text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 hover:underline font-semibold transition-colors">
-                                soporte@alektours.com
-                            </a>.
-                        </Section>
+                        {TERMINOS_ES_BORRADOR && (
+                            <p className="rounded-xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-xs text-foreground">
+                                Borrador pendiente de revisión jurídica · Versión {TERMINOS_VERSION} · {TERMINOS_FECHA}
+                            </p>
+                        )}
+                        {TERMINOS_SECCIONES.map((s) => (
+                            <Section key={s.titulo} title={s.titulo}>
+                                {s.parrafos.map((p, i) => (
+                                    <p key={i} className={i > 0 ? "mt-2" : undefined}>{p}</p>
+                                ))}
+                            </Section>
+                        ))}
                     </div>
 
                     {/* ── Footer ── */}
@@ -142,7 +96,7 @@ export default function TerminosModal({ isOpen, onClose }: TerminosModalProps) {
                             onClick={onClose}
                             className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-primary hover:bg-primary/90 text-white shadow-[0_4px_14px_0_rgba(123,30,58,0.39)] hover:shadow-[0_6px_20px_rgba(123,30,58,0.23)] dark:shadow-none transition-all duration-200 active:scale-95 flex items-center gap-2"
                         >
-                            Aceptar y cerrar
+                            Cerrar
                         </button>
                     </div>
                 </div>

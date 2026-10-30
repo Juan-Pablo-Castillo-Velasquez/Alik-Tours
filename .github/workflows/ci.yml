@@ -106,7 +106,11 @@ jobs:
           MAIL_SERVER: localhost
           MAIL_FROM_NAME: AlecTours
           REDIS_URL: redis://localhost:6379/0
-        run: pytest test_delete_exceptions.py test_reservas_pagos.py test_destino_servicio_delete.py -v
+        # Toda la suite de backend/tests/ (pyproject.toml: testpaths). Antes
+        # se corrian copias viejas que estaban sueltas en la raiz de
+        # backend/ y nunca se ejecutaban test_mensajes_chat.py ni
+        # test_verificacion_email.py.
+        run: pytest tests -v
 
   docker:
     name: Docker Build & Validate

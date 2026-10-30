@@ -128,18 +128,18 @@ async def crear_solicitud_cancelacion(
         with contextlib.suppress(Exception):
             await send_email(
                 email=cliente_email,
-                subject=f"Recibimos tu solicitud de cancelación - Reserva #{reserva_id} - AlecTours",
+                subject=f"Recibimos tu solicitud de cancelación - Reserva #{reserva_id} - Alik Tours",
                 body=(
                     f"Hola,\n\nRecibimos tu solicitud de cancelación para la reserva #{reserva_id}.\n"
                     f"Motivo: {data.motivo}\n\n"
                     "Un asesor la revisará y te avisaremos por este medio con la resolución.\n\n"
-                    "Saludos,\nEl equipo de AlecTours"
+                    "Saludos,\nEl equipo de Alik Tours"
                 ),
                 html_body=(
                     f"<p>Hola,</p><p>Recibimos tu solicitud de cancelación para la reserva "
                     f"<strong>#{reserva_id}</strong>.</p><p>Motivo: <strong>{data.motivo}</strong></p>"
                     "<p>Un asesor la revisará y te avisaremos por este medio con la resolución.</p>"
-                    "<p>Saludos,<br>El equipo de AlecTours</p>"
+                    "<p>Saludos,<br>El equipo de Alik Tours</p>"
                 ),
             )
 
