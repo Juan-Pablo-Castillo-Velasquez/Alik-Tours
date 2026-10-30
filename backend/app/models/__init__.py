@@ -1,6 +1,7 @@
 # Importar todos los modelos aquí para asegurar que SQLAlchemy los registre
 from app.models.auth_model import RecuperacionPassword, Rol, SesionUsuario, UsuarioRol
 from app.models.cliente_model import Cliente, Empleado, PreferenciaCliente
+from app.models.comunidad_model import ComentarioComunidad, ImagenPublicacion, PublicacionComunidad, VideoAgencia
 from app.models.favorito_model import Favorito
 from app.models.hotel_model import Caracteristica, Habitacion, Hotel, HotelCaracteristica, ImagenHotel, TipoHabitacion
 from app.models.mensaje_chat_model import MensajeChat
@@ -53,4 +54,8 @@ __all__ = [
     "MensajeChat",
     "ImagenHotel",
     "ImagenPaquete",
+    "PublicacionComunidad",
+    "ImagenPublicacion",
+    "ComentarioComunidad",
+    "VideoAgencia",
 ]

@@ -41,6 +41,8 @@ _TIPOS: dict[str, tuple[str, bytes]] = {
     "application/pdf": ("pdf", b"%PDF"),
     "video/mp4": ("mp4", b""),
     "video/webm": ("webm", b"\x1a\x45\xdf\xa3"),  # EBML header real de WebM/Matroska
+    # Videos grabados con iPhone (.mov): mismo contenedor ISO que MP4.
+    "video/quicktime": ("mov", b""),
 }
 
 
@@ -48,7 +50,7 @@ def _cabecera_coincide(cabecera: bytes, content_type: str) -> bool:
     """True si los bytes de cabecera corresponden al content_type declarado."""
     if content_type == "image/webp":
         return cabecera.startswith(b"RIFF") and cabecera[8:12] == b"WEBP"
-    if content_type == "video/mp4":
+    if content_type in ("video/mp4", "video/quicktime"):
         # Un MP4 real no empieza con un magic number fijo: los primeros 4
         # bytes son el tamaño de la primera "box" (varía según el archivo),
         # y recién los bytes 4-8 dicen "ftyp" (el tipo de box). Ver

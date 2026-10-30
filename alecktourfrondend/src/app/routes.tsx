@@ -21,6 +21,7 @@ const AdminDashboard = lazy(() => import("./pages/Admindashboard"));
 const Benefits = lazy(() => import("./pages/Benefits"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const Confirmation = lazy(() => import("./pages/Confirmation"));
+const Comunidad = lazy(() => import("./pages/Comunidad"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Corporate = lazy(() => import("./pages/Corporate"));
 const FAQ = lazy(() => import("./pages/faq"));
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
       { path: "/hotel/:id", Component: HotelDetail },
       { path: "/verify", Component: VerifyEmail },
       { path: "/faq", Component: FAQ },
+      { path: "/comunidad", Component: Comunidad },
       { path: "/contact", Component: Contact },
       { path: "/testimonios", Component: Testimonios },
       { path: "/reset-password", Component: ResetPassword },

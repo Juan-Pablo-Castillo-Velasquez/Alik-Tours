@@ -57,6 +57,11 @@ const ROUTES = {
   "/benefits": null,
   "/corporate": null,
   "/travel-info": null,
+  "/comunidad": {
+    title: "Comunidad viajera y videos",
+    description:
+      "Videos de Alik Tours y experiencias reales de nuestros viajeros: reseñas, fotos y videos de sus viajes.",
+  },
   "/faq": null,
   "/contact": null,
   "/testimonios": null,

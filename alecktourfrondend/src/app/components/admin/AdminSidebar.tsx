@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  Clapperboard,
   LayoutDashboard, CalendarDays, XCircle, PlusCircle, Users, Hotel,
   Package, Building2, Wallet, Bell, UserPlus, ShieldCheck, Activity,
   Settings, Plane, ChevronLeft, ChevronRight, UserCircle, Megaphone, Palette,
@@ -74,6 +75,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "notificaciones", label: "Notificaciones", icon: Bell, ready: true },
       { id: "mensajes", label: "Mensajes", icon: MessageCircle, ready: true },
+      { id: "comunidad", label: "Comunidad y videos", icon: Clapperboard, ready: true },
     ],
   },
   {
@@ -107,6 +109,9 @@ export const MODULOS_EMPLEADO: Module[] = [
   "cancelaciones",
   "pagos",
   "mensajes",
+  // Los asesores también moderan la comunidad; los videos de la agencia
+  // los gestiona solo el admin (el backend responde 403 y la pestaña se oculta).
+  "comunidad",
   "notificaciones",
   "mi-cuenta",
 ];

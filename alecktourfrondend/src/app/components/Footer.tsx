@@ -13,6 +13,7 @@ export default function Footer() {
       { name: "Inicio", href: "/" },
       { name: "Viajes Corporativos", href: "/corporate" },
       { name: "Alik Tours Rewards", href: "/benefits" },
+      { name: "Comunidad y videos", href: "/comunidad" },
       { name: "Contacto", href: "/contact" },
     ],
     soporte: [

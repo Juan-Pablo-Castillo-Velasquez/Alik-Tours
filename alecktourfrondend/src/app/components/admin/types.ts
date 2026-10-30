@@ -28,6 +28,7 @@ export type Module =
   | "pagos"
   | "usuarios"
   | "notificaciones"
+  | "comunidad"
   | "roles"
   | "actividad"
   | "configuracion"

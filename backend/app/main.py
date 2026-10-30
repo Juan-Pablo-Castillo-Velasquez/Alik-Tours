@@ -27,6 +27,7 @@ from app.middlewares.security_middleware import seguridad_middleware
 from app.routes.auth_route import router as auth_router
 from app.routes.banner_route import router as banner_router
 from app.routes.cliente_route import router as cliente_router
+from app.routes.comunidad_route import router as comunidad_router
 from app.routes.configuracion_route import router as configuracion_router
 from app.routes.contacto_route import router as contacto_router
 from app.routes.dashboard_route import router as dashboard_router
@@ -180,6 +181,7 @@ app.include_router(empresa_router)
 app.include_router(dashboard_router)
 app.include_router(banner_router)
 app.include_router(tema_router)
+app.include_router(comunidad_router)
 
 # ============================================================================
 # ARCHIVOS ESTATICOS (fotos de perfil, etc.)

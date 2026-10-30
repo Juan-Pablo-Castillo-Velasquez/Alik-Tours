@@ -1,4 +1,4 @@
-import { Bell, Calendar, CircleCheck, Loader2, XCircle } from "lucide-react";
+import { Bell, Calendar, CircleCheck, Loader2, Users, XCircle } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
@@ -15,6 +15,7 @@ const TIPO_ICON: Record<string, typeof Calendar> = {
   reserva: Calendar,
   cancelacion: XCircle,
   pago: CircleCheck,
+  comunidad: Users,
 };
 
 // Mismo cálculo de tiempo relativo que ya usa ModuleNotificaciones.tsx del
@@ -96,8 +97,12 @@ export default function NotificacionesBell({ idCliente }: Props) {
     }
   };
 
-  const irAReserva = (idReferencia: number) => {
+  const irAReserva = (idReferencia: number, tipo?: string) => {
     setOpen(false);
+    if (tipo === "comunidad") {
+      navigate("/comunidad");
+      return;
+    }
     navigate("/profile", { state: { tab: "reservas", reservaId: idReferencia } });
   };
 
@@ -144,7 +149,7 @@ export default function NotificacionesBell({ idCliente }: Props) {
                   return (
                     <li key={`${item.tipo}-${item.id_referencia}-${i}`}>
                       <button
-                        onClick={() => irAReserva(item.id_referencia)}
+                        onClick={() => irAReserva(item.id_referencia, item.tipo)}
                         className="w-full flex items-start gap-3 px-4 py-3 hover:bg-accent transition-colors text-left"
                       >
                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
