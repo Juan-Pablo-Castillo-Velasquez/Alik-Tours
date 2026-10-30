@@ -10,15 +10,23 @@ Comunidad viajera (/api/comunidad).
 """
 
 import logging
+import time
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+import cloudinary
+import cloudinary.utils
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session, selectinload
 
+# FastAPI entrega los archivos como starlette.datastructures.UploadFile;
+# fastapi.UploadFile es una SUBCLASE, así que isinstance contra ella da
+# False con un archivo real y el archivo se descartaba sin error.
+from starlette.datastructures import UploadFile as StarletteUploadFile
+
 from app.core.database import get_db
-from app.core.deps import get_current_usuario
+from app.core.deps import get_current_usuario, usuario_es_admin
 from app.core.file_validation import validar_y_leer_archivo
-from app.core.image_storage import borrar_imagen, guardar_imagen
+from app.core.image_storage import CLOUDINARY_CONFIGURADO, borrar_imagen, guardar_imagen
 from app.core.security import require_admin, require_empleado
 from app.models.comunidad_model import ComentarioComunidad, ImagenPublicacion, PublicacionComunidad, VideoAgencia
 from app.models.user_model import Usuario
@@ -125,6 +133,66 @@ def _borrar_medios(p: PublicacionComunidad) -> None:
         borrar_imagen(img.url, carpeta=CARPETA_FOTOS, public_path_prefix=PREFIJO_FOTOS)
 
 
+# ===================== SUBIDA DIRECTA A CLOUDINARY =====================
+# Los videos NO pasan por este servidor: el navegador los sube directo a
+# Cloudinary con una firma de un solo uso generada aquí, y luego solo envía
+# la URL resultante. Antes el archivo completo (hasta 80 MB) se recibía en
+# memoria en el backend (Render free, 512 MB) antes de reenviarlo a
+# Cloudinary: la conexión se caía y el panel mostraba "Failed to fetch".
+# Sin Cloudinary configurado (desarrollo local) se responde modo "servidor"
+# y el frontend sube el archivo al backend como siempre.
+
+DESTINOS_SUBIDA = {
+    # destino: (carpeta, resource_type, quién puede)
+    "agencia-video": (CARPETA_AGENCIA, "video", "admin"),
+    "agencia-portada": (CARPETA_PORTADAS, "image", "admin"),
+    "comunidad-video": (CARPETA_VIDEOS, "video", "cliente"),
+    "comunidad-foto": (CARPETA_FOTOS, "image", "cliente"),
+}
+
+
+def _url_cloudinary_valida(url: str | None, resource_type: str) -> str | None:
+    """Solo se aceptan URLs de NUESTRA cuenta de Cloudinary (nunca una URL
+    arbitraria enviada por el navegador)."""
+    if not url:
+        return None
+    cloud = cloudinary.config().cloud_name if CLOUDINARY_CONFIGURADO else None
+    prefijo = f"https://res.cloudinary.com/{cloud}/{resource_type}/upload/"
+    if not cloud or not url.startswith(prefijo) or len(url) > 500:
+        raise HTTPException(status_code=422, detail="Archivo no válido: súbelo de nuevo.")
+    return url
+
+
+@router.get("/firma-subida")
+def firma_subida(
+    destino: str = Query(..., description="agencia-video | agencia-portada | comunidad-video | comunidad-foto"),
+    current_user: Usuario = Depends(get_current_usuario),
+    authorization: str | None = Header(None),
+):
+    if destino not in DESTINOS_SUBIDA:
+        raise HTTPException(status_code=422, detail="Destino de subida no válido")
+    carpeta, resource_type, quien = DESTINOS_SUBIDA[destino]
+    if quien == "admin" and not usuario_es_admin(authorization):
+        raise HTTPException(status_code=403, detail="Solo un administrador puede subir videos de la agencia")
+    if quien == "cliente":
+        _exigir_cliente(current_user)
+    if not CLOUDINARY_CONFIGURADO:
+        return {"modo": "servidor"}
+    cfg = cloudinary.config()
+    folder = f"alectours/{carpeta}"
+    timestamp = int(time.time())
+    firma = cloudinary.utils.api_sign_request({"folder": folder, "timestamp": timestamp}, cfg.api_secret)
+    return {
+        "modo": "directo",
+        "cloud_name": cfg.cloud_name,
+        "api_key": cfg.api_key,
+        "timestamp": timestamp,
+        "folder": folder,
+        "signature": firma,
+        "resource_type": resource_type,
+    }
+
+
 # ===================== PÚBLICO =====================
 
 
@@ -183,18 +251,28 @@ async def crear_publicacion(
     destino: str | None = Form(None, max_length=120),
     video: UploadFile | None = File(None),
     imagenes: list[UploadFile] | None = File(None),
+    video_url: str | None = Form(None, description="URL ya subida a Cloudinary (subida directa)"),
+    imagenes_urls: list[str] | None = Form(None, description="URLs ya subidas a Cloudinary (subida directa)"),
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_usuario),
 ):
     """Crea una publicación en estado 'pendiente' (la revisa el equipo antes
     de mostrarse). Lleva un video corto O hasta 4 fotos (o solo texto)."""
     id_cliente = _exigir_cliente(current_user)
-    video = video if isinstance(video, UploadFile) and video.filename else None
-    imagenes = [i for i in (imagenes or []) if isinstance(i, UploadFile) and i.filename]
+    video = video if isinstance(video, StarletteUploadFile) and video.filename else None
+    imagenes = [i for i in (imagenes or []) if isinstance(i, StarletteUploadFile) and i.filename]
+    video_url_directo = _url_cloudinary_valida(video_url, "video") if isinstance(video_url, str) else None
+    fotos_directas = [
+        _url_cloudinary_valida(u, "image") for u in (imagenes_urls if isinstance(imagenes_urls, list) else []) if u
+    ]
+    if video_url_directo:
+        video = None
+    if fotos_directas:
+        imagenes = []
 
-    if video and imagenes:
+    if (video or video_url_directo) and (imagenes or fotos_directas):
         raise HTTPException(status_code=422, detail="Sube un video o fotos, no ambos en la misma publicación.")
-    if len(imagenes) > MAX_IMAGENES:
+    if len(imagenes) + len(fotos_directas) > MAX_IMAGENES:
         raise HTTPException(status_code=422, detail=f"Máximo {MAX_IMAGENES} fotos por publicación.")
 
     # Validar TODO antes de subir nada.
@@ -213,12 +291,14 @@ async def crear_publicacion(
         for img in imagenes
     ]
 
-    video_url = None
+    video_final = video_url_directo
     if video_validado:
-        video_url = guardar_imagen(
+        video_final = guardar_imagen(
             *video_validado, carpeta=CARPETA_VIDEOS, public_path_prefix=PREFIJO_VIDEOS, resource_type="video"
         )
-    urls_fotos = [guardar_imagen(*f, carpeta=CARPETA_FOTOS, public_path_prefix=PREFIJO_FOTOS) for f in fotos_validadas]
+    urls_fotos = fotos_directas + [
+        guardar_imagen(*f, carpeta=CARPETA_FOTOS, public_path_prefix=PREFIJO_FOTOS) for f in fotos_validadas
+    ]
 
     publicacion = PublicacionComunidad(
         id_cliente=id_cliente,
@@ -226,7 +306,7 @@ async def crear_publicacion(
         contenido=contenido.strip(),
         calificacion=calificacion if isinstance(calificacion, int) else None,
         destino=(destino.strip() or None) if isinstance(destino, str) else None,
-        video_url=video_url,
+        video_url=video_final,
         estado="pendiente",
     )
     publicacion.imagenes = [ImagenPublicacion(url=u, orden=i) for i, u in enumerate(urls_fotos)]
@@ -390,23 +470,35 @@ def admin_listar_videos(db: Session = Depends(get_db), admin_id: int = Depends(r
 async def admin_subir_video(
     titulo: str = Form(..., min_length=1, max_length=150),
     descripcion: str | None = Form(None, max_length=500),
-    video: UploadFile = File(...),
+    video: UploadFile | None = File(None),
     portada: UploadFile | None = File(None),
+    video_url: str | None = Form(None, description="URL ya subida a Cloudinary (subida directa)"),
+    portada_url: str | None = Form(None, description="URL ya subida a Cloudinary (subida directa)"),
     db: Session = Depends(get_db),
     admin_id: int = Depends(require_admin),
 ):
-    contenido_video = await validar_y_leer_archivo(
-        video, tipos_permitidos=VIDEO_TIPOS, mensaje_tipo=MENSAJE_VIDEO, tamano_maximo_bytes=VIDEO_AGENCIA_MAX_BYTES
-    )
+    video_directo = _url_cloudinary_valida(video_url, "video") if isinstance(video_url, str) else None
+    portada_directa = _url_cloudinary_valida(portada_url, "image") if isinstance(portada_url, str) else None
+    tiene_archivo = isinstance(video, StarletteUploadFile) and video.filename
+    if not video_directo and not tiene_archivo:
+        raise HTTPException(status_code=422, detail="Falta el video")
+    contenido_video = None
+    if not video_directo:
+        contenido_video = await validar_y_leer_archivo(
+            video,
+            tipos_permitidos=VIDEO_TIPOS,
+            mensaje_tipo=MENSAJE_VIDEO,
+            tamano_maximo_bytes=VIDEO_AGENCIA_MAX_BYTES,
+        )
     portada_validada = None
-    if isinstance(portada, UploadFile) and portada.filename:
+    if not portada_directa and isinstance(portada, StarletteUploadFile) and portada.filename:
         portada_validada = await validar_y_leer_archivo(
             portada, tipos_permitidos=IMAGEN_TIPOS, mensaje_tipo=MENSAJE_IMAGEN, tamano_maximo_bytes=IMAGEN_MAX_BYTES
         )
-    video_url = guardar_imagen(
+    video_final = video_directo or guardar_imagen(
         *contenido_video, carpeta=CARPETA_AGENCIA, public_path_prefix=PREFIJO_AGENCIA, resource_type="video"
     )
-    portada_url = (
+    portada_final = portada_directa or (
         guardar_imagen(*portada_validada, carpeta=CARPETA_PORTADAS, public_path_prefix=PREFIJO_PORTADAS)
         if portada_validada
         else None
@@ -415,8 +507,8 @@ async def admin_subir_video(
     nuevo = VideoAgencia(
         titulo=titulo.strip(),
         descripcion=(descripcion.strip() or None) if isinstance(descripcion, str) else None,
-        video_url=video_url,
-        portada_url=portada_url,
+        video_url=video_final,
+        portada_url=portada_final,
         orden=siguiente,
         activo=True,
     )

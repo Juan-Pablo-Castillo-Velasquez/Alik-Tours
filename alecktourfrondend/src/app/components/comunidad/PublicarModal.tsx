@@ -25,6 +25,7 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
   const [fotos, setFotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
+  const [progreso, setProgreso] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   // Vistas previas locales (se liberan al cambiar o cerrar).
@@ -89,6 +90,7 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
     if (titulo.trim().length < 3) return setError("El título debe tener al menos 3 caracteres.");
     if (contenido.trim().length < 10) return setError("Cuéntanos un poco más (mínimo 10 caracteres).");
     setEnviando(true);
+    setProgreso(0);
     setError(null);
     try {
       const creada = await comunidadService.publicar({
@@ -98,6 +100,7 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
         calificacion: calificacion || undefined,
         video: video ?? undefined,
         imagenes: fotos,
+        onProgreso: setProgreso,
       });
       toast.success("¡Gracias! Tu publicación quedará visible cuando nuestro equipo la revise.");
       onPublicada(creada);
@@ -190,7 +193,11 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
         <button type="submit" disabled={enviando}
           className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-2">
           {enviando && <Loader2 className="w-4 h-4 animate-spin" />}
-          {enviando ? (video ? "Subiendo video..." : "Publicando...") : "Enviar a revisión"}
+          {enviando
+            ? progreso > 0 && progreso < 100
+              ? `Subiendo ${video ? "video" : "fotos"}... ${progreso}%`
+              : "Publicando..."
+            : "Enviar a revisión"}
         </button>
       </form>
     </ModalBackdrop>

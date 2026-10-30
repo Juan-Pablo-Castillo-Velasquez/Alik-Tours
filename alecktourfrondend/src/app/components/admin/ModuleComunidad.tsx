@@ -47,6 +47,7 @@ export default function ModuleComunidad() {
     portada: null,
   });
   const [subiendo, setSubiendo] = useState(false);
+  const [progreso, setProgreso] = useState(0);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -128,12 +129,14 @@ export default function ModuleComunidad() {
       return;
     }
     setSubiendo(true);
+    setProgreso(0);
     try {
       await comunidadService.adminSubirVideo({
         titulo: form.titulo.trim(),
         descripcion: form.descripcion.trim() || undefined,
         video: form.video,
         portada: form.portada ?? undefined,
+        onProgreso: setProgreso,
       });
       setForm({ titulo: "", descripcion: "", video: null, portada: null });
       toast.success("Video publicado");
@@ -317,7 +320,7 @@ export default function ModuleComunidad() {
             <button type="submit" disabled={subiendo || !form.video}
               className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2">
               {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {subiendo ? "Subiendo..." : "Publicar video"}
+              {subiendo ? (progreso > 0 && progreso < 100 ? `Subiendo... ${progreso}%` : "Procesando...") : "Publicar video"}
             </button>
           </form>
 
