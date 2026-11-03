@@ -5,14 +5,19 @@ interface Props {
   onChange: (v: string) => void;
   placeholder?: string;
   className?: string;
+  /** Nombre accesible del buscador; por defecto, el placeholder. */
+  ariaLabel?: string;
 }
 
-export default function SearchInput({ value, onChange, placeholder = "Buscar...", className = "" }: Props) {
+export default function SearchInput({ value, onChange, placeholder = "Buscar...", className = "", ariaLabel }: Props) {
   return (
     <div className={`relative ${className}`}>
       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
       <input
         type="search"
+        // Accesibilidad (bootcamp, semana 3): sin label ni aria-label, el
+        // buscador no tenía nombre para un lector de pantalla.
+        aria-label={ariaLabel ?? placeholder}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
