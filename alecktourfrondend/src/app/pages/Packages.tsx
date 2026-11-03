@@ -141,6 +141,7 @@ export default function Packages() {
                   setPagina(1);
                 }}
                 placeholder="Filtrar por destino..."
+                aria-label="Filtrar por destino"
                 className="w-full pl-9 pr-8 py-2 text-sm font-medium bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               {filtroDestino && (
