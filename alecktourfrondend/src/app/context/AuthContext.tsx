@@ -67,6 +67,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     function handleSessionExpired() {
       setToken(null);
       setUsuario(null);
+      // Hallazgo (bootcamp, semana 3): antes solo se limpiaba el estado en
+      // memoria. El token vencido seguía en localStorage y, al recargar la
+      // página, AuthProvider lo volvía a leer: la persona aparecía otra vez
+      // "con sesión" hasta que la siguiente petición respondía 401.
+      localStorage.removeItem("token");
+      localStorage.removeItem("usuario");
     }
     window.addEventListener("auth:session-expired", handleSessionExpired);
     return () =>
