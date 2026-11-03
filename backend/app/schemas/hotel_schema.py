@@ -52,7 +52,7 @@ class HabitacionCreate(BaseModel):
 
 
 class HabitacionUpdate(BaseModel):
-    numero_habitacion: str | None = None
+    numero_habitacion: str | None = Field(None, min_length=1, max_length=20)  # VARCHAR(20)
     precio_noche: float | None = Field(None, ge=0)
     estado: str | None = None
 
@@ -155,14 +155,17 @@ class HotelCreate(BaseModel):
 
 
 class HotelUpdate(BaseModel):
-    nombre_hotel: str | None = None
+    # Mismos límites que HotelCreate (= tamaño de cada columna). Hallazgo de
+    # la semana 6: al editar no había límites y PostgreSQL rechazaba un
+    # nombre de 101 caracteres con un 500.
+    nombre_hotel: str | None = Field(None, min_length=1, max_length=100)
     calificacion: int | None = Field(None, ge=1, le=5)
-    direccion: str | None = None
-    ciudad: str | None = None
-    pais: str | None = None
-    codigo_postal: str | None = None
-    correo_electronico: str | None = None
-    telefono: str | None = None
+    direccion: str | None = Field(None, max_length=255)
+    ciudad: str | None = Field(None, max_length=100)
+    pais: str | None = Field(None, max_length=100)
+    codigo_postal: str | None = Field(None, max_length=20)
+    correo_electronico: str | None = Field(None, max_length=100)
+    telefono: str | None = Field(None, max_length=20)
     descripcion: str | None = Field(None, max_length=5000)
     politicas: str | None = Field(None, max_length=5000)
 

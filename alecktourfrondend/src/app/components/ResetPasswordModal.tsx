@@ -33,8 +33,11 @@ export default function ResetPasswordModal({ isOpen, onClose, token }: ResetPass
 
     async function handleReset() {
         setError("");
-        if (!password || password.length < 6) {
-            setError("La contraseña debe tener al menos 6 caracteres");
+        // Misma regla que el registro y que el backend (PasswordResetConfirm,
+        // user_schema.py): antes aquí solo se pedían 6 caracteres y el API
+        // terminaba rechazando una clave sin mayúscula o sin número.
+        if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/.test(password)) {
+            setError("La contraseña debe tener mínimo 6 caracteres, una mayúscula, una minúscula y un número");
             return;
         }
         if (password !== confirm) {
