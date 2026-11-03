@@ -47,11 +47,38 @@ AlekTours es la plataforma de la agencia Alik Tours (RNT 224224): las personas b
 
 ## 5. CI y umbrales
 
-_(Sección a cargo de Cristian.)_
+- Workflow: [`.github/workflows/tests.yml`](../.github/workflows/tests.yml) (lint y Docker siguen en `ci.yml`). Último run en verde de `main`: _pegar enlace_.
+- Jobs obligatorios en el ruleset de `main`: `frontend`, `backend`, `integracion`, `e2e` y `Lint (Ruff + ESLint)`. `evidencia-individual` solo informa.
+- Artefactos: `coverage-frontend`, `coverage-backend` (siempre) y `e2e-report` con trazas y log del API (si falla).
+- Saltados: el job `backend` salta a propósito los 25 de `tests/integration` (no tiene BD); el job `integracion` los corre y **falla si queda alguno saltado**.
+
+| Parte | Cobertura actual | Umbral configurado |
+|---|---|---|
+| Frontend | _anotar de `pnpm test`_ | 80% (líneas, ramas, funciones y sentencias) |
+| Backend | 81% (sin `TEST_DATABASE_URL`, como en el CI) | 81% (`fail_under`) |
 
 ## 6. Hallazgos y riesgos conocidos
 
-_(Sección a cargo de Cristian.)_
+| Defecto | Capa que lo encontró | Estado |
+|---|---|---|
+| El 500 devolvía CORS con credenciales a cualquier origen | API (S4) | Corregido |
+| Cualquier cuenta podía vincularse al perfil de otro cliente y ver sus reservas | API (S8) | Corregido |
+| El enlace de recuperación servía también el de verificación, y se podía reusar 24 h | API (S7) | Corregido (tipo propio, 1 h, un solo uso) |
+| El backend no validaba la contraseña (solo el formulario) | Integración (S6) | Corregido |
+| `echo=True`: el log mostraba consultas con hashes de contraseña | Integración (S6) | Corregido |
+| Textos más largos que la columna respondían 500 (registro, editar hotel/habitación) | Integración (S6) | Corregido |
+| Los CHECK de `reservas` estaban en el modelo pero no en la BD | Integración (S6) | Corregido (migración `f3c1d9a7b5e2`) |
+| Borrar un empleado respondía siempre 500 | API (S8) | Corregido |
+| Habitación: borrar inexistente = 200; con reservas = 500; número repetido = 400/500 | API (S4) | Corregido (404/409) |
+| Un admin podía eliminar su propia cuenta | API (S7) | Corregido |
+| Comprobante PDF con las fechas un día antes en Colombia | Unitarias front (S2) | Corregido |
+| La sesión vencida "revivía" al recargar | Componentes (S3) | Corregido |
+| `/packages` con el API caído decía "no hay paquetes" | E2E (S5) | Corregido (error + Reintentar) |
+| Dos handlers de MSW no coincidían con el backend real | Front (S6) | Corregido |
+| 15 tests fallaban según el orden (PRAGMA sin apagar); tablas que existían o no según el orden | Suite (S1, S7) | Corregido |
+| Accesibilidad: login, registro, contacto, pagos sin etiquetas asociadas ni roles | E2E y componentes | Corregido |
+| Cédula repetida en el registro deja la cuenta creada sin perfil | E2E (S7) | **Abierto**: incidencia #N, test con `test.fail()` |
+| La búsqueda distingue tildes en PostgreSQL (`medellin` ≠ `Medellín`) | Integración (S6) | **Abierto**: incidencia #N, test con `xfail(strict=True)` |
 
 ## 7. Evidencia individual
 
