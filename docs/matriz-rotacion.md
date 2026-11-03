@@ -38,6 +38,7 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 | Semana | Frontend (%) | Backend (%) | Umbral configurado para la semana siguiente |
 |---|---|---|---|
 | S1 (línea base) | 0 (aún no hay tests de frontend) | 47 | Front 30 · Back 47 |
+| S2 | _anotar el % de líneas de `pnpm test`_ | 47 | Front 30 · Back 47 |
 
 ## Regla de rama
 
@@ -51,3 +52,4 @@ El vocero escribe su respuesta **antes** de que el instructor llegue a la mesa; 
 | Semana | Vocero | Capa preguntada | Respuesta escrita | Resultado (Alto / Medio / Bajo) |
 |---|---|---|---|---|
 | S1 | | | | |
+| S2 | | | | |
