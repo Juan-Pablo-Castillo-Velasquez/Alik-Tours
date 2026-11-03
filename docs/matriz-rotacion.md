@@ -41,6 +41,7 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 | S2 | _anotar el % de líneas de `pnpm test`_ | 47 | Front 30 · Back 47 |
 | S3 | _anotar_ (entran ProtectedRoute, shared y payment) | 47 | Front 40 · Back 47 |
 | S4 | _anotar_ (sin tareas nuevas de front) | 70 | Front 50 · Back 70 |
+| S5 | _anotar_ (entra api/v1/api.ts) | 70 | Front 60 · Back 70 |
 
 ## Regla de rama
 
@@ -57,3 +58,4 @@ El vocero escribe su respuesta **antes** de que el instructor llegue a la mesa; 
 | S2 | | | | |
 | S3 | | | | |
 | S4 | | | | |
+| S5 | | | | |
