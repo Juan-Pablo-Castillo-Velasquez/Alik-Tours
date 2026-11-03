@@ -1,9 +1,16 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.core.config import settings
 
-engine = create_engine(settings.DATABASE_URL, echo=True)
+# echo=True imprimía en el log del servidor CADA consulta SQL con sus
+# parámetros, incluidos los hashes de contraseña al registrar o iniciar
+# sesión (hallazgo de la semana 6 del bootcamp, al leer el log de los tests
+# de integración). Ahora solo se activa a propósito, para depurar en local.
+SQL_ECHO = os.getenv("SQL_ECHO", "").lower() in ("1", "true", "si", "sí")
+engine = create_engine(settings.DATABASE_URL, echo=SQL_ECHO)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
