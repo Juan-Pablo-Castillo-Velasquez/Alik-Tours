@@ -211,6 +211,12 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                         exit={{ opacity: 0, scale: 0.94, y: 24 }}
                         transition={{ type: "spring", damping: 24, stiffness: 320 }}
                         onClick={(e) => e.stopPropagation()}
+                        // Accesibilidad (bootcamp, semana 1): sin role="dialog" ni nombre,
+                        // un lector de pantalla (y Playwright con getByRole) no sabía que
+                        // esto era una ventana modal ni cómo se llamaba.
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="login-titulo"
                         className="relative w-full max-w-md bg-card text-card-foreground rounded-xl shadow-2xl overflow-hidden border border-border my-auto"
                     >
                         {/* Header */}
@@ -218,6 +224,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                             <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5 blur-xl" />
                             <button
                                 onClick={resetAndClose}
+                                aria-label="Cerrar"
                                 className="absolute top-5 right-5 p-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10 rounded-lg transition-colors"
                             >
                                 <X className="w-5 h-5" />
@@ -233,7 +240,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                     exit={{ opacity: 0, y: 6 }}
                                     transition={{ duration: 0.18 }}
                                 >
-                                    <h1 className="text-2xl font-bold mb-1 text-primary-foreground">
+                                    <h1 id="login-titulo" className="text-2xl font-bold mb-1 text-primary-foreground">
                                         {needsVerification ? "Confirma tu correo" : "Bienvenido de nuevo"}
                                     </h1>
                                     <p className="text-primary-foreground/80 text-sm">
@@ -335,6 +342,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                             <AnimatePresence>
                                                 {formError && (
                                                     <motion.div
+                                                        role="alert"
                                                         initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                                                         animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
                                                         exit={{ opacity: 0, height: 0, marginBottom: 0 }}
@@ -348,10 +356,11 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
 
                                             <form onSubmit={handleSubmit} className="space-y-4">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-foreground mb-1.5">Correo electrónico</label>
+                                                    <label htmlFor="login-correo" className="block text-sm font-medium text-foreground mb-1.5">Correo electrónico</label>
                                                     <div className="relative group">
                                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                                         <input
+                                                            id="login-correo"
                                                             type="email"
                                                             name="username"
                                                             value={formData.username}
@@ -380,7 +389,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
 
                                                 <div>
                                                     <div className="flex items-center justify-between mb-1.5">
-                                                        <label className="text-sm font-medium text-foreground">Contraseña</label>
+                                                        <label htmlFor="login-password" className="text-sm font-medium text-foreground">Contraseña</label>
                                                         <button
                                                             type="button"
                                                             onClick={() => setShowForgot(true)}
@@ -392,6 +401,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                                     <div className="relative group">
                                                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                                         <input
+                                                            id="login-password"
                                                             type={showPassword ? "text" : "password"}
                                                             name="password"
                                                             value={formData.password}
@@ -406,6 +416,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                                             onClick={() => setShowPassword((s) => !s)}
                                                             className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
                                                             tabIndex={-1}
+                                                            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                                                         >
                                                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                                         </button>
