@@ -168,16 +168,18 @@ export default function Contact() {
                     /* Formulario Activo */
                     <motion.form
                       key="contact-form"
+                      aria-label="Formulario de contacto"
                       onSubmit={handleSubmit}
                       className="space-y-6"
                       exit={{ opacity: 0, scale: 0.95 }}
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="text-sm font-semibold text-card-foreground">
+                          <label htmlFor="contacto-nombre" className="text-sm font-semibold text-card-foreground">
                             Tu nombre completo
                           </label>
                           <input
+                            id="contacto-nombre"
                             type="text"
                             required
                             value={nombre}
@@ -189,10 +191,11 @@ export default function Contact() {
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-sm font-semibold text-card-foreground">
+                          <label htmlFor="contacto-correo" className="text-sm font-semibold text-card-foreground">
                             Correo electrónico
                           </label>
                           <input
+                            id="contacto-correo"
                             type="email"
                             required
                             value={correo}
@@ -223,10 +226,11 @@ export default function Contact() {
                       )}
 
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-card-foreground">
+                        <label htmlFor="contacto-asunto" className="text-sm font-semibold text-card-foreground">
                           Asunto del mensaje
                         </label>
                         <input
+                          id="contacto-asunto"
                           type="text"
                           required
                           value={asunto}
@@ -237,10 +241,11 @@ export default function Contact() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-card-foreground">
+                        <label htmlFor="contacto-mensaje" className="text-sm font-semibold text-card-foreground">
                           ¿En qué podemos ayudarte?
                         </label>
                         <textarea
+                          id="contacto-mensaje"
                           rows={5}
                           required
                           value={mensaje}
@@ -251,7 +256,7 @@ export default function Contact() {
                       </div>
 
                       {error && (
-                        <p className="text-sm text-red-500 text-center">
+                        <p role="alert" className="text-sm text-red-500 text-center">
                           {error}
                         </p>
                       )}
