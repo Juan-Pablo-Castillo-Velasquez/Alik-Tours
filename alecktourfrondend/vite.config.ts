@@ -78,8 +78,9 @@ export default defineConfig({
       // - services/**: adaptadores HTTP de una línea por endpoint; su
       //   contrato lo prueban el backend (semana 4) y los E2E.
       exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**'],
-      // Regla de trinquete: el umbral solo sube. Línea base semana 1.
-      thresholds: { lines: 0, branches: 0, functions: 0, statements: 0 },
+      // Regla de trinquete: el umbral solo sube (docs/matriz-rotacion.md).
+      // Semana 2: piso del 30%.
+      thresholds: { lines: 30, branches: 30, functions: 30, statements: 30 },
     },
   },
 })
