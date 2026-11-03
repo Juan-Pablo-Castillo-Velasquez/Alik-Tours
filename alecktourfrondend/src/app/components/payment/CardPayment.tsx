@@ -32,8 +32,9 @@ export default function CardPayment({
 
       <div className="grid grid-cols-1 gap-4">
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Número de tarjeta</label>
+          <label htmlFor="tarjeta-numero" className="block text-xs font-medium text-muted-foreground mb-1.5">Número de tarjeta</label>
           <input
+            id="tarjeta-numero"
             type="text"
             inputMode="numeric"
             placeholder="0000 0000 0000 0000"
@@ -44,8 +45,9 @@ export default function CardPayment({
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nombre del titular</label>
+          <label htmlFor="tarjeta-titular" className="block text-xs font-medium text-muted-foreground mb-1.5">Nombre del titular</label>
           <input
+            id="tarjeta-titular"
             type="text"
             placeholder="Como aparece en la tarjeta"
             value={value.name}
@@ -55,8 +57,9 @@ export default function CardPayment({
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Vencimiento</label>
+            <label htmlFor="tarjeta-vencimiento" className="block text-xs font-medium text-muted-foreground mb-1.5">Vencimiento</label>
             <input
+            id="tarjeta-vencimiento"
               type="text"
               inputMode="numeric"
               placeholder="MM/YY"
@@ -67,8 +70,9 @@ export default function CardPayment({
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">CVV</label>
+            <label htmlFor="tarjeta-cvv" className="block text-xs font-medium text-muted-foreground mb-1.5">CVV</label>
             <input
+            id="tarjeta-cvv"
               type="password"
               inputMode="numeric"
               placeholder="•••"
