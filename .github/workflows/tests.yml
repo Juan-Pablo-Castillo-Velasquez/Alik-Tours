@@ -26,9 +26,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          # Caché del almacén de pnpm (semana 8): la clave sale del lockfile
+          cache: pnpm
+          cache-dependency-path: alecktourfrondend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       # "pnpm test" = vitest run --coverage: falla si la cobertura baja del umbral
       - run: pnpm test
+      # El reporte HTML de cobertura queda descargable aunque el umbral falle
+      # (es justo cuando más se necesita): Actions → el run → Artifacts.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-frontend
+          path: alecktourfrondend/coverage/
+          retention-days: 7
 
   backend:
     runs-on: ubuntu-latest
