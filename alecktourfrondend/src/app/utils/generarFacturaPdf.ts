@@ -45,7 +45,15 @@ const MUTED: [number, number, number] = [120, 120, 120];
 
 function formatFecha(iso?: string): string {
   if (!iso) return "—";
-  const d = new Date(iso);
+  // Una fecha sin hora ("2026-12-01", como llegan fecha_inicio/fecha_fin
+  // de la reserva) se interpreta como día LOCAL. new Date("2026-12-01")
+  // la toma como medianoche UTC, y en Colombia (UTC-5) el comprobante
+  // mostraba el día anterior: "30 de noviembre" para un viaje del 1 de
+  // diciembre. Hallazgo de los tests unitarios de la semana 2.
+  const soloFecha = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const d = soloFecha
+    ? new Date(Number(soloFecha[1]), Number(soloFecha[2]) - 1, Number(soloFecha[3]))
+    : new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("es-CO", { day: "2-digit", month: "long", year: "numeric" });
 }
