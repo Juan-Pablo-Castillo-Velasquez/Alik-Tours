@@ -108,7 +108,16 @@ class MensajeChatRepository:
 
         total = query.count()
 
-        filas = query.order_by(MensajeChat.fecha_envio.desc()).offset(skip).limit(limit).all()
+        # Desempate por id_mensaje: dos mensajes con la misma fecha_envio
+        # (mismo segundo en SQLite, mismo instante en una carga masiva) no
+        # tenían un orden garantizado, y la bandeja podía mostrar los hilos
+        # en un orden distinto en cada consulta o repetir uno entre páginas.
+        filas = (
+            query.order_by(MensajeChat.fecha_envio.desc(), MensajeChat.id_mensaje.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
         # Una sola consulta agrupada por id_cliente, filtrada solo a los
         # clientes de ESTA página -- reemplaza el conteo por fila de antes.

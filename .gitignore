@@ -70,3 +70,11 @@ Thumbs.db
 # atascado y los archivos temporales de "pnpm install" no se pueden
 # borrar directo -- se mueven acá en vez de perderlos).
 _to_delete/
+
+# Pruebas (Bootcamp Testing ADSO): reportes de cobertura y de Playwright
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+e2e/playwright-report/
+e2e/test-results/

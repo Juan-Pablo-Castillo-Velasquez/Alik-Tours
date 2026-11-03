@@ -5,3 +5,6 @@
 
 ruff==0.16.5
 pytest==8.3.3
+# Cobertura (bootcamp, semana 1): se activa sola en cada "pytest" vía
+# addopts de pyproject.toml.
+pytest-cov==6.0.0

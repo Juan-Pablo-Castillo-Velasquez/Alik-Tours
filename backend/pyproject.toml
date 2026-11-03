@@ -79,3 +79,31 @@ quote-style = "double"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+# Bootcamp Testing ADSO, semana 1: cada "pytest" mide la cobertura y falla
+# si baja del umbral de [tool.coverage.report]. Así nadie puede "olvidar"
+# medir: el comando de siempre (local y CI) ya la exige.
+addopts = "--cov --cov-report=term-missing:skip-covered"
+
+[tool.coverage.run]
+source = ["app"]
+# Se mide la LÓGICA DE NEGOCIO (rutas, servicios, esquemas, validaciones,
+# seguridad). Quedan fuera, cada uno con su porqué:
+omit = [
+    # Arranque y configuración: no tienen reglas que probar, solo cablean.
+    "app/main.py",
+    "app/core/config.py",
+    # Adaptadores de infraestructura: hablan con PostgreSQL, Redis,
+    # SMTP y Cloudinary. Se prueban con dobles (semana 5) y con
+    # integración contra la BD real (semana 6, tests/integration/).
+    "app/core/database.py",
+    "app/core/cache.py",
+    "app/core/mail.py",
+    "app/core/image_storage.py",
+    "app/repositories/*",
+]
+
+[tool.coverage.report]
+# Regla de trinquete del bootcamp: el umbral solo sube. Línea base de la
+# semana 1 (ver docs/matriz-rotacion.md, "Cobertura semanal").
+fail_under = 47
+show_missing = true

@@ -20,7 +20,7 @@ app/core/database.py para construir su propio Base.metadata).
 
 import pytest
 import sqlalchemy as sa
-from sqlalchemy import ARRAY, create_engine
+from sqlalchemy import ARRAY, create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from app.core.database import Base
@@ -47,5 +47,14 @@ def db():
     Base.metadata.create_all(bind=engine)
     session = TestingSessionLocal()
     yield session
+    session.rollback()
+    # Hallazgo de la semana 1 (bootcamp): un test de test_mensajes_chat.py
+    # activa "PRAGMA foreign_keys=ON" para probar un ON DELETE CASCADE, y
+    # como el motor en memoria reutiliza LA MISMA conexión en toda la
+    # suite, el PRAGMA quedaba prendido para los tests siguientes:
+    # test_reservas_pagos.py fallaba (15 tests) al correr la suite
+    # completa, pero pasaba en verde corriendo ese archivo solo. Cada test
+    # debe dejar la BD como la encontró (FIRST: Independent).
+    session.execute(text("PRAGMA foreign_keys=OFF"))
     session.close()
     Base.metadata.drop_all(bind=engine)
