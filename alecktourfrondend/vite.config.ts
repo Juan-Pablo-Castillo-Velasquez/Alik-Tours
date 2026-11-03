@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
@@ -52,5 +53,36 @@ export default defineConfig({
       usePolling: true, // Fuerza a Vite a revisar cambios si estás en Windows/WSL con Docker
     },
     proxy: apiProxy,
+  },
+
+  // === PRUEBAS (Bootcamp Testing ADSO) ===
+  // "pnpm test" corre Vitest UNA vez y mide la cobertura: si baja del
+  // umbral, el comando falla (local y en CI). Ver docs/matriz-rotacion.md.
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
+    // Semana 1: todavía no hay tests de frontend (los E2E viven en /e2e y
+    // no cuentan para la cobertura). Se quita en la semana 2.
+    passWithNoTests: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      // Se mide la LÓGICA de la interfaz. Va entrando por capas, a medida
+      // que el bootcamp llega a cada una, y nunca sale:
+      // - Semana 1-2: lógica sin pantalla (utils, hooks y contextos).
+      // - Semana 3: componentes con reglas (ruta protegida, filtros, pagos).
+      // - Semana 5: el cliente HTTP (api/v1/api.ts), probado con MSW.
+      include: ['src/app/utils/**', 'src/app/hooks/**', 'src/app/context/**'],
+      // Fuera, con su porqué:
+      // - src/app/components/ui/**: librería shadcn/ui generada, no es
+      //   código propio (tampoco se lintea, ver eslint.config.js).
+      // - pages/** y las pantallas grandes: se cubren con los E2E de /e2e.
+      // - services/**: adaptadores HTTP de una línea por endpoint; su
+      //   contrato lo prueban el backend (semana 4) y los E2E.
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**'],
+      // Regla de trinquete: el umbral solo sube. Línea base semana 1.
+      thresholds: { lines: 0, branches: 0, functions: 0, statements: 0 },
+    },
   },
 })
