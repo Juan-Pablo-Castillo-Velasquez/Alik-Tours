@@ -29,6 +29,10 @@ export default function Packages() {
   const [searchParams] = useSearchParams();
   const [paquetes, setPaquetes] = useState<PaqueteResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  // Hallazgo (bootcamp, semana 5, E2E con page.route): si el API fallaba,
+  // la página decía "Todavía no hay paquetes publicados", como si la
+  // agencia no tuviera viajes. Ahora un error de carga se muestra como tal.
+  const [errorCarga, setErrorCarga] = useState(false);
   const [ordenPor, setOrdenPor] = useState<OrdenPor>("relevancia");
   const [pagina, setPagina] = useState(1);
   // Filtro real de destino: si se llega desde el SearchBar en modo
@@ -39,13 +43,21 @@ export default function Packages() {
   // del cliente es la única forma de que sea un filtro real y no decorativo.
   const [filtroDestino, setFiltroDestino] = useState(() => searchParams.get("destino") ?? "");
 
-  useEffect(() => {
+  const cargarPaquetes = () => {
     setLoading(true);
+    setErrorCarga(false);
     paqueteService
       .getAll(0, 300)
       .then(setPaquetes)
-      .catch(() => setPaquetes([]))
+      .catch(() => {
+        setPaquetes([]);
+        setErrorCarga(true);
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    cargarPaquetes();
   }, []);
 
   useSeoMeta({
@@ -255,6 +267,22 @@ export default function Packages() {
               </nav>
             )}
           </>
+        ) : errorCarga ? (
+          <div role="alert" className="bg-card rounded-2xl border border-border p-8 sm:p-12 text-center">
+            <h2 className="text-lg font-bold text-foreground mb-1">
+              No pudimos cargar los paquetes
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Revisa tu conexión o intenta de nuevo en unos minutos.
+            </p>
+            <button
+              type="button"
+              onClick={cargarPaquetes}
+              className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-primary hover:underline"
+            >
+              Reintentar
+            </button>
+          </div>
         ) : filtroDestino.trim() && paquetes.length > 0 ? (
           <div className="bg-card rounded-2xl border border-border p-8 sm:p-12 text-center">
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-muted mb-4">
