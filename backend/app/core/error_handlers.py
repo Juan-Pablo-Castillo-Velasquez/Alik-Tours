@@ -7,11 +7,12 @@ donde vive la lógica de cada pieza.
 """
 
 import logging
+import re
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from app.core.cors import get_extra_cors_origins
+from app.core.cors import VERCEL_PREVIEW_REGEX, get_cors_origins, get_extra_cors_origins
 
 logger = logging.getLogger(__name__)
 
@@ -29,16 +30,20 @@ async def global_exception_handler(request: Request, exc: Exception):
     # no trae header Origin (no es una llamada CORS de navegador), y en
     # ese caso interesa el dominio real de producción, no localhost.
     origenes_reales = get_extra_cors_origins()
+    # Hallazgo de seguridad (bootcamp, semana 4): antes se devolvía el
+    # Origin de la petición TAL CUAL, junto con Allow-Credentials: true, a
+    # cualquier sitio. Ahora solo se repite si es un origen permitido (los
+    # mismos de CORSMiddleware); si no, se responde con el origen real.
+    origen = request.headers.get("origin")
+    permitido = origen and (origen in get_cors_origins() or re.fullmatch(VERCEL_PREVIEW_REGEX, origen))
+    origen_respuesta = origen if permitido else (origenes_reales[0] if origenes_reales else "http://localhost:5173")
     return JSONResponse(
         status_code=500,
         content={
             "detail": "Error interno del servidor. Revisa los logs del servidor para ver el detalle.",
         },
         headers={
-            "Access-Control-Allow-Origin": request.headers.get(
-                "origin",
-                origenes_reales[0] if origenes_reales else "http://localhost:5173",
-            ),
+            "Access-Control-Allow-Origin": origen_respuesta,
             "Access-Control-Allow-Credentials": "true",
         },
     )
