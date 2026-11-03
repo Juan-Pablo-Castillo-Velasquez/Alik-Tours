@@ -408,7 +408,11 @@ def update_habitacion(
 def delete_habitacion(habitacion_id: int, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
     """Elimina una habitación"""
     try:
-        HabitacionRepository.delete(db, habitacion_id)
+        eliminada = HabitacionRepository.delete(db, habitacion_id)
+        # Hallazgo (bootcamp, semana 4): el repositorio devuelve None si el
+        # id no existe, y la ruta respondía 200 "eliminada" de todas formas.
+        if eliminada is None:
+            raise NotFoundError("Habitación no encontrada")
         delete_pattern(HOTELES_CACHE_PATTERN)
         return {"message": "Habitación eliminada exitosamente"}
     except NotFoundError as e:

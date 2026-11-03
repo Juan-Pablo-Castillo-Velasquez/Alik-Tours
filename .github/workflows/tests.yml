@@ -35,18 +35,8 @@ jobs:
     defaults:
       run:
         working-directory: backend
-    # Redis real: las rutas que invalidan caché (app/core/cache.py) lo
-    # necesitan aunque la BD de los tests unitarios sea SQLite en memoria.
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    # Sin servicio de Redis: desde la semana 4 los tests usan un Redis en
+    # memoria (backend/tests/fakes.py) y nunca uno real.
     env:
       # Solo para que la app importe: ningún test unitario se conecta a esta BD.
       DATABASE_URL: postgresql+psycopg2://admin:admin123@localhost:5432/alektours_db
