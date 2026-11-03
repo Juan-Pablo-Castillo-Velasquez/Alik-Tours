@@ -30,7 +30,7 @@ from app.core.security import create_access_token
 from app.models import *  # noqa: F401, F403
 from app.models.cliente_model import Cliente
 from app.models.user_model import Usuario
-from tests.fakes import RedisEnMemoria
+from tests.fakes import RedisEnMemoria, ServidorSMTPFalso
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 # StaticPool (semana 4 del bootcamp): TestClient ejecuta las rutas síncronas
@@ -105,6 +105,21 @@ def redis_falso(monkeypatch):
     monkeypatch.setattr("app.middlewares.security_middleware.redis_client", falso)
     monkeypatch.setattr("app.routes.resena_route.redis_client", falso)
     return falso
+
+
+@pytest.fixture(autouse=True)
+def buzon(monkeypatch):
+    """Lista de correos "enviados" en el test (objetos email.message). El
+    SMTP real se reemplaza siempre por ServidorSMTPFalso (tests/fakes.py)."""
+    from app.core import mail
+    from app.core.config import settings
+
+    enviados = []
+    falso = ServidorSMTPFalso(enviados)
+    monkeypatch.setattr(mail.smtplib, "SMTP", falso)
+    monkeypatch.setattr(mail.smtplib, "SMTP_SSL", falso)
+    monkeypatch.setattr(settings, "BREVO_API_KEY", None, raising=False)
+    return enviados
 
 
 @pytest.fixture

@@ -61,3 +61,36 @@ class RedisEnMemoria:
 
     def scan_iter(self, match="*"):
         yield from self.keys(match)
+
+
+class ServidorSMTPFalso:
+    """Fake de smtplib.SMTP / SMTP_SSL (semana 5): en vez de conectarse a
+    un servidor de correo, deja cada mensaje en `buzon`. Ningún test envía
+    correos reales (ni a Mailpit ni a Gmail). Con `falla=True` simula un
+    servidor caído para probar que la app resiste."""
+
+    def __init__(self, buzon, falla=False):
+        self.buzon = buzon
+        self.falla = falla
+
+    def __call__(self, *args, **kwargs):  # se usa como si fuera la clase SMTP
+        if self.falla:
+            raise ConnectionRefusedError("SMTP caído (simulado)")
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def starttls(self):
+        pass
+
+    def login(self, usuario, clave):
+        pass
+
+    def sendmail(self, remitente, destinatarios, mensaje):
+        from email import message_from_string
+
+        self.buzon.append(message_from_string(mensaje))
