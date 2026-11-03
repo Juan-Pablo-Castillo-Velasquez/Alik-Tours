@@ -142,8 +142,11 @@ class EmpleadoRepository:
 
         # Verificar si tiene historial de reservas
         historial_count = (
-            db.query(func.count(HistorialReserva.id_empleado))
-            .filter(HistorialReserva.id_empleado == empleado_id)
+            # Hallazgo (bootcamp, semana 8): la columna se llama
+            # id_empleado_responsable; con id_empleado, borrar CUALQUIER
+            # empleado respondía 500 (AttributeError).
+            db.query(func.count(HistorialReserva.id_empleado_responsable))
+            .filter(HistorialReserva.id_empleado_responsable == empleado_id)
             .scalar()
             or 0
         )
