@@ -1,0 +1,87 @@
+# Bootcamp Testing ADSO (semana 2): corre los tests de frontend y backend
+# en cada push y en cada PR, y exige el umbral de cobertura de cada parte
+# (vite.config.ts y backend/pyproject.toml). Si un umbral no se cumple, el
+# job queda en rojo y la regla de rama bloquea el merge.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: alecktourfrondend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: alecktourfrondend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pnpm install --frozen-lockfile
+      # "pnpm test" = vitest run --coverage: falla si la cobertura baja del umbral
+      - run: pnpm test
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    # Redis real: las rutas que invalidan caché (app/core/cache.py) lo
+    # necesitan aunque la BD de los tests unitarios sea SQLite en memoria.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Solo para que la app importe: ningún test unitario se conecta a esta BD.
+      DATABASE_URL: postgresql+psycopg2://admin:admin123@localhost:5432/alektours_db
+      SECRET_KEY: ci-test-secret-key-solo-para-ci-no-usar-en-produccion-32chars
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      MAIL_USERNAME: test@test.com
+      MAIL_PASSWORD: test
+      MAIL_FROM: noreply@alectours.com
+      MAIL_PORT: 1025
+      MAIL_SERVER: localhost
+      MAIL_FROM_NAME: AlecTours
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: cp .env.example .env
+      - run: pip install -r requirements-dev.txt
+      # "pytest" ya mide la cobertura (addopts) y falla bajo fail_under
+      - run: pytest
+
+  # No construye ni prueba nada: deja en el resumen del run (Actions → el
+  # run → arriba) quién hizo commits de test esta semana. Es la evidencia
+  # individual que revisa el instructor.
+  evidencia-individual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Commits de test por autor esta semana
+        run: |
+          echo "### Commits de test por autor desde el lunes" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          git shortlog -sn --since="last Monday" HEAD -- '*tests/*' '*.test.*' 'e2e/*' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

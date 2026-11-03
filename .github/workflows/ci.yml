@@ -51,71 +51,15 @@ jobs:
         working-directory: alecktourfrondend
         run: pnpm run lint
 
-  test:
-    name: Backend Unit Tests
-    runs-on: ubuntu-latest
-
-    # Redis real para el job de CI — sin esto, cualquier test que llame a
-    # una ruta que invalida caché (delete_pattern/get_cached en
-    # app/core/cache.py, ej. pagar_reserva, confirmar_pago,
-    # admin_resolver_solicitud) fallaba con "Temporary failure in name
-    # resolution" al intentar resolver el host 'redis' de docker-compose,
-    # que no existe en el runner. Hallazgo directo de las pruebas de
-    # correo de la Fase 2 del plan de mejora, que son las primeras en
-    # ejercitar rutas completas (no solo repositorios) en este proyecto.
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Create CI environment
-        run: cp backend/.env.example backend/.env
-
-      - name: Install backend dependencies
-        working-directory: backend
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements-dev.txt
-
-      - name: Run unit tests
-        working-directory: backend
-        env:
-          DATABASE_URL: postgresql+psycopg2://admin:admin123@localhost:5432/alektours_db
-          SECRET_KEY: ci-test-secret-key-solo-para-ci-no-usar-en-produccion-32chars
-          ALGORITHM: HS256
-          ACCESS_TOKEN_EXPIRE_MINUTES: 30
-          MAIL_USERNAME: test@test.com
-          MAIL_PASSWORD: test
-          MAIL_FROM: noreply@alectours.com
-          MAIL_PORT: 1025
-          MAIL_SERVER: localhost
-          MAIL_FROM_NAME: AlecTours
-          REDIS_URL: redis://localhost:6379/0
-        # Toda la suite de backend/tests/ (pyproject.toml: testpaths). Antes
-        # se corrian copias viejas que estaban sueltas en la raiz de
-        # backend/ y nunca se ejecutaban test_mensajes_chat.py ni
-        # test_verificacion_email.py.
-        run: pytest tests -v
+  # Los tests de backend (y ahora también los de frontend, con su umbral
+  # de cobertura) se movieron a .github/workflows/tests.yml en la semana 2
+  # del bootcamp de testing: así cada parte es un check propio que la regla
+  # de rama puede exigir. Este workflow queda para lint y build de Docker.
 
   docker:
     name: Docker Build & Validate
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint]
 
     steps:
       - name: Checkout repository

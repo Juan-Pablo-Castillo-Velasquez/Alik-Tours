@@ -12,6 +12,7 @@ import { Label } from "../ui/label";
 import {
   Tooltip, TooltipContent, TooltipTrigger,
 } from "../ui/tooltip";
+import { AA_MINIMO, contraste, cumpleAA } from "../../utils/contrasteWcag";
 
 interface Props {
   temas: Tema[];
@@ -39,40 +40,13 @@ const FORM_VACIO: TemaFormData = {
 // relativa que se usó para verificar los 7 temas sembrados en la
 // migración. Se recalcula en vivo mientras el admin edita colores, para
 // que nunca guarde una combinación que no se lea bien. ──
-function hexToRgbNums(hex: string): [number, number, number] | null {
-  const limpio = hex.replace("#", "");
-  if (!/^[0-9a-fA-F]{6}$/.test(limpio)) return null;
-  return [
-    parseInt(limpio.substring(0, 2), 16),
-    parseInt(limpio.substring(2, 4), 16),
-    parseInt(limpio.substring(4, 6), 16),
-  ];
-}
-
-function luminanciaRelativa([r, g, b]: [number, number, number]): number {
-  const canal = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
-}
-
-function contraste(hex1: string, hex2: string): number | null {
-  const rgb1 = hexToRgbNums(hex1);
-  const rgb2 = hexToRgbNums(hex2);
-  if (!rgb1 || !rgb2) return null;
-  const l1 = luminanciaRelativa(rgb1);
-  const l2 = luminanciaRelativa(rgb2);
-  const [claro, oscuro] = l1 > l2 ? [l1, l2] : [l2, l1];
-  return (claro + 0.05) / (oscuro + 0.05);
-}
-
-const AA_MINIMO = 4.5;
+// (hexToRgbNums, luminanciaRelativa, contraste y AA_MINIMO viven ahora en
+// utils/contrasteWcag.ts, donde tienen sus tests unitarios.)
 
 function BadgeContraste({ hex, contra, etiqueta }: { hex: string; contra: string; etiqueta: string }) {
   const ratio = contraste(hex, contra);
   if (ratio === null) return null;
-  const pasa = ratio >= AA_MINIMO;
+  const pasa = cumpleAA(ratio);
   return (
     <span
       className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md ${
