@@ -19,8 +19,9 @@ export default function PSEPayment({
   return (
     <div className="grid grid-cols-1 gap-4">
       <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1.5">Selecciona tu banco</label>
+        <label htmlFor="pse-banco" className="block text-xs font-medium text-muted-foreground mb-1.5">Selecciona tu banco</label>
         <select
+          id="pse-banco"
           value={value.banco}
           onChange={(e) => onChange({ ...value, banco: e.target.value })}
           className="w-full px-3 py-2.5 rounded-xl border border-border bg-input-background text-foreground text-sm focus:ring-2 focus:ring-primary/40 focus:outline-none"
@@ -32,8 +33,9 @@ export default function PSEPayment({
         </select>
       </div>
       <div>
-        <label className="block text-xs font-medium text-muted-foreground mb-1.5">Número de documento</label>
+        <label htmlFor="pse-documento" className="block text-xs font-medium text-muted-foreground mb-1.5">Número de documento</label>
         <input
+          id="pse-documento"
           type="text"
           inputMode="numeric"
           placeholder="1000111222"
