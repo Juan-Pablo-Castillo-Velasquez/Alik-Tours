@@ -86,3 +86,4 @@ El vocero escribe su respuesta **antes** de que el instructor llegue a la mesa; 
 | S6 | | | | |
 | S7 | | | | |
 | S8 | | | | |
+| S9 | | | | |
