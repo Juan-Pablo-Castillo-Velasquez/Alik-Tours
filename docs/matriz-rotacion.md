@@ -44,6 +44,7 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 | S5 | _anotar_ (entra api/v1/api.ts) | 70 | Front 60 · Back 70 |
 | S6 | _anotar_ | 70 (sin `TEST_DATABASE_URL`, como en el CI) | Front 70 · Back 70 |
 | S7 | _anotar_ | 75 | Front 75 · Back 75 |
+| S8 | _anotar_ | 81 | Front 80 · Back 81 |
 
 ## Flujos críticos (semana 7)
 
@@ -67,6 +68,8 @@ En un equipo que no montó la BD: `docker compose -f docker-compose.test.yml dow
 ## Regla de rama
 
 - [ ] Ruleset `main protegida` activo (Settings → Rules → Rulesets), con los checks del workflow `tests` obligatorios.
+- [ ] Semana 8: checks obligatorios `frontend`, `backend`, `integracion` y `e2e` (además de `Lint` del workflow de Docker CI).
+- [ ] PR de prueba con un test roto en cada capa: el merge quedó bloqueado (enlace al PR cerrado: ___).
 - Si el repo no permite rulesets: regla manual del grupo, **nadie fusiona un PR en rojo**.
 
 ## Registro de vocero aleatorio
@@ -82,3 +85,4 @@ El vocero escribe su respuesta **antes** de que el instructor llegue a la mesa; 
 | S5 | | | | |
 | S6 | | | | |
 | S7 | | | | |
+| S8 | | | | |
