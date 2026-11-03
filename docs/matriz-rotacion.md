@@ -43,6 +43,17 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 | S4 | _anotar_ (sin tareas nuevas de front) | 70 | Front 50 · Back 70 |
 | S5 | _anotar_ (entra api/v1/api.ts) | 70 | Front 60 · Back 70 |
 | S6 | _anotar_ | 70 (sin `TEST_DATABASE_URL`, como en el CI) | Front 70 · Back 70 |
+| S7 | _anotar_ | 75 | Front 75 · Back 75 |
+
+## Flujos críticos (semana 7)
+
+| Flujo | Por qué es crítico | Responsable | Archivo |
+|---|---|---|---|
+| Iniciar sesión | Puerta a reservas, pagos y datos personales | Juan Pablo | `e2e/tests/flujo-iniciar-sesion.spec.js` |
+| Buscar destino y ver el hotel | Lo que hace todos los días quien visita la agencia | Fernando | `e2e/tests/flujo-buscar-hotel.spec.js` |
+| Crear una cuenta | Maneja datos personales; es la entrada de cada cliente nuevo | Cristian | `e2e/tests/flujo-registro.spec.js` |
+
+Estabilidad: `pnpm exec playwright test --repeat-each=5` antes de fusionar (anotar el resultado en el PR).
 
 ## Prueba de fuego de la BD (semana 6)
 
@@ -70,3 +81,4 @@ El vocero escribe su respuesta **antes** de que el instructor llegue a la mesa; 
 | S4 | | | | |
 | S5 | | | | |
 | S6 | | | | |
+| S7 | | | | |

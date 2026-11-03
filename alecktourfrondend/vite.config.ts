@@ -92,8 +92,8 @@ export default defineConfig({
       //   que sí se mide desde la semana 5.
       exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**'],
       // Regla de trinquete: el umbral solo sube (docs/matriz-rotacion.md).
-      // Semana 6: piso del 70%.
-      thresholds: { lines: 70, branches: 70, functions: 70, statements: 70 },
+      // Semana 7: piso del 75%.
+      thresholds: { lines: 75, branches: 75, functions: 75, statements: 75 },
     },
   },
 })
