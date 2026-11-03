@@ -6,7 +6,7 @@
 // completo (URL, cabeceras, cuerpo, manejo de errores) sin backend real.
 import { http, HttpResponse } from "msw";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { API } from "../../../test/msw/handlers";
+import { API, CONTACTO_422_REAL } from "../../../test/msw/handlers";
 import { server } from "../../../test/msw/server";
 import { apiFetch, apiLogin } from "./api";
 
@@ -123,22 +123,11 @@ describe("apiFetch: errores", () => {
   });
 
   it("un 422 de FastAPI se convierte en texto legible (no '[object Object]')", async () => {
-    server.use(
-      http.post(`${API}/api/contacto`, () =>
-        HttpResponse.json(
-          {
-            detail: [
-              { loc: ["body", "correo"], msg: "value is not a valid email address", type: "value_error" },
-              { loc: ["body", "mensaje"], msg: "String should have at least 10 characters", type: "string_too_short" },
-            ],
-          },
-          { status: 422 },
-        ),
-      ),
-    );
+    // Cuerpo capturado del backend real en la semana 6 (CONTACTO_422_REAL).
+    server.use(http.post(`${API}/api/contacto`, () => HttpResponse.json(CONTACTO_422_REAL, { status: 422 })));
 
     await expect(apiFetch("/contacto", { method: "POST", body: {} })).rejects.toThrow(
-      "body.correo: value is not a valid email address; body.mensaje: String should have at least 10 characters",
+      "body.nombre: String should have at least 2 characters; body.correo: value is not a valid email address: An email address must have an @-sign.",
     );
   });
 
@@ -148,7 +137,9 @@ describe("apiFetch: errores", () => {
     await expect(apiFetch("/contacto", { method: "POST", body: {} })).rejects.toThrow("Datos inválidos en la solicitud");
   });
 
-  it("un detalle con forma de objeto junta sus textos", async () => {
+  // Semana 6: ningún endpoint real responde "detail" como objeto (se buscó en
+  // todo backend/app). Se deja como defensa del cliente, con un 409 real.
+  it("un detalle con forma de objeto junta sus textos (caso defensivo)", async () => {
     server.use(
       http.get(`${API}/api/reservas/1`, () =>
         HttpResponse.json({ detail: { mensaje: "Reserva vencida", codigo: 41 } }, { status: 409 }),
@@ -169,6 +160,27 @@ describe("apiFetch: errores", () => {
     );
 
     await expect(apiFetch("/hoteles/1")).rejects.toThrow("Error en la petición al servidor");
+  });
+});
+
+describe("apiFetch: respuestas reales del backend (semana 6)", () => {
+  it("POST /contacto devuelve el cuerpo real de éxito", async () => {
+    await expect(apiFetch("/contacto", { method: "POST", body: { nombre: "Ana" } })).resolves.toEqual({
+      ok: true,
+      message: "Mensaje enviado correctamente",
+    });
+  });
+
+  it("un 409 de pago repetido llega con su detalle de texto", async () => {
+    server.use(
+      http.post(`${API}/api/reservas/5/pagar`, () =>
+        HttpResponse.json({ detail: "Esta reserva ya está pagada en su totalidad" }, { status: 409 }),
+      ),
+    );
+
+    await expect(apiFetch("/reservas/5/pagar", { method: "POST", body: {} })).rejects.toThrow(
+      "Esta reserva ya está pagada en su totalidad",
+    );
   });
 });
 
