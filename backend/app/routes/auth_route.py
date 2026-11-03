@@ -71,7 +71,9 @@ def register(data: UsuarioCreate, db: Session = Depends(get_db)):
         db, data.username, data.correo_electronico, data.password, terminos_version=data.terminos_version
     )
     if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
+        # 409 Conflict (antes 400): usuario o correo ya registrados chocan con
+        # un dato guardado; el formato del error ({"detail": ...}) no cambia.
+        raise HTTPException(status_code=409, detail=result["error"])
 
     verification_token = result.get("verification_token")
     verification_code = result.get("verification_code")
