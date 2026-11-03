@@ -55,10 +55,81 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          # Caché de pip (semana 8): la segunda corrida no vuelve a descargar todo
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
       - run: cp .env.example .env
       - run: pip install -r requirements-dev.txt
-      # "pytest" ya mide la cobertura (addopts) y falla bajo fail_under
-      - run: pytest
+      # "pytest" ya mide la cobertura (addopts) y falla bajo fail_under.
+      # -rs muestra por qué se salta cada test: aquí se saltan SOLO los de
+      # tests/integration (no hay TEST_DATABASE_URL); esos corren en el job
+      # "integracion".
+      - run: pytest -rs --cov-report=html --cov-report=xml
+      # El reporte de cobertura queda descargable (Actions → el run → Artifacts)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-backend
+          path: |
+            backend/htmlcov/
+            backend/coverage.xml
+          retention-days: 7
+
+  # Semana 8: la integración contra PostgreSQL REAL, con la BD como servicio
+  # del job (mismo motor y versión que desarrollo y producción: 16). Las
+  # migraciones crean el esquema antes de los tests, igual que en un
+  # despliegue.
+  integracion:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: alektours
+          POSTGRES_PASSWORD: alektours
+          POSTGRES_DB: alektours_test
+        ports:
+          - "5433:5432"
+        options: >-
+          --health-cmd "pg_isready -U alektours -d alektours_test"
+          --health-interval 2s
+          --health-retries 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql+psycopg2://alektours:alektours@localhost:5433/alektours_test
+      TEST_DATABASE_URL: postgresql+psycopg2://alektours:alektours@localhost:5433/alektours_test
+      SECRET_KEY: ci-test-secret-key-solo-para-ci-no-usar-en-produccion-32chars
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      MAIL_FROM: noreply@alectours.com
+      MAIL_PORT: 1025
+      MAIL_SERVER: localhost
+      MAIL_FROM_NAME: AlecTours
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: cp .env.example .env
+      - run: pip install -r requirements-dev.txt
+      - name: Migraciones (esquema real)
+        run: alembic upgrade head
+      # --no-cov: la cobertura la exige el job "backend"; aquí importa que
+      # TODOS los tests de integración corran. Si alguno se salta, el job
+      # falla: un CI con tests saltados en silencio miente.
+      - name: Tests de integración (cero saltados)
+        shell: bash
+        run: |
+          set -o pipefail
+          pytest tests/integration -rs --no-cov | tee salida.txt
+          if grep -qE "[0-9]+ skipped" salida.txt; then
+            echo "::error::Hay tests de integración saltados: revisa TEST_DATABASE_URL"
+            exit 1
+          fi
 
   # No construye ni prueba nada: deja en el resumen del run (Actions → el
   # run → arriba) quién hizo commits de test esta semana. Es la evidencia
