@@ -11,6 +11,7 @@ from app.core.file_validation import validar_y_leer_archivo
 from app.core.image_storage import borrar_imagen, guardar_imagen
 from app.core.security import require_admin
 from app.models.hotel_model import Habitacion, Hotel, TipoHabitacion
+from app.models.reserva_model import ReservaHabitacion
 from app.repositories.hotel_repository import (
     CaracteristicaRepository,
     HabitacionRepository,
@@ -379,7 +380,8 @@ def create_habitacion(
 
     existente = HabitacionRepository.get_by_hotel_and_number(db, hotel_id, habitacion.numero_habitacion)
     if existente:
-        raise HTTPException(status_code=400, detail="Ya existe habitación con ese número")
+        # 409 Conflict (antes 400): el dato es válido, choca con uno guardado.
+        raise HTTPException(status_code=409, detail="Ya existe habitación con ese número")
 
     habitacion_data = habitacion.dict()
     habitacion_data["id_hotel"] = hotel_id
@@ -399,6 +401,16 @@ def update_habitacion(
     db_habitacion = HabitacionRepository.get_by_id(db, habitacion_id)
     if not db_habitacion:
         raise HTTPException(status_code=404, detail="Habitación no encontrada")
+    # Hallazgo (bootcamp, semana 4): renombrar una habitación con el número
+    # de otra del mismo hotel violaba UNIQUE (id_hotel, numero_habitacion) y
+    # respondía 500. Se valida antes, igual que al crear.
+    nuevo_numero = habitacion.numero_habitacion
+    if (
+        nuevo_numero is not None
+        and nuevo_numero != db_habitacion.numero_habitacion
+        and HabitacionRepository.get_by_hotel_and_number(db, db_habitacion.id_hotel, nuevo_numero)
+    ):
+        raise HTTPException(status_code=409, detail="Ya existe habitación con ese número")
     actualizada = HabitacionRepository.update(db, habitacion_id, habitacion.dict(exclude_unset=True))
     delete_pattern(HOTELES_CACHE_PATTERN)
     return actualizada
@@ -407,6 +419,15 @@ def update_habitacion(
 @router.delete("/habitaciones/{habitacion_id}")
 def delete_habitacion(habitacion_id: int, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
     """Elimina una habitación"""
+    # Hallazgo (bootcamp, semana 4): una habitación con reservas se intentaba
+    # borrar igual y terminaba en 500 (llave foránea de reserva_habitaciones).
+    # El historial de reservas no se puede perder: se responde 409.
+    reservas = db.query(ReservaHabitacion).filter(ReservaHabitacion.id_habitacion == habitacion_id).count()
+    if reservas:
+        raise HTTPException(
+            status_code=409,
+            detail=f"No se puede eliminar la habitación porque tiene {reservas} reserva(s) asociada(s).",
+        )
     try:
         eliminada = HabitacionRepository.delete(db, habitacion_id)
         # Hallazgo (bootcamp, semana 4): el repositorio devuelve None si el
