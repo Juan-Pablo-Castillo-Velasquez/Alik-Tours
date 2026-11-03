@@ -62,6 +62,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // El cliente HTTP arma las URLs con esta base: en los tests apunta a un
+    // host falso que solo existe en los handlers de MSW (src/test/msw/).
+    env: { VITE_API_BASE_URL: 'http://api.test' },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
@@ -77,13 +80,16 @@ export default defineConfig({
         'src/app/components/ProtectedRoute.tsx',
         'src/app/components/shared/**',
         'src/app/components/payment/**',
+        'src/app/api/**',
       ],
       // Fuera, con su porqué:
       // - src/app/components/ui/**: librería shadcn/ui generada, no es
       //   código propio (tampoco se lintea, ver eslint.config.js).
       // - pages/** y las pantallas grandes: se cubren con los E2E de /e2e.
       // - services/**: adaptadores HTTP de una línea por endpoint; su
-      //   contrato lo prueban el backend (semana 4) y los E2E.
+      //   contrato lo prueban el backend (semana 4) y los E2E. La lógica
+      //   común (errores, token, sesión vencida) está en api/v1/api.ts,
+      //   que sí se mide desde la semana 5.
       exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**'],
       // Regla de trinquete: el umbral solo sube (docs/matriz-rotacion.md).
       // Semana 4: piso del 50%.
