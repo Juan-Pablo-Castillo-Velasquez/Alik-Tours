@@ -42,6 +42,16 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 | S3 | _anotar_ (entran ProtectedRoute, shared y payment) | 47 | Front 40 · Back 47 |
 | S4 | _anotar_ (sin tareas nuevas de front) | 70 | Front 50 · Back 70 |
 | S5 | _anotar_ (entra api/v1/api.ts) | 70 | Front 60 · Back 70 |
+| S6 | _anotar_ | 70 (sin `TEST_DATABASE_URL`, como en el CI) | Front 70 · Back 70 |
+
+## Prueba de fuego de la BD (semana 6)
+
+En un equipo que no montó la BD: `docker compose -f docker-compose.test.yml down -v`,
+`up -d --wait`, `alembic upgrade head` y `pytest tests/integration` dos veces seguidas.
+
+| Fecha | Quién la corrió | Corrida 1 | Corrida 2 |
+|---|---|---|---|
+| | | | |
 
 ## Regla de rama
 
@@ -59,3 +69,4 @@ El vocero escribe su respuesta **antes** de que el instructor llegue a la mesa; 
 | S3 | | | | |
 | S4 | | | | |
 | S5 | | | | |
+| S6 | | | | |
