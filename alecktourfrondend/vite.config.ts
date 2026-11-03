@@ -70,7 +70,14 @@ export default defineConfig({
       // - Semana 1-2: lógica sin pantalla (utils, hooks y contextos).
       // - Semana 3: componentes con reglas (ruta protegida, filtros, pagos).
       // - Semana 5: el cliente HTTP (api/v1/api.ts), probado con MSW.
-      include: ['src/app/utils/**', 'src/app/hooks/**', 'src/app/context/**'],
+      include: [
+        'src/app/utils/**',
+        'src/app/hooks/**',
+        'src/app/context/**',
+        'src/app/components/ProtectedRoute.tsx',
+        'src/app/components/shared/**',
+        'src/app/components/payment/**',
+      ],
       // Fuera, con su porqué:
       // - src/app/components/ui/**: librería shadcn/ui generada, no es
       //   código propio (tampoco se lintea, ver eslint.config.js).
@@ -79,8 +86,8 @@ export default defineConfig({
       //   contrato lo prueban el backend (semana 4) y los E2E.
       exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**'],
       // Regla de trinquete: el umbral solo sube (docs/matriz-rotacion.md).
-      // Semana 2: piso del 30%.
-      thresholds: { lines: 30, branches: 30, functions: 30, statements: 30 },
+      // Semana 3: piso del 40%.
+      thresholds: { lines: 40, branches: 40, functions: 40, statements: 40 },
     },
   },
 })
