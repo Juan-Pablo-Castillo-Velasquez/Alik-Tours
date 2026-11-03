@@ -40,6 +40,7 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 | S1 (línea base) | 0 (aún no hay tests de frontend) | 47 | Front 30 · Back 47 |
 | S2 | _anotar el % de líneas de `pnpm test`_ | 47 | Front 30 · Back 47 |
 | S3 | _anotar_ (entran ProtectedRoute, shared y payment) | 47 | Front 40 · Back 47 |
+| S4 | _anotar_ (sin tareas nuevas de front) | 70 | Front 50 · Back 70 |
 
 ## Regla de rama
 
@@ -55,3 +56,4 @@ El vocero escribe su respuesta **antes** de que el instructor llegue a la mesa; 
 | S1 | | | | |
 | S2 | | | | |
 | S3 | | | | |
+| S4 | | | | |

@@ -86,8 +86,8 @@ export default defineConfig({
       //   contrato lo prueban el backend (semana 4) y los E2E.
       exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**'],
       // Regla de trinquete: el umbral solo sube (docs/matriz-rotacion.md).
-      // Semana 3: piso del 40%.
-      thresholds: { lines: 40, branches: 40, functions: 40, statements: 40 },
+      // Semana 4: piso del 50%.
+      thresholds: { lines: 50, branches: 50, functions: 50, statements: 50 },
     },
   },
 })
