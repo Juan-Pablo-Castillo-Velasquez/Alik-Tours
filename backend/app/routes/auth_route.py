@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.mail import send_password_reset_email, send_verification_email
-from app.core.security import create_verification_token, hash_password, verify_verification_token  # ← agrega
+from app.core.security import (
+    create_password_reset_token,
+    create_verification_token,
+    hash_password,
+    verify_password_reset_token,
+)
 from app.schemas.user_schema import (
     PasswordResetConfirm,
     PasswordResetRequest,
@@ -187,7 +192,7 @@ async def forgot_password(data: PasswordResetRequest, db: Session = Depends(get_
     user = db.query(Usuario).filter(Usuario.correo_electronico == data.correo_electronico).first()
 
     if user:
-        token = create_verification_token(user.correo_electronico)
+        token = create_password_reset_token(user.correo_electronico, user.password_hash)
         await send_password_reset_email(
             email=user.correo_electronico,
             reset_token=token,
@@ -201,14 +206,15 @@ async def forgot_password(data: PasswordResetRequest, db: Session = Depends(get_
 def reset_password_endpoint(data: PasswordResetConfirm, db: Session = Depends(get_db)):
     from app.models.user_model import Usuario
 
-    email = verify_verification_token(data.token)
+    def _hash_actual(correo):
+        u = db.query(Usuario).filter(Usuario.correo_electronico == correo).first()
+        return u.password_hash if u else None
+
+    email = verify_password_reset_token(data.token, _hash_actual)
     if not email:
-        raise HTTPException(status_code=400, detail="Token inválido o expirado")
+        raise HTTPException(status_code=400, detail="El enlace no es válido, ya se usó o venció. Pide uno nuevo.")
 
     user = db.query(Usuario).filter(Usuario.correo_electronico == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
     user.password_hash = hash_password(data.new_password)
     db.commit()
 

@@ -76,10 +76,11 @@ def admin_get_usuarios(db: Session = Depends(get_db), _u: int = Depends(require_
 def admin_create_usuario(
     data: UsuarioAdminCreate, db: Session = Depends(get_db), _u: int = Depends(require_permission("usuarios.gestionar"))
 ):
+    # 409 (antes 400): mismo contrato que /auth/register para un dato repetido.
     if db.query(Usuario).filter(Usuario.username == data.username).first():
-        raise HTTPException(status_code=400, detail="El nombre de usuario ya existe")
+        raise HTTPException(status_code=409, detail="El nombre de usuario ya existe")
     if db.query(Usuario).filter(Usuario.correo_electronico == data.correo_electronico).first():
-        raise HTTPException(status_code=400, detail="El correo electrónico ya está registrado")
+        raise HTTPException(status_code=409, detail="El correo electrónico ya está registrado")
 
     roles_validos = (
         {r.nombre_rol: r.id_rol for r in db.query(Rol).filter(Rol.nombre_rol.in_(data.roles)).all()}
@@ -165,6 +166,11 @@ def admin_delete_usuario(
     usuario = db.query(Usuario).filter(Usuario.id_usuario == usuario_id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    # Hallazgo (bootcamp, semana 7): quitarse el rol de admin ya estaba
+    # bloqueado, pero borrarse no -- el único admin podía dejar el panel sin
+    # nadie que lo administre.
+    if usuario_id == _u:
+        raise HTTPException(status_code=400, detail="No puedes eliminar tu propia cuenta.")
     db.delete(usuario)
     db.commit()
     return {"message": "Usuario eliminado exitosamente"}
@@ -187,7 +193,7 @@ def crear_rol(data: RolCreate, db: Session = Depends(get_db), _u: int = Depends(
     if not nombre:
         raise HTTPException(status_code=400, detail="El nombre del rol no puede estar vacío")
     if db.query(Rol).filter(Rol.nombre_rol == nombre).first():
-        raise HTTPException(status_code=400, detail="Ya existe un rol con ese nombre")
+        raise HTTPException(status_code=409, detail="Ya existe un rol con ese nombre")
     rol = Rol(nombre_rol=nombre)
     db.add(rol)
     db.commit()

@@ -2,6 +2,7 @@
 Módulo de seguridad: autenticación JWT, hashing de contraseñas y autorización.
 """
 
+import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
 
@@ -111,6 +112,45 @@ def verify_verification_token(token: str) -> str | None:
         return payload.get("email")
     except JWTError:
         return None
+
+
+def _huella_password(password_hash: str) -> str:
+    return hashlib.sha256((password_hash or "").encode()).hexdigest()[:16]
+
+
+def create_password_reset_token(email: str, password_hash: str) -> str:
+    """Token del enlace "olvidé mi contraseña" (hallazgo de la semana 7 del
+    bootcamp). Antes se reutilizaba create_verification_token, así que:
+    1) el enlace de "verifica tu correo" también servía para cambiar la
+       contraseña (mismo tipo de token), y
+    2) el enlace servía varias veces durante 24 h.
+    Ahora tiene su propio tipo, vence en 1 hora y lleva una huella del hash
+    actual de la contraseña: en cuanto la contraseña cambia, la huella deja
+    de coincidir y el enlace ya no sirve (un solo uso)."""
+    to_encode = {
+        "email": email,
+        "type": "password_reset",
+        "pwd": _huella_password(password_hash),
+        "exp": datetime.now(UTC) + timedelta(hours=1),
+    }
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def verify_password_reset_token(token: str, password_hash_actual_de) -> str | None:
+    """Devuelve el correo si el token es de recuperación, no venció y la
+    contraseña no ha cambiado desde que se emitió. `password_hash_actual_de`
+    recibe el correo y devuelve el hash guardado hoy (o None)."""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except JWTError:
+        return None
+    if payload.get("type") != "password_reset":
+        return None
+    email = payload.get("email")
+    hash_actual = password_hash_actual_de(email)
+    if hash_actual is None or payload.get("pwd") != _huella_password(hash_actual):
+        return None
+    return email
 
 
 def generate_verification_code() -> str:
