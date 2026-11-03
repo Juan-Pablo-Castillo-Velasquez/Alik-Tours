@@ -105,5 +105,5 @@ omit = [
 [tool.coverage.report]
 # Regla de trinquete del bootcamp: el umbral solo sube. Línea base de la
 # semana 1 (ver docs/matriz-rotacion.md, "Cobertura semanal").
-fail_under = 47
+fail_under = 70
 show_missing = true
