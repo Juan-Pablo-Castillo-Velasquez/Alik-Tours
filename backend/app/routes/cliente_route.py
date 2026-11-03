@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.deps import exigir_propietario_o_admin, get_current_usuario, usuario_es_admin
 from app.core.exceptions import ClienteDependencyError, EmpleadoDependencyError, NotFoundError
 from app.core.security import hash_password, require_admin, require_empleado, verify_password
+from app.models.cliente_model import Cliente
 from app.models.metodo_pago_guardado_model import MetodoPagoGuardado
 from app.models.user_model import Usuario
 from app.repositories.cliente_repository import ClienteRepository, EmpleadoRepository
@@ -91,9 +92,9 @@ def create_cliente(
     cliente: ClienteCreate, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_usuario)
 ):
     if ClienteRepository.get_by_cedula(db, cliente.cedula):
-        raise HTTPException(status_code=400, detail="Cliente con esa cédula ya existe")
+        raise HTTPException(status_code=409, detail="Cliente con esa cédula ya existe")
     if cliente.correo and ClienteRepository.get_by_email(db, cliente.correo):
-        raise HTTPException(status_code=400, detail="Email ya registrado")
+        raise HTTPException(status_code=409, detail="Email ya registrado")
     nuevo = ClienteRepository.create(db, cliente.dict())
     delete_pattern("clientes:list:*")
     return nuevo
@@ -170,6 +171,17 @@ def vincular_cliente(
     if ya_vinculado:
         raise HTTPException(status_code=409, detail="Ese cliente ya está vinculado a otro usuario")
 
+    # Hallazgo de seguridad (bootcamp, semana 8): cualquier cuenta podía
+    # vincularse a un perfil de cliente sin usuario (por ejemplo, uno creado
+    # en la oficina) y desde ahí ver sus reservas y pagos. Quien no es admin
+    # solo puede vincular un perfil con SU MISMO correo (es lo que hace el
+    # registro: crea el perfil con el correo de la cuenta y lo vincula).
+    if not usuario_es_admin(authorization):
+        cliente = db.query(Cliente).filter(Cliente.id_cliente == data.id_cliente).first()
+        correo_cliente = (cliente.correo or "").strip().lower() if cliente else ""
+        if correo_cliente != (usuario.correo_electronico or "").strip().lower():
+            raise HTTPException(status_code=403, detail="Solo puedes vincular un perfil con tu mismo correo")
+
     usuario.id_cliente = data.id_cliente
     db.commit()
     return {"message": "Cliente vinculado correctamente"}
@@ -190,7 +202,7 @@ def update_cliente(
     # update_cliente no lo hacía y dejaba que el CHECK/UNIQUE de la base de
     # datos reventara con un IntegrityError sin capturar (500 crudo).
     if cliente.correo and ClienteRepository.existe_otro_con_correo(db, cliente_id, cliente.correo):
-        raise HTTPException(status_code=400, detail="Email ya registrado por otro cliente")
+        raise HTTPException(status_code=409, detail="Email ya registrado por otro cliente")
     actualizado = ClienteRepository.update(db, cliente_id, cliente.dict(exclude_unset=True))
     delete_pattern("clientes:list:*")
     return actualizado
@@ -253,9 +265,9 @@ def get_empleado(empleado_id: int, db: Session = Depends(get_db), admin_id: int 
 @router.post("/empleados", response_model=EmpleadoResponse, status_code=201)
 def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
     if EmpleadoRepository.get_by_cedula(db, empleado.cedula):
-        raise HTTPException(status_code=400, detail="Empleado con esa cédula ya existe")
+        raise HTTPException(status_code=409, detail="Empleado con esa cédula ya existe")
     if empleado.correo_electronico and EmpleadoRepository.get_by_email(db, empleado.correo_electronico):
-        raise HTTPException(status_code=400, detail="Email ya registrado")
+        raise HTTPException(status_code=409, detail="Email ya registrado")
     nuevo = EmpleadoRepository.create(db, empleado.dict())
     delete_pattern("empleados:list:*")
     return nuevo
