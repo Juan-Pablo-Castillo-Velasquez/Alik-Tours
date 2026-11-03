@@ -62,9 +62,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
-    // Semana 1: todavía no hay tests de frontend (los E2E viven en /e2e y
-    // no cuentan para la cobertura). Se quita en la semana 2.
-    passWithNoTests: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json-summary'],
