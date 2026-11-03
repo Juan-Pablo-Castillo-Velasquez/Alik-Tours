@@ -596,6 +596,45 @@ pnpm dev
 
 ---
 
+# Pruebas
+
+Suite construida en el Bootcamp Testing ADSO. Estrategia completa en
+[`docs/estrategia-pruebas.md`](docs/estrategia-pruebas.md) y rotación del
+grupo en [`docs/matriz-rotacion.md`](docs/matriz-rotacion.md).
+
+| Parte | Comando | Qué corre |
+|---|---|---|
+| Frontend | `cd alecktourfrondend && pnpm test` | Vitest + Testing Library + MSW, con umbral de cobertura |
+| Backend | `cd backend && pytest` | Unitarias y de API (SQLite en memoria), con umbral de cobertura |
+| E2E | `cd e2e && pnpm test` | Playwright (ver [`e2e/README.md`](e2e/README.md)) |
+
+## Integración con PostgreSQL real
+
+Los tests de `backend/tests/integration/` se saltan si no existe
+`TEST_DATABASE_URL`. Para correrlos contra la BD de pruebas (puerto 5433,
+nunca la de desarrollo):
+
+```bash
+# 1. Levantar la BD de pruebas (vacía)
+docker compose -f docker-compose.test.yml up -d --wait
+
+# 2. Crear el esquema con las migraciones y correr la integración (desde backend/)
+export DATABASE_URL=postgresql+psycopg2://alektours:alektours@localhost:5433/alektours_test
+export TEST_DATABASE_URL=$DATABASE_URL
+alembic upgrade head && pytest tests/integration
+
+# 3. Apagarla y borrar sus datos
+docker compose -f docker-compose.test.yml down -v
+```
+
+En PowerShell (Windows), el paso 2 es:
+
+```powershell
+$env:DATABASE_URL="postgresql+psycopg2://alektours:alektours@localhost:5433/alektours_test"
+$env:TEST_DATABASE_URL=$env:DATABASE_URL
+alembic upgrade head; pytest tests/integration
+```
+
 # API
 
 FastAPI genera automáticamente la documentación OpenAPI.
