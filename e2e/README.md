@@ -5,12 +5,21 @@ una persona (frontend React + API FastAPI + PostgreSQL).
 
 ## Cómo correrlas
 
-1. Levanta la BD y el backend (en otra terminal), igual que para desarrollar:
+1. Levanta la BD de **pruebas**, Mailpit y el backend contra esa BD (en
+   otra terminal). Desde la semana 7 los E2E crean sus datos por API y leen
+   el código de verificación del correo en Mailpit:
 
    ```bash
-   docker compose up -d postgres
-   cd backend && uvicorn app.main:app --port 8000
+   docker compose -f docker-compose.test.yml up -d --wait
+   docker compose up -d mailpit
+   cd backend
+   export DATABASE_URL=postgresql+psycopg2://alektours:alektours@localhost:5433/alektours_test
+   export MAIL_SERVER=localhost MAIL_PORT=1025
+   alembic upgrade head
+   uvicorn app.main:app --port 8000
    ```
+
+   (En PowerShell: `$env:DATABASE_URL="..."; $env:MAIL_SERVER="localhost"`.)
 
 2. Instala y corre los E2E (Playwright levanta el frontend solo, con Vite):
 
@@ -34,3 +43,7 @@ Para grabar un flujo nuevo: `pnpm codegen` (con el frontend corriendo).
 - Todos los tests importan `test` y `expect` de `./fixtures.js` (oculta el
   aviso de cookies y el folleto de bienvenida).
 - Nunca `waitForTimeout`: las aserciones web-first ya esperan.
+- Los datos se crean por API con `tests/support/api.js` (valores únicos).
+- La sesión de cliente se prepara una vez (`auth.setup.js`) y se reutiliza
+  con `test.use({ storageState: SESION_CLIENTE })`.
+- Antes de dar por bueno un test: `pnpm exec playwright test <archivo> --repeat-each=5`.
