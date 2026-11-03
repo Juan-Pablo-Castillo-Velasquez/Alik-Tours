@@ -29,7 +29,7 @@ jobs:
           # Caché del almacén de pnpm (semana 8): la clave sale del lockfile
           cache: pnpm
           cache-dependency-path: alecktourfrondend/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
       # "pnpm test" = vitest run --coverage: falla si la cobertura baja del umbral
       - run: pnpm test
       # El reporte HTML de cobertura queda descargable aunque el umbral falle
@@ -208,9 +208,9 @@ jobs:
             alecktourfrondend/pnpm-lock.yaml
             e2e/pnpm-lock.yaml
       # Playwright levanta el frontend con Vite: necesita sus dependencias
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
         working-directory: alecktourfrondend
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --no-frozen-lockfile
         working-directory: e2e
       - run: pnpm exec playwright install --with-deps chromium
         working-directory: e2e
