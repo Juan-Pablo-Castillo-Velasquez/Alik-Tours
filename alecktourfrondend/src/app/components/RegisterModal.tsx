@@ -5,7 +5,7 @@ import {
     Eye, EyeOff, Lock, Mail, MapPin, Phone, Pencil, Plane, RefreshCw, ShieldCheck, User, X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { apiFetch } from "../api/v1/api";
@@ -96,9 +96,16 @@ interface FieldProps {
 // vive en la etiqueta, no en un placeholder larguísimo -- el placeholder
 // queda libre para un ejemplo útil en vez de repetir la etiqueta.
 function Field({ label, icon, error, suffix, optional, children }: FieldProps) {
+    // Accesibilidad (bootcamp, semana 7): la etiqueta no estaba asociada a
+    // su campo, así que un lector de pantalla (y getByLabel en los E2E) no
+    // sabía qué era cada input. Se le da un id al campo y la etiqueta apunta
+    // a él.
+    const idGenerado = useId();
+    const id = (isValidElement(children) && children.props.id) || idGenerado;
+    const campo = isValidElement(children) ? cloneElement(children, { id }) : children;
     return (
         <div className="space-y-1.5 w-full">
-            <label className="flex items-center gap-1 text-xs font-semibold text-foreground/80 pl-0.5">
+            <label htmlFor={id} className="flex items-center gap-1 text-xs font-semibold text-foreground/80 pl-0.5">
                 {label}
                 {optional && <span className="text-muted-foreground font-normal">(opcional)</span>}
             </label>
@@ -106,7 +113,7 @@ function Field({ label, icon, error, suffix, optional, children }: FieldProps) {
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors duration-200">
                     {icon}
                 </span>
-                {children}
+                {campo}
                 {suffix && (
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center">{suffix}</span>
                 )}
@@ -469,6 +476,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                             exit={{ opacity: 0, scale: 0.96, y: 15 }}
                             transition={{ type: "spring", damping: 25, stiffness: 360 }}
                             onClick={(e) => e.stopPropagation()}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="registro-titulo"
                             className="relative w-full max-w-lg my-8 rounded-xl shadow-2xl border border-border overflow-hidden bg-card text-card-foreground max-h-[90vh] flex flex-col"
                         >
                             {/* ── Header ── */}
@@ -478,6 +488,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
                                 <button
                                     onClick={handleClose}
+                                    aria-label="Cerrar"
                                     className="absolute top-5 right-5 p-2 rounded-lg text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10 transition-all duration-200"
                                 >
                                     <X className="w-4 h-4" />
@@ -493,6 +504,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                         <p className="text-primary-foreground/70 text-[11px] font-bold tracking-widest uppercase">Alik Tours</p>
                                         <AnimatePresence mode="wait">
                                             <motion.h1
+                                                id="registro-titulo"
                                                 key={step}
                                                 initial={{ opacity: 0, y: -6 }}
                                                 animate={{ opacity: 1, y: 0 }}
@@ -527,6 +539,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                 <AnimatePresence>
                                     {formError && (
                                         <motion.div
+                                            role="alert"
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}

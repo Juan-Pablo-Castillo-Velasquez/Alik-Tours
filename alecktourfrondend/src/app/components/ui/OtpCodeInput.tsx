@@ -71,6 +71,8 @@ export default function OtpCodeInput({
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"
+                    // Accesibilidad (bootcamp, semana 7): 6 cajas sin nombre.
+                    aria-label={`Dígito ${i + 1} de ${length}`}
                     maxLength={1}
                     autoFocus={autoFocus && i === 0}
                     disabled={disabled}
