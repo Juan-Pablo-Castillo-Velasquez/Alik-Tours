@@ -45,6 +45,7 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 | S6 | _anotar_ | 70 (sin `TEST_DATABASE_URL`, como en el CI) | Front 70 · Back 70 |
 | S7 | _anotar_ | 75 | Front 75 · Back 75 |
 | S8 | _anotar_ | 81 | Front 80 · Back 81 |
+| S9 | _anotar_ | _anotar_ | Front ≥ 80 · Back ≥ 81 (cierre: condición para sustentar) |
 
 ## Flujos críticos (semana 7)
 
@@ -64,6 +65,21 @@ En un equipo que no montó la BD: `docker compose -f docker-compose.test.yml dow
 | Fecha | Quién la corrió | Corrida 1 | Corrida 2 |
 |---|---|---|---|
 | | | | |
+
+## Cierre del trimestre (semana 9)
+
+- [ ] Workflow `tests` en verde dos veces seguidas en `main`, sin reintentos: run 1 ___ · run 2 ___
+- [ ] Cero tests saltados en el CI, salvo los justificados en `docs/estrategia-pruebas.md`
+- [ ] Hallazgos abiertos registrados como incidencia con su test de fallo esperado (`test.fail()` y `xfail(strict=True)`): reemplazar `#N` por el número real
+- [ ] `docs/estrategia-pruebas.md` revisado por los tres
+
+### Ensayo cruzado (explicar, romper, escribir)
+
+| Integrante | Capas que respondió | La que más le costó | Qué repasó |
+|---|---|---|---|
+| Juan Pablo | | | |
+| Fernando | | | |
+| Cristian | | | |
 
 ## Regla de rama
 
