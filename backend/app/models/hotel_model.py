@@ -58,7 +58,11 @@ class Hotel(Base):
         """Cantidad real de reseñas de clientes que dejaron este hotel —
         usado para mostrar información comercial real (ej. "4.6 (23 reseñas)")
         en vez de conteos inventados en las tarjetas de hotel."""
-        return len(self.resenas)
+        return len(self._resenas_visibles())
+
+    def _resenas_visibles(self):
+        # Las reseñas que el equipo oculta no cuentan en lo público.
+        return [r for r in self.resenas if r.visible is not False]
 
     @property
     def calificacion_promedio(self):
@@ -67,9 +71,10 @@ class Hotel(Base):
         por el hotel). None si todavía no hay ninguna reseña real — el
         frontend debe usar `calificacion` como respaldo en ese caso, nunca
         inventar un promedio."""
-        if not self.resenas:
+        visibles = self._resenas_visibles()
+        if not visibles:
             return None
-        return round(sum(r.calificacion for r in self.resenas) / len(self.resenas), 1)
+        return round(sum(r.calificacion for r in visibles) / len(visibles), 1)
 
 
 class ImagenHotel(Base):

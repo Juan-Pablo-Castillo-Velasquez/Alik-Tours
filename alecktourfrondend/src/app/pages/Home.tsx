@@ -1,6 +1,7 @@
 import Benefits from "../components/Benefits";
 import BannersPromocionales from "../components/BannersPromocionales";
 import BlogGuides from "../components/BlogGuides";
+import VideosPromocionales from "../components/comunidad/VideosPromocionales";
 import DestinationsGrid from "../components/DestinationsGrid";
 import Footer from "../components/Footer";
 import Hero from "../components/Hero";
@@ -29,6 +30,11 @@ export default function Home() {
       <PromocionAccordeon />
       <Benefits />
       <DestinationsGrid />
+      {/* Videos que el admin marca "Mostrar en el inicio" (si no hay, no ocupa espacio). */}
+      <VideosPromocionales
+        inicio
+        subtitulo="Lo que hacemos en cada viaje, contado por nuestro equipo."
+      />
       <OffersHighlight />
       <WhyChooseUs />
       <Testimonials />

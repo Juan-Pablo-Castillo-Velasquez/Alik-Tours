@@ -1,4 +1,19 @@
-import { ArrowDown, ArrowUp, Check, Clapperboard, Eye, EyeOff, Loader2, Trash2, Upload, Users, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  Clapperboard,
+  Eye,
+  EyeOff,
+  Home,
+  Loader2,
+  MessageCircle,
+  Star,
+  Trash2,
+  Upload,
+  Users,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -9,13 +24,16 @@ import {
   resolveMediaComunidad,
   VideoAgencia,
 } from "../../services/comunidad.service";
+import { PaqueteResponse, paqueteService } from "../../services/paquete.service";
+import ComentariosHilo from "../comunidad/ComentariosHilo";
 import Estrellas from "../comunidad/Estrellas";
+import ModerarResenas from "./ModerarResenas";
 import FilterChip from "../shared/FilterChip";
 import EmptyState from "./ui/EmptyState";
 import SectionHeader from "./ui/SectionHeader";
 import { inputCls, labelCls } from "./types";
 
-type Pestana = "moderacion" | "videos";
+type Pestana = "moderacion" | "videos" | "resenas";
 
 const FILTROS: { estado: EstadoPublicacion; label: string }[] = [
   { estado: "pendiente", label: "Por revisar" },
@@ -40,12 +58,17 @@ export default function ModuleComunidad() {
 
   const [videos, setVideos] = useState<VideoAgencia[]>([]);
   const [puedeVideos, setPuedeVideos] = useState(true);
-  const [form, setForm] = useState<{ titulo: string; descripcion: string; video: File | null; portada: File | null }>({
-    titulo: "",
-    descripcion: "",
-    video: null,
-    portada: null,
-  });
+  const FORM_VACIO = { titulo: "", descripcion: "", video: null, portada: null, idPaquete: 0, mostrarInicio: false };
+  const [form, setForm] = useState<{
+    titulo: string;
+    descripcion: string;
+    video: File | null;
+    portada: File | null;
+    idPaquete: number;
+    mostrarInicio: boolean;
+  }>(FORM_VACIO);
+  const [paquetes, setPaquetes] = useState<PaqueteResponse[]>([]);
+  const [comentariosAbiertos, setComentariosAbiertos] = useState<number | null>(null);
   const [subiendo, setSubiendo] = useState(false);
   const [progreso, setProgreso] = useState(0);
 
@@ -76,6 +99,14 @@ export default function ModuleComunidad() {
   useEffect(() => {
     cargarVideos();
   }, [cargarVideos]);
+
+  useEffect(() => {
+    // Para asociar un video a su viaje (video promocional del paquete).
+    paqueteService
+      .getAll(0, 300)
+      .then(setPaquetes)
+      .catch(() => setPaquetes([]));
+  }, []);
 
   const moderar = async (p: PublicacionComunidad, nuevo: EstadoPublicacion) => {
     const motivo = motivos[p.id_publicacion]?.trim();
@@ -121,6 +152,21 @@ export default function ModuleComunidad() {
     }
   };
 
+  const alternarComentarioVideo = async (idVideo: number, idCom: number, oculto: boolean) => {
+    try {
+      const c = await comunidadService.adminOcultarComentario(idCom, oculto);
+      setVideos((prev) =>
+        prev.map((v) =>
+          v.id_video === idVideo
+            ? { ...v, comentarios: v.comentarios.map((x) => (x.id_comentario === idCom ? { ...x, oculto: c.oculto } : x)) }
+            : v,
+        ),
+      );
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo actualizar el comentario");
+    }
+  };
+
   const subirVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.video || !form.titulo.trim()) return;
@@ -136,9 +182,11 @@ export default function ModuleComunidad() {
         descripcion: form.descripcion.trim() || undefined,
         video: form.video,
         portada: form.portada ?? undefined,
+        idPaquete: form.idPaquete || null,
+        mostrarInicio: form.mostrarInicio,
         onProgreso: setProgreso,
       });
-      setForm({ titulo: "", descripcion: "", video: null, portada: null });
+      setForm(FORM_VACIO);
       toast.success("Video publicado");
       cargarVideos();
     } catch (err: any) {
@@ -148,7 +196,10 @@ export default function ModuleComunidad() {
     }
   };
 
-  const editarVideo = async (v: VideoAgencia, cambios: Partial<VideoAgencia>) => {
+  const editarVideo = async (
+    v: VideoAgencia,
+    cambios: Partial<Pick<VideoAgencia, "activo" | "mostrar_inicio">> & { id_paquete?: number },
+  ) => {
     try {
       await comunidadService.adminEditarVideo(v.id_video, cambios);
       cargarVideos();
@@ -195,9 +246,14 @@ export default function ModuleComunidad() {
             Videos de la agencia
           </FilterChip>
         )}
+        <FilterChip selected={pestana === "resenas"} onClick={() => setPestana("resenas")} icon={<Star className="w-3.5 h-3.5" />}>
+          Reseñas
+        </FilterChip>
       </div>
 
-      {pestana === "moderacion" ? (
+      {pestana === "resenas" ? (
+        <ModerarResenas />
+      ) : pestana === "moderacion" ? (
         <>
           <div className="flex gap-2 flex-wrap">
             {FILTROS.map((f) => (
@@ -317,6 +373,22 @@ export default function ModuleComunidad() {
               <input type="file" accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => setForm({ ...form, portada: e.target.files?.[0] ?? null })} className="text-xs w-full" />
             </div>
+            <div>
+              <label className={labelCls} htmlFor="video-paquete">Video promocional del viaje (opcional)</label>
+              <select id="video-paquete" value={form.idPaquete}
+                onChange={(e) => setForm({ ...form, idPaquete: Number(e.target.value) })} className={inputCls}>
+                <option value={0}>Ninguno: solo en la página Comunidad</option>
+                {paquetes.map((p) => (
+                  <option key={p.id_paquete} value={p.id_paquete}>{p.nombre_paquete}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-muted-foreground mt-1">Sale también en la ficha de ese paquete.</p>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.mostrarInicio}
+                onChange={(e) => setForm({ ...form, mostrarInicio: e.target.checked })} />
+              Mostrar también en la página de inicio
+            </label>
             <button type="submit" disabled={subiendo || !form.video}
               className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2">
               {subiendo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -325,7 +397,7 @@ export default function ModuleComunidad() {
           </form>
 
           {videos.length === 0 ? (
-            <EmptyState icon={Clapperboard} title="Todavía no hay videos" description="Los videos activos aparecen en la página Comunidad del sitio, en este orden." />
+            <EmptyState icon={Clapperboard} title="Todavía no hay videos" description="Los videos activos aparecen en la página Comunidad del sitio (en este orden), en la ficha de su paquete y, si los marcas, en el inicio." />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {videos.map((v, i) => (
@@ -333,6 +405,22 @@ export default function ModuleComunidad() {
                   <video src={resolveMediaComunidad(v.video_url)} poster={resolveMediaComunidad(v.portada_url)} controls preload="metadata" className="w-full aspect-video object-cover bg-black" />
                   <div className="p-3 space-y-2">
                     <p className="text-sm font-semibold break-words">{v.titulo}</p>
+                    <select
+                      aria-label={`Paquete del video ${v.titulo}`}
+                      value={v.id_paquete ?? 0}
+                      onChange={(e) => editarVideo(v, { id_paquete: Number(e.target.value) })}
+                      className={`${inputCls} text-xs py-1.5`}
+                    >
+                      <option value={0}>Sin paquete</option>
+                      {paquetes.map((p) => (
+                        <option key={p.id_paquete} value={p.id_paquete}>{p.nombre_paquete}</option>
+                      ))}
+                    </select>
+                    <label className="flex items-center gap-2 text-xs">
+                      <input type="checkbox" checked={v.mostrar_inicio}
+                        onChange={(e) => editarVideo(v, { mostrar_inicio: e.target.checked })} />
+                      <Home className="w-3.5 h-3.5" /> En la página de inicio
+                    </label>
                     <div className="flex items-center gap-1">
                       <button onClick={() => mover(i, -1)} disabled={i === 0} className="p-1.5 rounded hover:bg-muted disabled:opacity-30" aria-label="Subir"><ArrowUp className="w-4 h-4" /></button>
                       <button onClick={() => mover(i, 1)} disabled={i === videos.length - 1} className="p-1.5 rounded hover:bg-muted disabled:opacity-30" aria-label="Bajar"><ArrowDown className="w-4 h-4" /></button>
@@ -341,6 +429,55 @@ export default function ModuleComunidad() {
                       </button>
                       <button onClick={() => borrarVideo(v)} className="p-1.5 rounded text-destructive hover:bg-destructive/10" aria-label="Eliminar video"><Trash2 className="w-4 h-4" /></button>
                     </div>
+                    <button
+                      onClick={() => setComentariosAbiertos((id) => (id === v.id_video ? null : v.id_video))}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"
+                      aria-expanded={comentariosAbiertos === v.id_video}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      {v.comentarios.length} comentario{v.comentarios.length === 1 ? "" : "s"} · responder
+                    </button>
+                    {comentariosAbiertos === v.id_video && (
+                      <div className="border-t border-border pt-2 space-y-2">
+                        {v.comentarios.filter((c) => c.oculto).map((c) => (
+                          <div key={c.id_comentario} className="flex items-start justify-between gap-2 text-xs opacity-60">
+                            <span className="break-words"><strong>{c.autor.nombre}</strong> (oculto): {c.contenido}</span>
+                            <button onClick={() => alternarComentarioVideo(v.id_video, c.id_comentario, false)} className="shrink-0 p-1 rounded hover:bg-muted" title="Mostrar comentario">
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        <ComentariosHilo
+                          comentarios={v.comentarios.filter((c) => !c.oculto)}
+                          onChange={(nuevos) =>
+                            setVideos((prev) =>
+                              prev.map((x) =>
+                                x.id_video === v.id_video
+                                  ? { ...x, comentarios: [...x.comentarios.filter((c) => c.oculto), ...nuevos] }
+                                  : x,
+                              ),
+                            )
+                          }
+                          puedeComentar
+                          onPedirLogin={() => {}}
+                          enviar={(texto, idPadre) => comunidadService.comentarVideo(v.id_video, texto, idPadre)}
+                          borrar={comunidadService.borrarComentario}
+                        />
+                        {v.comentarios.some((c) => !c.oculto) && (
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-semibold text-muted-foreground">Ocultar comentarios del sitio</p>
+                            {v.comentarios.filter((c) => !c.oculto).map((c) => (
+                              <div key={c.id_comentario} className="flex items-center justify-between gap-2 text-xs">
+                                <span className="truncate">{c.autor.nombre}: {c.contenido}</span>
+                                <button onClick={() => alternarComentarioVideo(v.id_video, c.id_comentario, true)} className="shrink-0 p-1 rounded hover:bg-muted" title="Ocultar comentario">
+                                  <EyeOff className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

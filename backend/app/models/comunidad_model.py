@@ -67,18 +67,36 @@ class ImagenPublicacion(Base):
 
 
 class ComentarioComunidad(Base):
+    """Comentario en una publicación de un cliente O en un video de la
+    agencia (exactamente uno de los dos). Lo escribe un cliente o alguien
+    del equipo (admin/asesor): el equipo responde con el nombre de la
+    agencia. id_padre = respuesta a otro comentario (un solo nivel)."""
+
     __tablename__ = "comentarios_comunidad"
+    __table_args__ = (
+        CheckConstraint(
+            "(id_publicacion IS NOT NULL AND id_video IS NULL) OR (id_publicacion IS NULL AND id_video IS NOT NULL)",
+            name="ck_comentario_publicacion_o_video",
+        ),
+        CheckConstraint("id_cliente IS NOT NULL OR id_usuario_equipo IS NOT NULL", name="ck_comentario_tiene_autor"),
+    )
 
     id_comentario = Column(Integer, primary_key=True, index=True)
     id_publicacion = Column(
-        Integer, ForeignKey("publicaciones_comunidad.id_publicacion", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("publicaciones_comunidad.id_publicacion", ondelete="CASCADE"), nullable=True, index=True
     )
-    id_cliente = Column(Integer, ForeignKey("clientes.id_cliente", ondelete="CASCADE"), nullable=False)
+    id_video = Column(Integer, ForeignKey("videos_agencia.id_video", ondelete="CASCADE"), nullable=True, index=True)
+    id_cliente = Column(Integer, ForeignKey("clientes.id_cliente", ondelete="CASCADE"), nullable=True)
+    id_usuario_equipo = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
+    id_padre = Column(
+        Integer, ForeignKey("comentarios_comunidad.id_comentario", ondelete="CASCADE"), nullable=True, index=True
+    )
     contenido = Column(String(500), nullable=False)
     oculto = Column(Boolean, nullable=False, default=False)
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
 
     publicacion = relationship("PublicacionComunidad", back_populates="comentarios")
+    video = relationship("VideoAgencia", back_populates="comentarios")
     cliente = relationship("Cliente")
 
 
@@ -94,4 +112,16 @@ class VideoAgencia(Base):
     portada_url = Column(String(500), nullable=True)
     orden = Column(Integer, nullable=False, default=0)
     activo = Column(Boolean, nullable=False, default=True)
+    # Video promocional de un viaje: aparece en la ficha de ese paquete.
+    id_paquete = Column(Integer, ForeignKey("paquetes.id_paquete", ondelete="SET NULL"), nullable=True, index=True)
+    # Se muestra también en la página de inicio.
+    mostrar_inicio = Column(Boolean, nullable=False, default=False, server_default="false")
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
+
+    paquete = relationship("Paquete")
+    comentarios = relationship(
+        "ComentarioComunidad",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        order_by="ComentarioComunidad.fecha_creacion",
+    )

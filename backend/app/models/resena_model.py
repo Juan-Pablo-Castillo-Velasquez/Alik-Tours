@@ -1,4 +1,4 @@
-from sqlalchemy import TIMESTAMP, CheckConstraint, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import TIMESTAMP, Boolean, CheckConstraint, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -16,6 +16,12 @@ class Resena(Base):
     comentario = Column(Text, nullable=False)
     foto_url = Column(String(500))
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
+    fecha_edicion = Column(TIMESTAMP, nullable=True)
+    # Respuesta pública de la agencia (admin/asesor) a la reseña.
+    respuesta_agencia = Column(Text, nullable=True)
+    fecha_respuesta = Column(TIMESTAMP, nullable=True)
+    # El equipo puede ocultar una reseña (spam, datos personales...).
+    visible = Column(Boolean, nullable=False, default=True, server_default="true")
 
     reserva = relationship("Reserva")
     cliente = relationship("Cliente")

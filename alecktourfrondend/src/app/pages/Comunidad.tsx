@@ -4,16 +4,13 @@ import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import PublicacionCard from "../components/comunidad/PublicacionCard";
 import PublicarModal from "../components/comunidad/PublicarModal";
+import VideoAgenciaCard from "../components/comunidad/VideoAgenciaCard";
 import { BRAND } from "../config/brand";
 import { useAuth } from "../context/AuthContext";
 import { useAuthModal } from "../context/AuthModalContext";
+import { usePuedeComentar } from "../hooks/usePuedeComentar";
 import { useSeoMeta } from "../hooks/useSeoMeta";
-import {
-  comunidadService,
-  PublicacionComunidad,
-  resolveMediaComunidad,
-  VideoAgencia,
-} from "../services/comunidad.service";
+import { comunidadService, PublicacionComunidad, VideoAgencia } from "../services/comunidad.service";
 
 const POR_PAGINA = 10;
 
@@ -34,6 +31,8 @@ export default function Comunidad() {
   const { isAuthenticated, usuario } = useAuth();
   const { openLogin } = useAuthModal();
   const esCliente = isAuthenticated && usuario?.id_cliente != null;
+  // Clientes y equipo comentan; solo los clientes publican experiencias.
+  const puedeComentar = usePuedeComentar();
 
   const [videos, setVideos] = useState<VideoAgencia[]>([]);
   const [publicaciones, setPublicaciones] = useState<PublicacionComunidad[]>([]);
@@ -44,8 +43,11 @@ export default function Comunidad() {
   const [mias, setMias] = useState<PublicacionComunidad[]>([]);
   const [modalAbierto, setModalAbierto] = useState(false);
 
+  // Se recarga al iniciar/cerrar sesión: el servidor marca qué es "mío"
+  // (para poder borrarlo) solo si la petición lleva la sesión.
   useEffect(() => {
     let vigente = true;
+    setCargando(true);
     Promise.all([comunidadService.getVideos(), comunidadService.getPublicaciones(0, POR_PAGINA)])
       .then(([v, p]) => {
         if (!vigente) return;
@@ -58,7 +60,7 @@ export default function Comunidad() {
     return () => {
       vigente = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const cargarMias = useCallback(() => {
     if (!esCliente) return;
@@ -106,20 +108,12 @@ export default function Comunidad() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {videos.map((v) => (
-              <figure key={v.id_video} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-                <video
-                  src={resolveMediaComunidad(v.video_url)}
-                  poster={resolveMediaComunidad(v.portada_url)}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="w-full aspect-[9/16] max-h-[520px] object-cover bg-black"
-                />
-                <figcaption className="p-4">
-                  <p className="font-semibold text-sm break-words">{v.titulo}</p>
-                  {v.descripcion && <p className="text-xs text-muted-foreground mt-1 break-words">{v.descripcion}</p>}
-                </figcaption>
-              </figure>
+              <VideoAgenciaCard
+                key={`${v.id_video}-${isAuthenticated}`}
+                video={v}
+                puedeComentar={puedeComentar}
+                onPedirLogin={openLogin}
+              />
             ))}
           </div>
         </section>
@@ -171,9 +165,9 @@ export default function Comunidad() {
           <div className="space-y-6">
             {publicaciones.map((p) => (
               <PublicacionCard
-                key={p.id_publicacion}
+                key={`${p.id_publicacion}-${isAuthenticated}`}
                 publicacion={p}
-                puedeComentar={esCliente}
+                puedeComentar={puedeComentar}
                 onPedirLogin={openLogin}
                 onBorrada={(id) => {
                   setPublicaciones((prev) => prev.filter((x) => x.id_publicacion !== id));

@@ -8,7 +8,7 @@ import { http, HttpResponse } from "msw";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { API, CONTACTO_422_REAL } from "../../../test/msw/handlers";
 import { server } from "../../../test/msw/server";
-import { apiFetch, apiLogin } from "./api";
+import { apiFetch, apiGetResenas, apiLogin } from "./api";
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => server.resetHandlers());
@@ -244,5 +244,23 @@ describe("apiLogin", () => {
     server.use(http.post(`${API}/auth/login`, () => new HttpResponse("Bad Gateway", { status: 502 })));
 
     await expect(apiLogin("ana@correo.com", "x")).rejects.toThrow("Login fallido");
+  });
+});
+
+describe("apiGetResenas", () => {
+  it("sin filtro pide la página; con estrellas agrega el filtro", async () => {
+    const urls: string[] = [];
+    server.use(
+      http.get(`${API}/api/resenas`, ({ request }) => {
+        urls.push(new URL(request.url).search);
+        return HttpResponse.json({ total: 0, promedio: 5, resenas: [], distribucion: { "5": 0 } });
+      }),
+    );
+
+    await apiGetResenas(0, 9);
+    const filtrada = await apiGetResenas(9, 9, 4);
+
+    expect(urls).toEqual(["?skip=0&limit=9", "?skip=9&limit=9&calificacion=4"]);
+    expect(filtrada.distribucion).toEqual({ "5": 0 });
   });
 });

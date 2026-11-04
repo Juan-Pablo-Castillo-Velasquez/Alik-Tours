@@ -57,6 +57,21 @@ def get_current_usuario(
     return usuario
 
 
+def get_usuario_opcional(
+    authorization: str | None = Header(None),
+    db: Session = Depends(get_db),
+) -> Usuario | None:
+    """Como get_current_usuario pero para endpoints PÚBLICOS que muestran
+    algo extra a quien tiene sesión (ej. "este comentario es tuyo"): sin
+    token, o con uno inválido/vencido, devuelve None en vez de 401."""
+    if not authorization:
+        return None
+    try:
+        return get_current_usuario(authorization, db)
+    except HTTPException:
+        return None
+
+
 def usuario_es_admin(authorization: str | None) -> bool:
     """Mismo chequeo que require_admin (security.py) pero sin lanzar
     excepción — para combinarlo con un chequeo de propiedad ('el dueño del

@@ -65,7 +65,7 @@ class ResenaRepository:
         return (
             db.query(Resena)
             .options(joinedload(Resena.cliente))
-            .filter(Resena.id_hotel == id_hotel)
+            .filter(Resena.id_hotel == id_hotel, Resena.visible.is_(True))
             .order_by(Resena.fecha_creacion.desc())
             .offset(skip)
             .limit(limit)
@@ -79,7 +79,7 @@ class ResenaRepository:
                 func.avg(Resena.calificacion).label("promedio"),
                 func.count(Resena.id_resena).label("total"),
             )
-            .filter(Resena.id_hotel == id_hotel)
+            .filter(Resena.id_hotel == id_hotel, Resena.visible.is_(True))
             .first()
         )
 
@@ -94,6 +94,7 @@ class ResenaRepository:
         return (
             db.query(Resena)
             .options(joinedload(Resena.cliente), joinedload(Resena.hotel))
+            .filter(Resena.visible.is_(True))
             .order_by(Resena.calificacion.desc(), Resena.fecha_creacion.desc())
             .limit(limit)
             .all()
@@ -101,23 +102,49 @@ class ResenaRepository:
 
     @staticmethod
     def get_promedio_global(db: Session):
-        return db.query(
-            func.avg(Resena.calificacion).label("promedio"),
-            func.count(Resena.id_resena).label("total"),
-        ).first()
+        return (
+            db.query(
+                func.avg(Resena.calificacion).label("promedio"),
+                func.count(Resena.id_resena).label("total"),
+            )
+            .filter(Resena.visible.is_(True))
+            .first()
+        )
 
     @staticmethod
-    def get_all(db: Session, skip: int = 0, limit: int = 12):
-        """Todas las reseñas (cualquier calificación), para la página pública /testimonios."""
+    def _publicas(db: Session, calificacion: int | None = None):
+        q = db.query(Resena).filter(Resena.visible.is_(True))
+        if calificacion:
+            q = q.filter(Resena.calificacion == calificacion)
+        return q
+
+    @staticmethod
+    def get_all(db: Session, skip: int = 0, limit: int = 12, calificacion: int | None = None):
+        """Reseñas visibles (cualquier calificación, o solo una), para la página pública /testimonios."""
         return (
-            db.query(Resena)
+            ResenaRepository._publicas(db, calificacion)
             .options(joinedload(Resena.cliente), joinedload(Resena.hotel))
-            .order_by(Resena.fecha_creacion.desc())
+            .order_by(Resena.fecha_creacion.desc(), Resena.id_resena.desc())
             .offset(skip)
             .limit(limit)
             .all()
         )
 
     @staticmethod
-    def count_all(db: Session) -> int:
-        return db.query(func.count(Resena.id_resena)).scalar() or 0
+    def count_all(db: Session, calificacion: int | None = None) -> int:
+        return ResenaRepository._publicas(db, calificacion).count()
+
+    @staticmethod
+    def get_distribucion(db: Session) -> dict[int, int]:
+        """Cuántas reseñas visibles hay de cada calificación (1 a 5)."""
+        filas = (
+            db.query(Resena.calificacion, func.count(Resena.id_resena))
+            .filter(Resena.visible.is_(True))
+            .group_by(Resena.calificacion)
+            .all()
+        )
+        conteo = dict.fromkeys(range(1, 6), 0)
+        for estrellas, total in filas:
+            if estrellas in conteo:
+                conteo[estrellas] = total
+        return conteo

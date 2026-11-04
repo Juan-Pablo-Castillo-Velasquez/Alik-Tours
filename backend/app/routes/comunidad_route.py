@@ -6,7 +6,11 @@ Comunidad viajera (/api/comunidad).
   aparece en el sitio cuando un admin/asesor la aprueba.
 - Los clientes comentan publicaciones aprobadas de otros. Los comentarios
   salen al instante; el equipo puede ocultarlos.
-- Videos propios de la agencia, administrados desde el panel.
+- Videos propios de la agencia, administrados desde el panel. Se pueden
+  comentar, asociar a un paquete (salen como video promocional en la ficha
+  de ese viaje) y destacar en la página de inicio.
+- El equipo (admin/asesor) también comenta y responde: sus comentarios salen
+  con el nombre de la agencia. Las respuestas son de un solo nivel.
 """
 
 import logging
@@ -24,11 +28,12 @@ from sqlalchemy.orm import Session, selectinload
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.core.database import get_db
-from app.core.deps import get_current_usuario, usuario_es_admin
+from app.core.deps import get_current_usuario, get_usuario_opcional, usuario_es_admin, usuario_es_staff
 from app.core.file_validation import validar_y_leer_archivo
 from app.core.image_storage import CLOUDINARY_CONFIGURADO, borrar_imagen, guardar_imagen
 from app.core.security import require_admin, require_empleado
 from app.models.comunidad_model import ComentarioComunidad, ImagenPublicacion, PublicacionComunidad, VideoAgencia
+from app.models.reserva_model import Paquete
 from app.models.user_model import Usuario
 from app.schemas.comunidad_schema import (
     AutorComunidad,
@@ -68,6 +73,29 @@ def _ahora() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
+NOMBRE_EQUIPO = "Alik Tours · Equipo"
+
+
+def _usuario(valor) -> Usuario | None:
+    """Las funciones de ruta también se llaman directo desde las pruebas: ahí
+    el parámetro opcional llega como el objeto Depends(...) y no como Usuario."""
+    return valor if isinstance(valor, Usuario) else None
+
+
+def _texto(valor) -> str | None:
+    return valor if isinstance(valor, str) else None
+
+
+def _autor_de(usuario: Usuario | None, authorization: str | None) -> tuple[int | None, int | None]:
+    """(id_cliente, id_usuario_equipo) de quien comenta. El equipo comenta
+    como la agencia aunque su usuario también tenga ficha de cliente."""
+    if usuario and usuario_es_staff(authorization):
+        return None, usuario.id_usuario
+    if usuario and usuario.id_cliente:
+        return usuario.id_cliente, None
+    raise HTTPException(status_code=403, detail="Inicia sesión con tu cuenta de cliente para comentar en la comunidad.")
+
+
 def _exigir_cliente(usuario: Usuario) -> int:
     if not usuario.id_cliente:
         raise HTTPException(status_code=403, detail="Solo los clientes registrados pueden participar en la comunidad.")
@@ -84,22 +112,44 @@ def _autor(db: Session, cliente) -> AutorComunidad:
     return AutorComunidad(nombre=f"{cliente.nombre}{inicial}", foto=usuario.foto_perfil if usuario else None)
 
 
-def _comentario(db: Session, c: ComentarioComunidad, id_cliente_actual: int | None) -> ComentarioResponse:
+def _es_mio(c: ComentarioComunidad, viewer: Usuario | None) -> bool:
+    if not viewer:
+        return False
+    if c.id_cliente is not None:
+        return c.id_cliente == viewer.id_cliente
+    return c.id_usuario_equipo is not None and c.id_usuario_equipo == viewer.id_usuario
+
+
+def _comentario(db: Session, c: ComentarioComunidad, viewer: Usuario | None = None) -> ComentarioResponse:
+    autor = AutorComunidad(nombre=NOMBRE_EQUIPO, es_equipo=True) if c.id_cliente is None else _autor(db, c.cliente)
     return ComentarioResponse(
         id_comentario=c.id_comentario,
         id_publicacion=c.id_publicacion,
+        id_video=c.id_video,
+        id_padre=c.id_padre,
         contenido=c.contenido,
         oculto=c.oculto,
         fecha_creacion=c.fecha_creacion,
-        autor=_autor(db, c.cliente),
-        es_mio=id_cliente_actual is not None and c.id_cliente == id_cliente_actual,
+        autor=autor,
+        es_mio=_es_mio(c, viewer),
     )
 
 
+def _visibles(comentarios: list[ComentarioComunidad], incluir_ocultos: bool) -> list[ComentarioComunidad]:
+    """Sin ocultos (salvo moderación) y sin respuestas cuyo comentario
+    principal está oculto o ya no existe."""
+    if incluir_ocultos:
+        return list(comentarios)
+    visibles = [c for c in comentarios if not c.oculto]
+    ids = {c.id_comentario for c in visibles}
+    return [c for c in visibles if c.id_padre is None or c.id_padre in ids]
+
+
 def _publicacion(
-    db: Session, p: PublicacionComunidad, id_cliente_actual: int | None = None, incluir_ocultos: bool = False
+    db: Session, p: PublicacionComunidad, viewer: Usuario | None = None, incluir_ocultos: bool = False
 ) -> PublicacionResponse:
-    comentarios = [c for c in p.comentarios if incluir_ocultos or not c.oculto]
+    comentarios = _visibles(p.comentarios, incluir_ocultos)
+    id_cliente_actual = viewer.id_cliente if viewer else None
     return PublicacionResponse(
         id_publicacion=p.id_publicacion,
         titulo=p.titulo,
@@ -112,10 +162,118 @@ def _publicacion(
         motivo_moderacion=p.motivo_moderacion,
         fecha_creacion=p.fecha_creacion,
         autor=_autor(db, p.cliente),
-        comentarios=[_comentario(db, c, id_cliente_actual) for c in comentarios],
+        comentarios=[_comentario(db, c, viewer) for c in comentarios],
         total_comentarios=len(comentarios),
         es_mia=id_cliente_actual is not None and p.id_cliente == id_cliente_actual,
     )
+
+
+def _video(
+    db: Session, v: VideoAgencia, viewer: Usuario | None = None, incluir_ocultos: bool = False
+) -> VideoAgenciaResponse:
+    comentarios = _visibles(v.comentarios, incluir_ocultos)
+    return VideoAgenciaResponse(
+        id_video=v.id_video,
+        titulo=v.titulo,
+        descripcion=v.descripcion,
+        video_url=v.video_url,
+        portada_url=v.portada_url,
+        orden=v.orden or 0,
+        activo=bool(v.activo),
+        id_paquete=v.id_paquete,
+        nombre_paquete=v.paquete.nombre_paquete if v.paquete else None,
+        mostrar_inicio=bool(v.mostrar_inicio),
+        fecha_creacion=v.fecha_creacion,
+        total_comentarios=len(comentarios),
+        comentarios=[_comentario(db, c, viewer) for c in comentarios],
+    )
+
+
+def _query_videos(db: Session):
+    return db.query(VideoAgencia).options(
+        selectinload(VideoAgencia.paquete),
+        selectinload(VideoAgencia.comentarios).selectinload(ComentarioComunidad.cliente),
+    )
+
+
+def _paquete_valido(db: Session, id_paquete) -> int | None:
+    """None/0 = sin paquete. Si viene un id, el paquete debe existir."""
+    if not isinstance(id_paquete, int) or id_paquete == 0:
+        return None
+    if not db.query(Paquete).filter(Paquete.id_paquete == id_paquete).first():
+        raise HTTPException(status_code=422, detail="El paquete elegido no existe")
+    return id_paquete
+
+
+def _guardar_comentario(
+    db: Session,
+    data: ComentarioCreate,
+    usuario: Usuario,
+    authorization: str | None,
+    publicacion: PublicacionComunidad | None = None,
+    video: VideoAgencia | None = None,
+) -> ComentarioComunidad:
+    id_cliente, id_equipo = _autor_de(usuario, authorization)
+    padre = None
+    if data.id_padre is not None:
+        padre = db.query(ComentarioComunidad).filter(ComentarioComunidad.id_comentario == data.id_padre).first()
+        mismo_hilo = padre is not None and (
+            (publicacion is not None and padre.id_publicacion == publicacion.id_publicacion)
+            or (video is not None and padre.id_video == video.id_video)
+        )
+        if not mismo_hilo or padre.oculto:
+            raise HTTPException(status_code=404, detail="El comentario que quieres responder ya no está disponible")
+        # Un solo nivel: responder a una respuesta cuelga del mismo comentario principal.
+        if padre.id_padre is not None:
+            padre = db.query(ComentarioComunidad).filter(ComentarioComunidad.id_comentario == padre.id_padre).first()
+
+    comentario = ComentarioComunidad(
+        id_publicacion=publicacion.id_publicacion if publicacion else None,
+        id_video=video.id_video if video else None,
+        id_cliente=id_cliente,
+        id_usuario_equipo=id_equipo,
+        id_padre=padre.id_comentario if padre else None,
+        contenido=data.contenido,
+    )
+    db.add(comentario)
+
+    titulo_hilo = publicacion.titulo if publicacion else video.titulo
+    referencia = publicacion.id_publicacion if publicacion else video.id_video
+    avisados: set[int] = set()
+    if publicacion and publicacion.id_cliente != id_cliente:
+        crear_notificacion(
+            db,
+            tipo="comunidad",
+            titulo="Comentaron tu publicación",
+            mensaje=f"«{titulo_hilo}»: {data.contenido[:120]}",
+            id_referencia=referencia,
+            id_cliente=publicacion.id_cliente,
+            commit=False,
+        )
+        avisados.add(publicacion.id_cliente)
+    if padre and padre.id_cliente and padre.id_cliente != id_cliente and padre.id_cliente not in avisados:
+        crear_notificacion(
+            db,
+            tipo="comunidad",
+            titulo="Respondieron tu comentario",
+            mensaje=f"«{titulo_hilo}»: {data.contenido[:120]}",
+            id_referencia=referencia,
+            id_cliente=padre.id_cliente,
+            commit=False,
+        )
+    if video and id_cliente is not None:
+        # Aviso interno para que el equipo conteste a tiempo.
+        crear_notificacion(
+            db,
+            tipo="comunidad",
+            titulo="Nuevo comentario en un video de la agencia",
+            mensaje=f"«{titulo_hilo}»: {data.contenido[:120]}",
+            id_referencia=referencia,
+            commit=False,
+        )
+    db.commit()
+    db.refresh(comentario)
+    return comentario
 
 
 def _query_publicaciones(db: Session):
@@ -201,8 +359,11 @@ def listar_publicaciones(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
+    usuario: Usuario | None = Depends(get_usuario_opcional),
 ):
-    """Publicaciones aprobadas, la más reciente primero."""
+    """Publicaciones aprobadas, la más reciente primero. Con sesión marca
+    lo propio (es_mia / es_mio) para que se pueda borrar."""
+    viewer = _usuario(usuario)
     base = db.query(PublicacionComunidad).filter(PublicacionComunidad.estado == "aprobada")
     total = base.count()
     items = (
@@ -213,17 +374,41 @@ def listar_publicaciones(
         .limit(limit)
         .all()
     )
-    return PublicacionesPaginadas(items=[_publicacion(db, p) for p in items], total=total, skip=skip, limit=limit)
+    return PublicacionesPaginadas(
+        items=[_publicacion(db, p, viewer) for p in items], total=total, skip=skip, limit=limit
+    )
 
 
 @router.get("/videos", response_model=list[VideoAgenciaResponse])
-def listar_videos_agencia(db: Session = Depends(get_db)):
-    return (
-        db.query(VideoAgencia)
-        .filter(VideoAgencia.activo.is_(True))
-        .order_by(VideoAgencia.orden.asc(), VideoAgencia.fecha_creacion.desc())
-        .all()
-    )
+def listar_videos_agencia(
+    id_paquete: int | None = Query(None, description="Solo los videos promocionales de este paquete"),
+    inicio: bool = Query(False, description="Solo los destacados para la página de inicio"),
+    db: Session = Depends(get_db),
+    usuario: Usuario | None = Depends(get_usuario_opcional),
+):
+    q = _query_videos(db).filter(VideoAgencia.activo.is_(True))
+    if isinstance(id_paquete, int):
+        q = q.filter(VideoAgencia.id_paquete == id_paquete)
+    if inicio is True:
+        q = q.filter(VideoAgencia.mostrar_inicio.is_(True))
+    videos = q.order_by(VideoAgencia.orden.asc(), VideoAgencia.fecha_creacion.desc()).all()
+    viewer = _usuario(usuario)
+    return [_video(db, v, viewer) for v in videos]
+
+
+@router.post("/videos/{id_video}/comentarios", response_model=ComentarioResponse, status_code=201)
+def comentar_video(
+    id_video: int,
+    data: ComentarioCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_usuario),
+    authorization: str | None = Header(None),
+):
+    v = db.query(VideoAgencia).filter(VideoAgencia.id_video == id_video).first()
+    if not v or not v.activo:
+        raise HTTPException(status_code=404, detail="Video no encontrado")
+    comentario = _guardar_comentario(db, data, current_user, _texto(authorization), video=v)
+    return _comentario(db, comentario, current_user)
 
 
 # ===================== CLIENTE =====================
@@ -240,7 +425,7 @@ def mis_publicaciones(db: Session = Depends(get_db), current_user: Usuario = Dep
         .order_by(PublicacionComunidad.fecha_creacion.desc())
         .all()
     )
-    return [_publicacion(db, p, id_cliente) for p in items]
+    return [_publicacion(db, p, current_user) for p in items]
 
 
 @router.post("/publicaciones", response_model=PublicacionResponse, status_code=201)
@@ -322,7 +507,7 @@ async def crear_publicacion(
     )
     db.commit()
     db.refresh(publicacion)
-    return _publicacion(db, publicacion, id_cliente)
+    return _publicacion(db, publicacion, current_user)
 
 
 @router.delete("/publicaciones/{id_publicacion}")
@@ -346,36 +531,29 @@ def comentar(
     data: ComentarioCreate,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_usuario),
+    authorization: str | None = Header(None),
 ):
-    id_cliente = _exigir_cliente(current_user)
     p = db.query(PublicacionComunidad).filter(PublicacionComunidad.id_publicacion == id_publicacion).first()
     if not p or p.estado != "aprobada":
         raise HTTPException(status_code=404, detail="Publicación no encontrada")
-    comentario = ComentarioComunidad(id_publicacion=id_publicacion, id_cliente=id_cliente, contenido=data.contenido)
-    db.add(comentario)
-    if p.id_cliente != id_cliente:
-        crear_notificacion(
-            db,
-            tipo="comunidad",
-            titulo="Comentaron tu publicación",
-            mensaje=f"«{p.titulo}»: {data.contenido[:120]}",
-            id_referencia=p.id_publicacion,
-            id_cliente=p.id_cliente,
-            commit=False,
-        )
-    db.commit()
-    db.refresh(comentario)
-    return _comentario(db, comentario, id_cliente)
+    comentario = _guardar_comentario(db, data, current_user, _texto(authorization), publicacion=p)
+    return _comentario(db, comentario, current_user)
 
 
 @router.delete("/comentarios/{id_comentario}")
 def borrar_comentario(
     id_comentario: int, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_usuario)
 ):
-    id_cliente = _exigir_cliente(current_user)
+    """El autor borra su comentario (cliente o miembro del equipo). Sus
+    respuestas se borran con él."""
     c = db.query(ComentarioComunidad).filter(ComentarioComunidad.id_comentario == id_comentario).first()
-    if not c or c.id_cliente != id_cliente:
+    if not c or not _es_mio(c, current_user):
         raise HTTPException(status_code=404, detail="Comentario no encontrado")
+    # Explícito (no solo el ON DELETE CASCADE de la BD) para que funcione igual
+    # en cualquier motor.
+    db.query(ComentarioComunidad).filter(ComentarioComunidad.id_padre == c.id_comentario).delete(
+        synchronize_session=False
+    )
     db.delete(c)
     db.commit()
     return {"message": "Comentario eliminado"}
@@ -463,7 +641,8 @@ def admin_ocultar_comentario(
 
 @router.get("/admin/videos", response_model=list[VideoAgenciaResponse])
 def admin_listar_videos(db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
-    return db.query(VideoAgencia).order_by(VideoAgencia.orden.asc(), VideoAgencia.fecha_creacion.desc()).all()
+    videos = _query_videos(db).order_by(VideoAgencia.orden.asc(), VideoAgencia.fecha_creacion.desc()).all()
+    return [_video(db, v, incluir_ocultos=True) for v in videos]
 
 
 @router.post("/admin/videos", response_model=VideoAgenciaResponse, status_code=201)
@@ -474,6 +653,8 @@ async def admin_subir_video(
     portada: UploadFile | None = File(None),
     video_url: str | None = Form(None, description="URL ya subida a Cloudinary (subida directa)"),
     portada_url: str | None = Form(None, description="URL ya subida a Cloudinary (subida directa)"),
+    id_paquete: int | None = Form(None, description="Paquete del que es video promocional"),
+    mostrar_inicio: bool = Form(False, description="Mostrarlo también en la página de inicio"),
     db: Session = Depends(get_db),
     admin_id: int = Depends(require_admin),
 ):
@@ -511,11 +692,13 @@ async def admin_subir_video(
         portada_url=portada_final,
         orden=siguiente,
         activo=True,
+        id_paquete=_paquete_valido(db, id_paquete),
+        mostrar_inicio=mostrar_inicio is True,
     )
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
-    return nuevo
+    return _video(db, nuevo, incluir_ocultos=True)
 
 
 @router.put("/admin/videos/{id_video}", response_model=VideoAgenciaResponse)
@@ -525,12 +708,16 @@ def admin_editar_video(
     v = db.query(VideoAgencia).filter(VideoAgencia.id_video == id_video).first()
     if not v:
         raise HTTPException(status_code=404, detail="Video no encontrado")
-    for campo, valor in data.dict(exclude_unset=True).items():
+    cambios = data.model_dump(exclude_unset=True)
+    if "id_paquete" in cambios and cambios["id_paquete"] is not None:
+        v.id_paquete = _paquete_valido(db, cambios.pop("id_paquete"))
+    cambios.pop("id_paquete", None)
+    for campo, valor in cambios.items():
         if valor is not None:
             setattr(v, campo, valor.strip() if isinstance(valor, str) else valor)
     db.commit()
     db.refresh(v)
-    return v
+    return _video(db, v, incluir_ocultos=True)
 
 
 @router.delete("/admin/videos/{id_video}")

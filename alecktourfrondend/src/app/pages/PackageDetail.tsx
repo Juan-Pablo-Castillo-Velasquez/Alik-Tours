@@ -39,6 +39,8 @@ import {
   PaqueteServicioDetalle,
   paqueteService,
 } from "../services/paquete.service";
+import VideosPromocionales from "../components/comunidad/VideosPromocionales";
+import RespuestaAgencia from "../components/resenas/RespuestaAgencia";
 import { resenaService, ResenaResponse } from "../services/resena.service";
 import { getCityImage, getDefaultImage } from "../utils/cityImages";
 
@@ -596,6 +598,7 @@ export default function PackageDetail() {
                         <Quote className="w-3.5 h-3.5 inline mr-1.5 text-primary/40 -mt-1" />
                         {r.comentario}
                       </p>
+                      <RespuestaAgencia respuesta={r.respuesta_agencia} fecha={r.fecha_respuesta} />
                     </div>
                   ))}
                 </div>
@@ -778,6 +781,14 @@ export default function PackageDetail() {
             </div>
           </div>
         </div>
+
+        {/* Videos promocionales de ESTE viaje (el admin los asocia al paquete
+            en Comunidad y videos). Sin videos no se muestra nada. */}
+        <VideosPromocionales
+          idPaquete={pkg.id_paquete}
+          titulo="Así se vive este viaje"
+          subtitulo="Videos reales de la agencia en este destino. Pregunta lo que quieras en los comentarios."
+        />
 
         {/* También te puede interesar -- paquetes con destino real parecido
             (GET /paquetes/{id}/similares), nunca una recomendación

@@ -4,28 +4,41 @@ import {
   LogIn,
   MapPin,
   MessageSquarePlus,
+  Pencil,
   Quote,
   ShieldCheck,
   Star,
+  Trash2,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { apiCrearResena, apiGetResenas, ResenaDestacada } from "../api/v1/api";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
+import RespuestaAgencia from "../components/resenas/RespuestaAgencia";
 import { useAuth } from "../context/AuthContext";
+import { useAuthModal } from "../context/AuthModalContext";
 import { ReservaResponse } from "../data/reservaTypes";
+import { resenaService, ResenaResponse } from "../services/resena.service";
 import { reservaService } from "../services/services";
 
 const PAGE_SIZE = 9;
 
+// Solo se reseña un viaje que ya pasó o está confirmado (no uno cancelado o
+// sin confirmar).
+const ESTADOS_RESENABLES = new Set(["confirmada", "finalizada"]);
+
 export default function Testimonios() {
   const { usuario, isAuthenticated } = useAuth();
+  const { openLogin } = useAuthModal();
 
   const [resenas, setResenas] = useState<ResenaDestacada[]>([]);
   const [total, setTotal] = useState(0);
+  const [totalGlobal, setTotalGlobal] = useState(0);
+  const [distribucion, setDistribucion] = useState<Record<string, number>>({});
+  const [filtroEstrellas, setFiltroEstrellas] = useState<number | null>(null);
   const [promedio, setPromedio] = useState(5);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -42,9 +55,50 @@ export default function Testimonios() {
     texto: string;
   } | null>(null);
 
+  // Mis reseñas (para editarlas/borrarlas y no ofrecer reseñar dos veces la misma reserva)
+  const [misResenas, setMisResenas] = useState<ResenaResponse[]>([]);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [edicion, setEdicion] = useState({ calificacion: 5, comentario: "" });
+
+  const cargarResenas = useCallback(
+    async (skip: number) => {
+      if (skip === 0) setLoading(true);
+      else setLoadingMore(true);
+      try {
+        const data = await apiGetResenas(skip, PAGE_SIZE, filtroEstrellas ?? undefined);
+        setTotal(data.total);
+        setTotalGlobal(data.total_global ?? data.total);
+        setDistribucion(data.distribucion ?? {});
+        setPromedio(data.promedio);
+        setResenas((prev) => (skip === 0 ? data.resenas : [...prev, ...data.resenas]));
+      } catch (err) {
+        console.error("No se pudieron cargar las reseñas:", err);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [filtroEstrellas],
+  );
+
   useEffect(() => {
     cargarResenas(0);
-  }, []);
+  }, [cargarResenas]);
+
+  const cargarMisResenas = useCallback(() => {
+    if (!isAuthenticated || !usuario?.id_cliente) {
+      setMisResenas([]);
+      return;
+    }
+    resenaService
+      .mias()
+      .then(setMisResenas)
+      .catch(() => setMisResenas([]));
+  }, [isAuthenticated, usuario?.id_cliente]);
+
+  useEffect(() => {
+    cargarMisResenas();
+  }, [cargarMisResenas]);
 
   useEffect(() => {
     if (isAuthenticated && usuario?.id_cliente) {
@@ -55,22 +109,44 @@ export default function Testimonios() {
     }
   }, [isAuthenticated, usuario?.id_cliente]);
 
-  async function cargarResenas(skip: number) {
-    skip === 0 ? setLoading(true) : setLoadingMore(true);
-    try {
-      const data = await apiGetResenas(skip, PAGE_SIZE);
-      setTotal(data.total);
-      setPromedio(data.promedio);
-      setResenas((prev) =>
-        skip === 0 ? data.resenas : [...prev, ...data.resenas],
-      );
-    } catch (err) {
-      console.error("No se pudieron cargar las reseñas:", err);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
+  // Reservas que todavía se pueden reseñar: confirmadas o finalizadas y sin
+  // reseña. Antes salían todas (canceladas incluidas) y elegir una ya
+  // reseñada terminaba en "Ya dejaste una reseña para esta reserva".
+  const yaResenadas = new Set(misResenas.map((r) => r.id_reserva));
+  const reservasResenables = misReservas.filter(
+    (r) => ESTADOS_RESENABLES.has(String(r.estado)) && !yaResenadas.has(r.id_reserva),
+  );
+
+  const guardarEdicion = async (r: ResenaResponse) => {
+    if (edicion.comentario.trim().length < 10) {
+      toast.error("Cuéntanos un poco más (mínimo 10 caracteres).");
+      return;
     }
-  }
+    try {
+      await resenaService.editar(r.id_resena, {
+        calificacion: edicion.calificacion,
+        comentario: edicion.comentario.trim(),
+      });
+      toast.success("Reseña actualizada");
+      setEditandoId(null);
+      cargarMisResenas();
+      cargarResenas(0);
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo actualizar la reseña");
+    }
+  };
+
+  const borrarMiResena = async (r: ResenaResponse) => {
+    if (!window.confirm("¿Borrar tu reseña? Podrás escribir una nueva para esa reserva.")) return;
+    try {
+      await resenaService.borrar(r.id_resena);
+      toast.success("Reseña eliminada");
+      cargarMisResenas();
+      cargarResenas(0);
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo borrar la reseña");
+    }
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,6 +181,7 @@ export default function Testimonios() {
       setIdReserva("");
       setCalificacion(5);
       cargarResenas(0); // refrescar el listado con la nueva reseña arriba
+      cargarMisResenas();
     } catch (err: any) {
       setMensaje({
         tipo: "error",
@@ -155,7 +232,7 @@ export default function Testimonios() {
               {promedio.toFixed(1)} / 5.0
             </p>
             <span className="text-muted-foreground text-sm">
-              · {total} {total === 1 ? "reseña" : "reseñas"}
+              · {totalGlobal} {totalGlobal === 1 ? "reseña" : "reseñas"}
             </span>
           </div>
         </div>
@@ -164,6 +241,47 @@ export default function Testimonios() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* LISTADO */}
         <div className="lg:col-span-2">
+          {/* Resumen por estrellas: cada barra filtra el listado */}
+          {totalGlobal > 0 && (
+            <div className="mb-8 rounded-3xl border border-border bg-card p-5">
+              <p className="text-sm font-semibold text-foreground mb-3">Filtra por calificación</p>
+              <div className="space-y-1.5">
+                {[5, 4, 3, 2, 1].map((n) => {
+                  const cantidad = distribucion[String(n)] ?? 0;
+                  const pct = totalGlobal ? Math.round((cantidad / totalGlobal) * 100) : 0;
+                  const activo = filtroEstrellas === n;
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => setFiltroEstrellas(activo ? null : n)}
+                      disabled={cantidad === 0}
+                      aria-pressed={activo}
+                      className={`w-full flex items-center gap-3 rounded-lg px-2 py-1 text-xs transition-colors disabled:opacity-40 ${
+                        activo ? "bg-primary/10" : "hover:bg-muted"
+                      }`}
+                    >
+                      <span className="w-14 shrink-0 flex items-center gap-1 font-semibold text-foreground">
+                        {n} <Star className="w-3.5 h-3.5 fill-gold text-gold" />
+                      </span>
+                      <span className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                        <span className="block h-full rounded-full bg-gold" style={{ width: `${pct}%` }} />
+                      </span>
+                      <span className="w-10 shrink-0 text-right text-muted-foreground">{cantidad}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {filtroEstrellas && (
+                <button
+                  onClick={() => setFiltroEstrellas(null)}
+                  className="mt-3 text-xs font-semibold text-primary hover:underline"
+                >
+                  Ver todas las reseñas
+                </button>
+              )}
+            </div>
+          )}
+
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -175,8 +293,9 @@ export default function Testimonios() {
             </div>
           ) : resenas.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-border p-10 text-center text-muted-foreground">
-              Todavía no hay reseñas publicadas. ¡Sé el primero en dejar la
-              tuya!
+              {filtroEstrellas
+                ? `No hay reseñas de ${filtroEstrellas} estrellas.`
+                : "Todavía no hay reseñas publicadas. ¡Sé el primero en dejar la tuya!"}
             </div>
           ) : (
             <>
@@ -206,7 +325,13 @@ export default function Testimonios() {
 
                     <p className="relative text-foreground/90 text-[14px] leading-[1.75] mb-5">
                       “{r.quote}”
+                      {r.editada && <span className="ml-1 text-[11px] text-muted-foreground">(editada)</span>}
                     </p>
+                    {r.respuesta && (
+                      <div className="mb-5 -mt-2">
+                        <RespuestaAgencia respuesta={r.respuesta} fecha={r.fecha_respuesta} />
+                      </div>
+                    )}
 
                     <div className="h-px bg-border mb-4" />
 
@@ -246,7 +371,7 @@ export default function Testimonios() {
 
         {/* FORMULARIO / CTA */}
         <div className="lg:col-span-1">
-          <div className="sticky top-24 rounded-3xl border border-border bg-card p-6 shadow-lg shadow-primary/5 dark:shadow-none">
+          <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto rounded-3xl border border-border bg-card p-6 shadow-lg shadow-primary/5 dark:shadow-none">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <MessageSquarePlus className="w-5 h-5 text-primary" />
@@ -262,32 +387,34 @@ export default function Testimonios() {
                   Inicia sesión para reseñar un viaje que ya realizaste con
                   nosotros.
                 </p>
-                <Link
-                  to="/login"
+                <button
+                  onClick={openLogin}
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
                   Iniciar sesión
-                </Link>
+                </button>
               </div>
-            ) : misReservas.length === 0 ? (
+            ) : reservasResenables.length === 0 ? (
               <p className="text-muted-foreground text-sm py-4">
-                No encontramos reservas asociadas a tu cuenta todavía. Cuando
-                completes un viaje con nosotros, podrás reseñarlo aquí.
+                {misReservas.length === 0
+                  ? "No encontramos reservas asociadas a tu cuenta todavía. Cuando completes un viaje con nosotros, podrás reseñarlo aquí."
+                  : "Ya reseñaste todos tus viajes confirmados. ¡Gracias! Puedes editar tus reseñas abajo."}
               </p>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                  <label htmlFor="resena-reserva" className="block text-xs font-semibold text-muted-foreground mb-1.5">
                     ¿Qué reserva quieres reseñar?
                   </label>
                   <select
+                    id="resena-reserva"
                     value={idReserva}
                     onChange={(e) => setIdReserva(e.target.value)}
                     className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                   >
                     <option value="">Selecciona una reserva</option>
-                    {misReservas.map((r) => (
+                    {reservasResenables.map((r) => (
                       <option key={r.id_reserva} value={r.id_reserva}>
                         Reserva #{r.id_reserva} · {r.fecha_inicio} ({r.estado})
                       </option>
@@ -304,6 +431,8 @@ export default function Testimonios() {
                       <button
                         key={s}
                         type="button"
+                        aria-label={`${s} estrella${s > 1 ? "s" : ""}`}
+                        aria-pressed={s === calificacion}
                         onClick={() => setCalificacion(s)}
                         onMouseEnter={() => setHoverStar(s)}
                         onMouseLeave={() => setHoverStar(0)}
@@ -322,10 +451,11 @@ export default function Testimonios() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                  <label htmlFor="resena-comentario" className="block text-xs font-semibold text-muted-foreground mb-1.5">
                     Tu comentario
                   </label>
                   <textarea
+                    id="resena-comentario"
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
                     rows={4}
@@ -361,6 +491,92 @@ export default function Testimonios() {
                   {enviando ? "Publicando..." : "Publicar reseña"}
                 </button>
               </form>
+            )}
+
+            {misResenas.length > 0 && (
+              <div className="mt-6 pt-5 border-t border-border space-y-3">
+                <p className="text-sm font-bold text-foreground">Mis reseñas</p>
+                {misResenas.map((r) => (
+                  <div key={r.id_resena} className="rounded-2xl border border-border p-3 text-sm">
+                    {editandoId === r.id_resena ? (
+                      <div className="space-y-2">
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              aria-label={`${s} estrella${s > 1 ? "s" : ""}`}
+                              aria-pressed={s === edicion.calificacion}
+                              onClick={() => setEdicion((e) => ({ ...e, calificacion: s }))}
+                            >
+                              <Star
+                                className={`w-5 h-5 ${s <= edicion.calificacion ? "fill-[#C9A227] text-[#C9A227]" : "text-muted-foreground"}`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={edicion.comentario}
+                          onChange={(e) => setEdicion((x) => ({ ...x, comentario: e.target.value }))}
+                          rows={3}
+                          maxLength={1000}
+                          aria-label="Editar mi reseña"
+                          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => guardarEdicion(r)}
+                            className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            onClick={() => setEditandoId(null)}
+                            className="px-3 py-1.5 rounded-lg border border-border text-xs"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="flex gap-0.5">
+                            {Array.from({ length: r.calificacion }, (_, i) => (
+                              <Star key={i} className="w-3.5 h-3.5 fill-[#C9A227] text-[#C9A227]" />
+                            ))}
+                          </span>
+                          <span className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                setEditandoId(r.id_resena);
+                                setEdicion({ calificacion: r.calificacion, comentario: r.comentario });
+                              }}
+                              className="p-1 rounded hover:bg-muted text-muted-foreground"
+                              aria-label="Editar mi reseña"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => borrarMiResena(r)}
+                              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                              aria-label="Borrar mi reseña"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-xs mt-1 line-clamp-3">{r.comentario}</p>
+                        {r.nombre_hotel && <p className="text-[11px] text-muted-foreground mt-1">{r.nombre_hotel}</p>}
+                        {r.visible === false && (
+                          <p className="text-[11px] text-destructive mt-1">El equipo ocultó esta reseña del sitio.</p>
+                        )}
+                        <RespuestaAgencia respuesta={r.respuesta_agencia} fecha={r.fecha_respuesta} />
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

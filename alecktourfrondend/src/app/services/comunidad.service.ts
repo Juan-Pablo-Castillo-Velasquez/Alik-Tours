@@ -4,11 +4,16 @@ import { apiFetch, BASE_URL } from "../api/v1/api";
 export interface AutorComunidad {
   nombre: string;
   foto: string | null;
+  /** Escribe alguien del equipo de la agencia (admin/asesor). */
+  es_equipo?: boolean;
 }
 
 export interface ComentarioComunidad {
   id_comentario: number;
-  id_publicacion: number;
+  id_publicacion: number | null;
+  id_video?: number | null;
+  /** Respuesta a otro comentario (un solo nivel). */
+  id_padre?: number | null;
   contenido: string;
   oculto: boolean;
   fecha_creacion: string | null;
@@ -50,7 +55,14 @@ export interface VideoAgencia {
   portada_url: string | null;
   orden: number;
   activo: boolean;
+  /** Paquete del que es video promocional (sale en la ficha de ese viaje). */
+  id_paquete: number | null;
+  nombre_paquete: string | null;
+  /** También se muestra en la página de inicio. */
+  mostrar_inicio: boolean;
   fecha_creacion: string | null;
+  total_comentarios: number;
+  comentarios: ComentarioComunidad[];
 }
 
 export interface NuevaPublicacion {
@@ -136,7 +148,18 @@ export const comunidadService = {
   // Público
   getPublicaciones: (skip = 0, limit = 10) =>
     apiFetch<PublicacionesPaginadas>(`/comunidad/publicaciones?skip=${skip}&limit=${limit}`),
-  getVideos: () => apiFetch<VideoAgencia[]>("/comunidad/videos"),
+  getVideos: (filtro: { idPaquete?: number; inicio?: boolean } = {}) => {
+    const params = new URLSearchParams();
+    if (filtro.idPaquete != null) params.set("id_paquete", String(filtro.idPaquete));
+    if (filtro.inicio) params.set("inicio", "true");
+    const qs = params.toString();
+    return apiFetch<VideoAgencia[]>(`/comunidad/videos${qs ? `?${qs}` : ""}`);
+  },
+  comentarVideo: (idVideo: number, contenido: string, idPadre?: number) =>
+    apiFetch<ComentarioComunidad>(`/comunidad/videos/${idVideo}/comentarios`, {
+      method: "POST",
+      body: { contenido, id_padre: idPadre ?? null },
+    }),
 
   // Cliente
   getMisPublicaciones: () => apiFetch<PublicacionComunidad[]>("/comunidad/mis-publicaciones"),
@@ -163,10 +186,10 @@ export const comunidadService = {
   },
   borrarPublicacion: (id: number) =>
     apiFetch<{ message: string }>(`/comunidad/publicaciones/${id}`, { method: "DELETE" }),
-  comentar: (idPublicacion: number, contenido: string) =>
+  comentar: (idPublicacion: number, contenido: string, idPadre?: number) =>
     apiFetch<ComentarioComunidad>(`/comunidad/publicaciones/${idPublicacion}/comentarios`, {
       method: "POST",
-      body: { contenido },
+      body: { contenido, id_padre: idPadre ?? null },
     }),
   borrarComentario: (id: number) => apiFetch<{ message: string }>(`/comunidad/comentarios/${id}`, { method: "DELETE" }),
 
@@ -190,11 +213,15 @@ export const comunidadService = {
     descripcion?: string;
     video: File;
     portada?: File;
+    idPaquete?: number | null;
+    mostrarInicio?: boolean;
     onProgreso?: (porcentaje: number) => void;
   }) => {
     const fd = new FormData();
     fd.append("titulo", data.titulo);
     if (data.descripcion) fd.append("descripcion", data.descripcion);
+    if (data.idPaquete) fd.append("id_paquete", String(data.idPaquete));
+    if (data.mostrarInicio) fd.append("mostrar_inicio", "true");
     const videoUrl = await subirArchivoDirecto(data.video, "agencia-video", data.onProgreso);
     if (videoUrl) fd.append("video_url", videoUrl);
     else fd.append("video", data.video);
@@ -205,7 +232,13 @@ export const comunidadService = {
     }
     return apiFetch<VideoAgencia>("/comunidad/admin/videos", { method: "POST", body: fd });
   },
-  adminEditarVideo: (id: number, data: Partial<Pick<VideoAgencia, "titulo" | "descripcion" | "activo" | "orden">>) =>
+  /** id_paquete: 0 quita el paquete asociado. */
+  adminEditarVideo: (
+    id: number,
+    data: Partial<Pick<VideoAgencia, "titulo" | "descripcion" | "activo" | "orden" | "mostrar_inicio">> & {
+      id_paquete?: number;
+    },
+  ) =>
     apiFetch<VideoAgencia>(`/comunidad/admin/videos/${id}`, { method: "PUT", body: data }),
   adminBorrarVideo: (id: number) =>
     apiFetch<{ message: string }>(`/comunidad/admin/videos/${id}`, { method: "DELETE" }),

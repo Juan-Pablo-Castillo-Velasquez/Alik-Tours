@@ -564,7 +564,11 @@
    superficie es un vidrio prácticamente neutro (blanco/negro sólido),
    sin importar el tema activo; la identidad de marca/temporada sigue
    estando clara en la franja superior (::before) y en el badge del logo,
-   no en toda la barra. */
+   no en toda la barra.
+
+   Ahora (pedido del equipo) vuelve un tinte, pero SUAVE y en degradado
+   primario -> dorado -> primario: la barra combina con el tema activo sin
+   confundirse con el Hero. */
 .navbar-surface {
   /* Sin position: relative a proposito -- el <nav> ya es sticky (ver
      Navbar.tsx), y position:sticky funciona igual que relative como
@@ -573,10 +577,21 @@
      utilidad .sticky de Tailwind y ganaba por orden de aparicion en el
      CSS compilado (misma especificidad, mismo peso) -- eso pisaba el
      position:sticky y el navbar dejaba de quedarse fijo al hacer scroll. */
+  /* Fondo teñido con el color del tema activo (marca o temporada): como
+     --primary/--gold se redefinen por tema (TemaContext.tsx), la barra
+     combina sola con cada tema. El tinte es suave a propósito: se
+     distingue del Hero oscuro y el texto oscuro sigue con buen contraste.
+     El rgba de respaldo es para navegadores sin color-mix(). */
   background: rgba(255, 255, 255, 0.97);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 10%, rgb(255 255 255 / 0.96)) 0%,
+    color-mix(in srgb, var(--gold) 12%, rgb(255 255 255 / 0.96)) 50%,
+    color-mix(in srgb, var(--primary) 10%, rgb(255 255 255 / 0.96)) 100%
+  );
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(var(--primary-rgb), 0.14);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.18);
   box-shadow:
     0 1px 0 rgba(var(--primary-rgb), 0.06),
     var(--shadow-sm);
@@ -598,7 +613,13 @@
 }
 .dark .navbar-surface {
   background: rgba(15, 15, 16, 0.97);
-  border-bottom-color: rgba(var(--primary-rgb), 0.22);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 20%, rgb(14 14 16 / 0.97)) 0%,
+    color-mix(in srgb, var(--gold) 8%, rgb(14 14 16 / 0.97)) 50%,
+    color-mix(in srgb, var(--primary) 20%, rgb(14 14 16 / 0.97)) 100%
+  );
+  border-bottom-color: rgba(var(--primary-rgb), 0.3);
 }
 
 /* Cuando hay un tema de temporada activo (Navidad, Halloween...) la

@@ -142,6 +142,10 @@ export interface ResenaDestacada {
   trip: string;
   avatar: string;
   fecha?: string;
+  editada?: boolean;
+  /** Respuesta pública de la agencia. */
+  respuesta?: string | null;
+  fecha_respuesta?: string | null;
 }
 
 export interface ResenasDestacadasResponse {
@@ -156,17 +160,25 @@ export async function apiGetResenasDestacadas(): Promise<ResenasDestacadasRespon
 }
 
 export interface ResenasListResponse {
+  /** Total con el filtro aplicado (para paginar). */
   total: number;
   promedio: number;
+  /** Total sin filtro (para el encabezado). */
+  total_global?: number;
+  /** Cuántas reseñas hay de cada calificación: {"5": 12, "4": 3, ...}. */
+  distribucion?: Record<string, number>;
   resenas: ResenaDestacada[];
 }
 
-// Listado paginado de TODAS las reseñas — usado en la página /testimonios.
+// Listado paginado de las reseñas — usado en la página /testimonios.
+// calificacion: solo las de esas estrellas (1-5).
 export async function apiGetResenas(
   skip = 0,
   limit = 12,
+  calificacion?: number,
 ): Promise<ResenasListResponse> {
-  return apiFetch<ResenasListResponse>(`/resenas?skip=${skip}&limit=${limit}`);
+  const filtro = calificacion ? `&calificacion=${calificacion}` : "";
+  return apiFetch<ResenasListResponse>(`/resenas?skip=${skip}&limit=${limit}${filtro}`);
 }
 
 export interface ResenaCreateInput {
