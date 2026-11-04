@@ -94,7 +94,7 @@ test.describe('Contacto', () => {
     await page.goto('/contact');
     const formulario = page.getByRole('form', { name: 'Formulario de contacto' });
     await formulario.getByLabel('Tu nombre completo').fill('Invitado E2E');
-    await formulario.getByLabel('Correo electrónico').fill('invitado@alektours.test');
+    await formulario.getByLabel('Correo electrónico').fill('invitado@e2e.alektours.com');
     await formulario.getByLabel('Asunto del mensaje').fill('Cotización');
     await formulario.getByLabel('¿En qué podemos ayudarte?').fill('Quiero cotizar un viaje a Santa Marta.');
 

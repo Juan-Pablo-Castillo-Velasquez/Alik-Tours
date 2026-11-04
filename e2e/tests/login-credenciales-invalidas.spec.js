@@ -9,7 +9,7 @@ import { test, expect } from './fixtures.js';
 test('muestra "Credenciales inválidas" y no deja entrar con una contraseña incorrecta', async ({ page }) => {
   // Arrange: /login abre el modal de inicio de sesión sobre el home.
   // El correo es único en cada corrida: nunca coincide con una cuenta real.
-  const correo = `nadie.${Date.now()}@alektours.test`;
+  const correo = `nadie.${Date.now()}@e2e.alektours.com`;
   await page.goto('/login');
   const dialogo = page.getByRole('dialog', { name: 'Bienvenido de nuevo' });
   await expect(dialogo).toBeVisible();

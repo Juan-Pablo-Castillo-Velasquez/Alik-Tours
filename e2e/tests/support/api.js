@@ -28,9 +28,10 @@ export function unico(prefijo) {
   return `${prefijo}-${Date.now().toString(36)}-${contador}-${Math.floor(Math.random() * 1e4)}`;
 }
 
-/** Correo único en un dominio que nunca existe (.test). */
+/** Correo único. No se usa .test: el validador de correos del backend
+ *  (email-validator) rechaza los dominios reservados. Mailpit atrapa todo. */
 export function correoUnico(prefijo = 'e2e') {
-  return `${unico(prefijo).toLowerCase()}@alektours.test`;
+  return `${unico(prefijo).toLowerCase()}@e2e.alektours.com`;
 }
 
 /** Cédula única de 10 dígitos. */

@@ -14,7 +14,7 @@ test('un invitado envía un mensaje de contacto y ve la confirmación', async ({
 
   // Act
   await formulario.getByLabel('Tu nombre completo').fill('Invitado E2E');
-  await formulario.getByLabel('Correo electrónico').fill(`invitado.${marca}@alektours.test`);
+  await formulario.getByLabel('Correo electrónico').fill(`invitado.${marca}@e2e.alektours.com`);
   await formulario.getByLabel('Asunto del mensaje').fill(`Cotización E2E ${marca}`);
   await formulario
     .getByLabel('¿En qué podemos ayudarte?')
