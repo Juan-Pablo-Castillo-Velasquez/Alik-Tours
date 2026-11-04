@@ -783,7 +783,7 @@ export default function Navbar() {
                   xl:hidden
                   border-t border-border/50
                   overflow-hidden
-                  bg-background
+                  navbar-panel
                 "
               >
                 <div className="py-4 space-y-1">

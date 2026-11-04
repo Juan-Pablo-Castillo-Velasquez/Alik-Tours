@@ -585,9 +585,9 @@
   background: rgba(255, 255, 255, 0.97);
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--primary) 10%, rgb(255 255 255 / 0.96)) 0%,
-    color-mix(in srgb, var(--gold) 12%, rgb(255 255 255 / 0.96)) 50%,
-    color-mix(in srgb, var(--primary) 10%, rgb(255 255 255 / 0.96)) 100%
+    color-mix(in srgb, var(--primary) 20%, rgb(255 255 255 / 0.97)) 0%,
+    color-mix(in srgb, var(--gold) 22%, rgb(255 255 255 / 0.97)) 50%,
+    color-mix(in srgb, var(--primary) 20%, rgb(255 255 255 / 0.97)) 100%
   );
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -615,11 +615,20 @@
   background: rgba(15, 15, 16, 0.97);
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--primary) 20%, rgb(14 14 16 / 0.97)) 0%,
-    color-mix(in srgb, var(--gold) 8%, rgb(14 14 16 / 0.97)) 50%,
-    color-mix(in srgb, var(--primary) 20%, rgb(14 14 16 / 0.97)) 100%
+    color-mix(in srgb, var(--primary) 32%, rgb(14 14 16 / 0.97)) 0%,
+    color-mix(in srgb, var(--gold) 14%, rgb(14 14 16 / 0.97)) 50%,
+    color-mix(in srgb, var(--primary) 32%, rgb(14 14 16 / 0.97)) 100%
   );
   border-bottom-color: rgba(var(--primary-rgb), 0.3);
+}
+
+/* Menú desplegable del celular: mismo tinte del tema que la barra (antes
+   era bg-background blanco y en el celular todo el navbar se veía blanco). */
+.navbar-panel {
+  background: color-mix(in srgb, var(--primary) 12%, #fff);
+}
+.dark .navbar-panel {
+  background: color-mix(in srgb, var(--primary) 22%, #0e0e10);
 }
 
 /* Cuando hay un tema de temporada activo (Navidad, Halloween...) la
