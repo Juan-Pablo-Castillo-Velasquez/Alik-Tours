@@ -119,7 +119,7 @@ ${selector} {
    badge del logo (Navbar.tsx), no en toda la superficie del navbar. */
 ${selector} .navbar-surface::before {
   height: 5px;
-  box-shadow: 0 2px 12px rgba(var(--primary-rgb), 0.55);
+  box-shadow: 0 2px 12px rgba(var(--gold-rgb), 0.6);
 }
 `.trim();
 

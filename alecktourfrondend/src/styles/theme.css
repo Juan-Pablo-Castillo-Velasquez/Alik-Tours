@@ -2,6 +2,27 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Copias de los colores del sitio para el navbar (ver .navbar-surface):
+     se resuelven en <html> con el tema de temporada y el modo oscuro ya
+     aplicados, así el navbar puede invertir sus tokens y sus menús
+     recuperar los originales. */
+  --nav-bg: var(--primary);
+  --sitio-primary: var(--primary);
+  --sitio-primary-rgb: var(--primary-rgb);
+  --sitio-primary-foreground: var(--primary-foreground);
+  --sitio-foreground: var(--foreground);
+  --sitio-background: var(--background);
+  --sitio-card: var(--card);
+  --sitio-card-foreground: var(--card-foreground);
+  --sitio-muted: var(--muted);
+  --sitio-muted-foreground: var(--muted-foreground);
+  --sitio-accent: var(--accent);
+  --sitio-accent-foreground: var(--accent-foreground);
+  --sitio-secondary: var(--secondary);
+  --sitio-secondary-foreground: var(--secondary-foreground);
+  --sitio-border: var(--border);
+  --sitio-ring: var(--ring);
+  --sitio-input-background: var(--input-background);
   --font-size: 16px;
 
   /* Fondo cálido tipo "hueso", no blanco plano — le da profundidad sin perder claridad */
@@ -127,6 +148,9 @@
 }
 
 .dark {
+  /* En oscuro el color del tema es más claro: se oscurece un poco para el
+     navbar, así el texto blanco sigue leyéndose bien. */
+  --nav-bg: color-mix(in srgb, var(--primary) 62%, #000);
   --background: #0f0f10;
   --foreground: #f5f5f5;
 
@@ -570,31 +594,64 @@
    primario -> dorado -> primario: la barra combina con el tema activo sin
    confundirse con el Hero. */
 .navbar-surface {
-  /* Sin position: relative a proposito -- el <nav> ya es sticky (ver
-     Navbar.tsx), y position:sticky funciona igual que relative como
-     containing block para el ::before de abajo. Antes esta regla
-     ponia position:relative acá, que empataba en especificidad con la
-     utilidad .sticky de Tailwind y ganaba por orden de aparicion en el
-     CSS compilado (misma especificidad, mismo peso) -- eso pisaba el
-     position:sticky y el navbar dejaba de quedarse fijo al hacer scroll. */
-  /* Fondo teñido con el color del tema activo (marca o temporada): como
-     --primary/--gold se redefinen por tema (TemaContext.tsx), la barra
-     combina sola con cada tema. El tinte es suave a propósito: se
-     distingue del Hero oscuro y el texto oscuro sigue con buen contraste.
-     El rgba de respaldo es para navegadores sin color-mix(). */
-  background: rgba(255, 255, 255, 0.97);
+  /* El navbar ES del color del tema activo (marca o temporada), sólido,
+     como pidió el equipo: --nav-bg sale de --primary, que TemaContext.tsx
+     redefine por tema. Dentro de la barra los tokens se invierten (texto y
+     botones claros sobre el color) para que todo lo que ya usa
+     text-foreground / text-primary / bg-primary se lea bien sin tocar cada
+     componente. Los menús flotantes recuperan los colores normales más
+     abajo. */
+  background: var(--nav-bg);
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--primary) 20%, rgb(255 255 255 / 0.97)) 0%,
-    color-mix(in srgb, var(--gold) 22%, rgb(255 255 255 / 0.97)) 50%,
-    color-mix(in srgb, var(--primary) 20%, rgb(255 255 255 / 0.97)) 100%
+    var(--nav-bg) 0%,
+    color-mix(in srgb, var(--nav-bg) 86%, var(--gold)) 50%,
+    var(--nav-bg) 100%
   );
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(var(--primary-rgb), 0.18);
-  box-shadow:
-    0 1px 0 rgba(var(--primary-rgb), 0.06),
-    var(--shadow-sm);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-sm);
+
+  --primary: #ffffff;
+  --primary-rgb: 255, 255, 255;
+  --primary-foreground: var(--nav-bg);
+  --foreground: #ffffff;
+  --background: var(--nav-bg);
+  --card: rgba(255, 255, 255, 0.1);
+  --card-foreground: #ffffff;
+  --muted: rgba(255, 255, 255, 0.14);
+  --muted-foreground: rgba(255, 255, 255, 0.8);
+  --accent: rgba(255, 255, 255, 0.14);
+  --accent-foreground: #ffffff;
+  --secondary: rgba(255, 255, 255, 0.14);
+  --secondary-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.24);
+  --ring: #ffffff;
+  --input-background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+/* Menús desplegables, campana y popovers dentro del navbar: vuelven a los
+   colores normales del sitio (fondo de tarjeta, texto oscuro). */
+.navbar-surface .absolute.bg-card,
+.navbar-surface .absolute.bg-popover,
+.navbar-surface [role="menu"],
+.navbar-surface [role="dialog"] {
+  --primary: var(--sitio-primary);
+  --primary-rgb: var(--sitio-primary-rgb);
+  --primary-foreground: var(--sitio-primary-foreground);
+  --foreground: var(--sitio-foreground);
+  --background: var(--sitio-background);
+  --card: var(--sitio-card);
+  --card-foreground: var(--sitio-card-foreground);
+  --muted: var(--sitio-muted);
+  --muted-foreground: var(--sitio-muted-foreground);
+  --accent: var(--sitio-accent);
+  --accent-foreground: var(--sitio-accent-foreground);
+  --secondary: var(--sitio-secondary);
+  --secondary-foreground: var(--sitio-secondary-foreground);
+  --border: var(--sitio-border);
+  --ring: var(--sitio-ring);
+  --input-background: var(--sitio-input-background);
+  color: var(--sitio-foreground);
 }
 .navbar-surface::before {
   content: "";
@@ -603,32 +660,15 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(
-    90deg,
-    var(--primary) 0%,
-    var(--gold) 50%,
-    var(--primary) 100%
-  );
-  box-shadow: 0 1px 8px rgba(var(--primary-rgb), 0.4);
-}
-.dark .navbar-surface {
-  background: rgba(15, 15, 16, 0.97);
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--primary) 32%, rgb(14 14 16 / 0.97)) 0%,
-    color-mix(in srgb, var(--gold) 14%, rgb(14 14 16 / 0.97)) 50%,
-    color-mix(in srgb, var(--primary) 32%, rgb(14 14 16 / 0.97)) 100%
-  );
-  border-bottom-color: rgba(var(--primary-rgb), 0.3);
+  /* Franja dorada del tema (dentro del navbar --primary es blanco). */
+  background: linear-gradient(90deg, transparent 0%, var(--gold) 20%, var(--gold) 80%, transparent 100%);
+  box-shadow: 0 1px 8px rgba(var(--gold-rgb), 0.45);
 }
 
-/* Menú desplegable del celular: mismo tinte del tema que la barra (antes
-   era bg-background blanco y en el celular todo el navbar se veía blanco). */
+/* Menú desplegable del celular: mismo color del tema, un poco más oscuro
+   para separarlo de la barra. */
 .navbar-panel {
-  background: color-mix(in srgb, var(--primary) 12%, #fff);
-}
-.dark .navbar-panel {
-  background: color-mix(in srgb, var(--primary) 22%, #0e0e10);
+  background: color-mix(in srgb, var(--nav-bg) 88%, #000);
 }
 
 /* Cuando hay un tema de temporada activo (Navidad, Halloween...) la
