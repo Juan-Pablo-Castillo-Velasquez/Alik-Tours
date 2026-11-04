@@ -19,12 +19,12 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # version que se le pida preparar a mano, así que fijar aquí un pnpm
 # distinto (como se hacía antes con pnpm@8) no tenía ningún efecto real
 # y quedaba engañoso. pnpm-workspace.yaml también se copia ahora: sin
-# él, "pnpm install --no-frozen-lockfile" no ve "allowBuilds" y falla con
+# él, "pnpm install --frozen-lockfile" no ve "allowBuilds" y falla con
 # [ERR_PNPM_IGNORED_BUILDS] (esbuild/@tailwindcss/oxide/core-js).
 RUN corepack enable
 
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    pnpm install --no-frozen-lockfile
+    pnpm install --frozen-lockfile
 
 COPY . .
 

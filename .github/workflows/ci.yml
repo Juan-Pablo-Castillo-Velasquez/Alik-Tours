@@ -45,7 +45,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: alecktourfrondend
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: ESLint (frontend)
         working-directory: alecktourfrondend

@@ -4,6 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "packageManager": "pnpm@11.0.9",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "build": "vite build && node scripts/prerender-seo.mjs",
     "dev": "vite",
