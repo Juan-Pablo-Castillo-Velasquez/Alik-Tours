@@ -18,7 +18,7 @@ export default function Home() {
   useSeoMeta({
     title: "Agencia de Viajes en Colombia · RNT 224224",
     description:
-      "Agencia de viajes Alik Tours (RNT 224224): paquetes y hoteles nacionales e internacionales, viajes personalizados y asesoría personalizada. Viajar para vivir.",
+      "Alik Tours, agencia de viajes en Colombia (RNT 224224): paquetes nacionales e internacionales, hoteles y viajes a tu medida con asesoría humana y pago en cuotas.",
     path: "/",
   });
 

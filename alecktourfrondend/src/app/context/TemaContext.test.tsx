@@ -66,11 +66,12 @@ describe("TemaContext", () => {
     expect(JSON.parse(localStorage.getItem("alik:tema-activo") ?? "{}").clave).toBe("halloween");
   });
 
-  it("en Halloween cambia el favicon, y con el tema normal lo devuelve", async () => {
+  it("el favicon es siempre el logo, también en Halloween", async () => {
     responderTema(halloween);
     const { result } = renderHook(() => useTema(), { wrapper });
     await waitFor(() => expect(result.current.temaActivo?.clave).toBe("halloween"));
-    expect(document.getElementById("favicon-png")?.getAttribute("href")).toBe("/favicon-halloween.png");
+    expect(document.getElementById("favicon-png")?.getAttribute("href")).toBe("/favicon.png");
+    expect(document.getElementById("favicon-svg")?.getAttribute("href")).toBe("/icon-192.png");
 
     responderTema(base);
     await act(() => result.current.refrescarTemaActivo());

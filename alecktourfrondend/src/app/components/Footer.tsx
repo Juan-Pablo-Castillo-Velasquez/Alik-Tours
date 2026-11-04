@@ -111,6 +111,7 @@ export default function Footer() {
             style={{ color: "rgba(243,228,232,0.55)" }}
           >
             © {currentYear} {BRAND.name}. Todos los derechos reservados. · RNT {BRAND.rnt}
+            <span className="block mt-1">Agencia fundada por Juan Pablo Castillo Velásquez</span>
           </p>
           <div className="flex gap-6 text-sm">
             <Link to="/terms" className="footer-link">

@@ -65,7 +65,7 @@ export default function Benefits() {
             className="text-3xl md:text-4xl text-foreground font-medium"
             style={{ fontFamily: "'Fraunces', serif" }}
           >
-            Viajar seguro, pagar <span className="text-primary italic">fácil</span>.
+            Viajar seguro, pagar <span className="text-primary">fácil</span>.
           </h2>
         </motion.div>
 

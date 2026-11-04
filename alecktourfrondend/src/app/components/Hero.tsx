@@ -237,7 +237,7 @@ export default function Hero() {
           >
             Tu próximo viaje
             <br />
-            empieza <span className="italic text-[var(--gold)]">aquí.</span>
+            empieza <span className="text-[var(--gold)]">aquí.</span>
           </h1>
 
           {/* Descripción */}

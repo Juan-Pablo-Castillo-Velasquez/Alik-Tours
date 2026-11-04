@@ -45,27 +45,17 @@ export function sincronizarThemeColorMeta(): void {
   if (primario) meta.setAttribute("content", primario);
 }
 
-// Favicon de temporada: por ahora solo Halloween tiene una variante
-// propia (ver public/favicon-halloween.png, mismo badge del navbar pero
-// con el ícono "ghost" -- el mismo que ya usa este tema en icono, ver
-// tema_schema.py) -- agregar otra temporada es agregar otro `if` acá y
-// su archivo en /public, no un sistema nuevo. Fuera de esa temporada
-// activa, siempre se restauran los íconos por defecto (el badge real del
-// navbar, ver Navbar.tsx) -- nunca se queda pegado en un ícono viejo.
-function aplicarFaviconTemporada(tema: Tema | null): void {
+// El favicon es SIEMPRE el logo oficial, también con un tema de temporada
+// activo: es lo que se ve en la pestaña y en los resultados de Google, y la
+// marca debe reconocerse igual todo el año (antes Halloween lo cambiaba por
+// un fantasma). Se reescriben los href por si quedó uno viejo en caché.
+function aplicarFaviconTemporada(_tema: Tema | null): void {
   const svgLink = document.getElementById("favicon-svg") as HTMLLinkElement | null;
   const pngLink = document.getElementById("favicon-png") as HTMLLinkElement | null;
   if (!svgLink || !pngLink) return;
-
-  if (tema?.clave === "halloween") {
-    svgLink.type = "image/png";
-    svgLink.href = "/favicon-halloween.png";
-    pngLink.href = "/favicon-halloween.png";
-  } else {
-    svgLink.type = "image/png";
-    svgLink.href = "/icon-192.png";
-    pngLink.href = "/favicon.png";
-  }
+  svgLink.type = "image/png";
+  svgLink.href = "/icon-192.png";
+  pngLink.href = "/favicon.png";
 }
 
 // Recolorea TODO el sitio (navbar, botones, footer, hero, sidebar admin)

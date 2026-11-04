@@ -1,0 +1,14 @@
+{
+  "name": "Alik Tours · Agencia de viajes",
+  "short_name": "Alik Tours",
+  "description": "Agencia de viajes en Colombia: paquetes, hoteles y viajes a tu medida con asesoría humana. Viajar para vivir.",
+  "lang": "es-CO",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6e1832",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,24 @@
+/* Una sola fuente para TODO el sitio (pedido del equipo): títulos, texto,
+   botones, formularios y el panel usan Plus Jakarta Sans (se carga en
+   index.html) y nada sale en cursiva.
+
+   Va con !important a propósito: hay componentes con estilo en línea
+   (fontFamily: 'Fraunces', serif), clases font-serif/font-mono e italic
+   repartidos por la app; con esta regla la página se ve igual en todos lados
+   sin tener que perseguirlos uno por uno. */
+:root {
+  --font-sitio: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  font-family: var(--font-sitio) !important;
+  font-style: normal !important;
+}
+
+/* Sin cursivas "falsas" que el navegador inventa inclinando la letra. */
+html {
+  font-synthesis-style: none;
+}

@@ -67,7 +67,7 @@ export default function DestinationsGrid() {
                             style={{ fontFamily: "'Fraunces', serif" }}
                         >
                             Destinos que <br className="hidden md:block" />
-                            <span className="text-primary italic">enamoran</span>
+                            <span className="text-primary">enamoran</span>
                         </h2>
                         <p className="text-muted-foreground leading-relaxed mb-6 max-w-md">
                             Cada hospedaje pasa por nuestra curaduría antes de llegar a esta lista. Calidad antes que cantidad. Reserva hoy y recibe beneficios.
