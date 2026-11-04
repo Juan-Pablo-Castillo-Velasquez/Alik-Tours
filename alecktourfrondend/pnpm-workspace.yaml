@@ -17,3 +17,7 @@ allowBuilds:
   '@tailwindcss/oxide': true
   core-js: true
   esbuild: true
+  # msw (solo pruebas, semana 5 del bootcamp) trae un postinstall que
+  # copia su service worker para el navegador; los tests usan msw/node y
+  # no lo necesitan. Se declara explícitamente para que pnpm no falle.
+  msw: false
