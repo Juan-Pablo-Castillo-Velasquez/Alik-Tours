@@ -1,5 +1,7 @@
 # --- Dependencias ---
 node_modules/
+# También como enlace simbólico (sin la barra solo se ignora la carpeta)
+node_modules
 jspm_packages/
 web_cached_nodes/
 
