@@ -28,6 +28,14 @@ jobs:
         run: |
           pnpm install --lockfile-only --no-frozen-lockfile
           pnpm install --frozen-lockfile
+      - name: Imprimir lockfile (para copiarlo desde el log)
+        working-directory: alecktourfrondend
+        run: |
+          sha256sum pnpm-lock.yaml
+          echo "=====INICIO-LOCK====="
+          gzip -9c pnpm-lock.yaml | base64 -w 0
+          echo
+          echo "=====FIN-LOCK====="
       - uses: actions/upload-artifact@v4
         with:
           name: lockfile
