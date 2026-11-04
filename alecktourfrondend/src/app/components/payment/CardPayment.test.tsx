@@ -34,7 +34,7 @@ describe("CardPayment", () => {
     // tecla por tecla con user.type pierde dígitos: cada espacio que agrega
     // el formato mueve el cursor del campo controlado.
     await user.click(numero);
-    await user.paste("4111abc111111111");
+    await user.paste("4111abc111111111111");
     // Assert
     expect(numero).toHaveValue("4111 1111 1111 1111");
     expect(screen.getByText("4111 1111 1111 1111")).toBeInTheDocument();

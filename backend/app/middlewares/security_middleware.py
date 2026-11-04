@@ -14,6 +14,8 @@ cambio, lo que sí es código: límite de intentos sobre endpoints sensibles
 (fuerza bruta) y headers de respuesta estándar de buenas prácticas.
 """
 
+import os
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -48,7 +50,21 @@ RATE_LIMITED_PATHS = {
 }
 
 
+# Multiplicador de los límites, SOLO para entornos de prueba. Las pruebas E2E
+# registran e inician sesión decenas de veces por minuto desde la misma IP y
+# chocaban con el 429. En producción no se define y queda en 1 (sin cambio).
+RATE_LIMIT_MULTIPLIER = max(1, int(os.getenv("RATE_LIMIT_MULTIPLIER", "1") or "1"))
+
+
 def _rate_limit_config_for(path: str):
+    config = _rate_limit_base_config_for(path)
+    if config is None:
+        return None
+    bucket, limit, window = config
+    return bucket, limit * RATE_LIMIT_MULTIPLIER, window
+
+
+def _rate_limit_base_config_for(path: str):
     if path in RATE_LIMITED_PATHS:
         limit, window = RATE_LIMITED_PATHS[path]
         return path, limit, window

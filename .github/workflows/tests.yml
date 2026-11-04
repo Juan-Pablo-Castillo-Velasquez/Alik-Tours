@@ -183,6 +183,8 @@ jobs:
       MAIL_PORT: 1025
       MAIL_SERVER: localhost
       MAIL_FROM_NAME: AlecTours
+      # Las E2E hacen muchos registros/logins seguidos desde la misma IP
+      RATE_LIMIT_MULTIPLIER: "100"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
