@@ -117,6 +117,8 @@ class TestRegistroDeUsuario:
     def test_si_el_usuario_ya_existe_no_crea_nada(self, repo):
         repo.buscar_usuario.return_value = SimpleNamespace(id_usuario=1)
         db = MagicMock(name="sesion")
+        # El correo se revisa antes que el usuario: aquí el correo está libre.
+        db.query.return_value.filter.return_value.first.return_value = None
 
         resultado = auth_service.register_user(db, "ana", "ana@correo.com", "Clave123!")
 

@@ -43,15 +43,19 @@ def _generar_y_guardar_codigo(db: Session, user) -> str:
 
 
 def register_user(db: Session, username: str, email: str, password: str, terminos_version: str | None = None):
-    existing_user = get_user_by_username(db, username)
-    if existing_user:
-        return {"error": "El nombre de usuario ya existe"}
-
     from app.models.user_model import Usuario
 
+    # El correo se revisa PRIMERO: el registro del sitio arma el usuario a
+    # partir del correo, así que con un correo repetido también se repite el
+    # usuario y la persona veía "El nombre de usuario ya existe", que no le
+    # dice qué hacer (lo encontró la prueba E2E de registro).
     existing_email = db.query(Usuario).filter(Usuario.correo_electronico == email).first()
     if existing_email:
         return {"error": "El correo electrónico ya está registrado"}
+
+    existing_user = get_user_by_username(db, username)
+    if existing_user:
+        return {"error": "El nombre de usuario ya existe"}
 
     hashed_password = hash_password(password)
     user_data = {
