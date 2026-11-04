@@ -14,7 +14,10 @@ interface FetchOptions extends RequestInit {
 
 // ─── Login (form-encoded, requerido por FastAPI OAuth2) ───────────────────────
 export async function apiLogin(username: string, password: string) {
-  const body = new URLSearchParams({ username, password });
+  // Como texto ya codificado (mismo formato application/x-www-form-urlencoded):
+  // funciona igual en el navegador y en el entorno de pruebas (jsdom + fetch
+  // de Node, que no acepta el URLSearchParams de jsdom como cuerpo).
+  const body = new URLSearchParams({ username, password }).toString();
 
   const response = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",

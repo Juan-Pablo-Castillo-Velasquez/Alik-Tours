@@ -50,8 +50,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedUser = localStorage.getItem("usuario");
     if (savedToken && savedUser) {
       try {
+        // Primero se lee el usuario: si el JSON está corrupto no debe quedar
+        // un token puesto (antes se fijaba antes del parse y la sesión
+        // quedaba "iniciada" con datos rotos; lo encontró AuthContext.test).
+        const usuarioGuardado = JSON.parse(savedUser);
         setToken(savedToken);
-        setUsuario(JSON.parse(savedUser));
+        setUsuario(usuarioGuardado);
       } catch {
         // JSON inválido — limpiar
         localStorage.removeItem("token");

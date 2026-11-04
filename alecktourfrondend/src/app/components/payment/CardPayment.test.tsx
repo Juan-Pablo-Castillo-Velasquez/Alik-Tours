@@ -30,8 +30,11 @@ describe("CardPayment", () => {
     const user = userEvent.setup();
     render(<Arnes />);
     const numero = screen.getByLabelText("Número de tarjeta");
-    // Act
-    await user.type(numero, "4111abc111111111");
+    // Act: se PEGA el número (como lo copia la gente del banco). Escribirlo
+    // tecla por tecla con user.type pierde dígitos: cada espacio que agrega
+    // el formato mueve el cursor del campo controlado.
+    await user.click(numero);
+    await user.paste("4111abc111111111");
     // Assert
     expect(numero).toHaveValue("4111 1111 1111 1111");
     expect(screen.getByText("4111 1111 1111 1111")).toBeInTheDocument();
