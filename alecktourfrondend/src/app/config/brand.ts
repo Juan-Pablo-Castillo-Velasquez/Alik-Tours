@@ -11,6 +11,8 @@ export const BRAND = {
   siteUrl: "https://alik-tours.vercel.app",
   // Teléfono publicado en el JSON-LD del sitio (index.html).
   telefono: "+57 322 812 7104",
+  // Número de WhatsApp de la agencia (botones "Escríbenos por WhatsApp").
+  whatsapp: "+57 322 817 4200",
   instagram: "https://www.instagram.com/aliktours/",
   // Logo oficial (círculo "ALIK TOURS - Viajar Para Vivir"), ver public/.
   logo: "/logo-alik-tours-160.png",

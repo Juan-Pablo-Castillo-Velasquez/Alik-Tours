@@ -838,7 +838,7 @@ export default function Checkout() {
                       >
                         <IconoWhatsApp className="w-4 h-4 text-[#25D366] mb-1.5" />
                         <b className="block text-xs text-foreground">¿Dudas? WhatsApp</b>
-                        <span className="text-[11px] text-muted-foreground">{BRAND.telefono}</span>
+                        <span className="text-[11px] text-muted-foreground">{BRAND.whatsapp}</span>
                       </a>
                     </div>
                   </div>

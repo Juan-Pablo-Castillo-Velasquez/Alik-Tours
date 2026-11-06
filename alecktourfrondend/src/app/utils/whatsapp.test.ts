@@ -29,7 +29,7 @@ describe("enlaceWhatsApp", () => {
     expect(enlaceWhatsApp("3001234567")).toBe("https://wa.me/573001234567");
   });
 
-  it("el de la agencia usa el teléfono oficial", () => {
-    expect(enlaceWhatsAppAgencia("Hola")).toBe("https://wa.me/573228127104?text=Hola");
+  it("el de la agencia usa su número de WhatsApp", () => {
+    expect(enlaceWhatsAppAgencia("Hola")).toBe("https://wa.me/573228174200?text=Hola");
   });
 });

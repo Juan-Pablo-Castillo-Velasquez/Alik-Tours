@@ -62,7 +62,7 @@ export default function Footer() {
             {/* Contacto directo: WhatsApp e Instagram oficiales (el bloque
                 "Social" estaba vacío). */}
             <div className="flex flex-wrap items-center gap-3">
-              <BotonWhatsApp texto="Escríbenos por WhatsApp" detalle={BRAND.telefono} />
+              <BotonWhatsApp texto="Escríbenos por WhatsApp" detalle={BRAND.whatsapp} />
               <a
                 href={BRAND.instagram}
                 target="_blank"

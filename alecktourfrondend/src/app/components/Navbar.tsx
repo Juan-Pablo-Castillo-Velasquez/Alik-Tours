@@ -902,7 +902,7 @@ export default function Navbar() {
                     <BotonWhatsApp
                       variante="bloque"
                       texto="Escríbenos por WhatsApp"
-                      detalle={BRAND.telefono}
+                      detalle={BRAND.whatsapp}
                       onClick={() => setIsMenuOpen(false)}
                     />
                   </div>

@@ -21,7 +21,7 @@ export function enlaceWhatsApp(numero: string | null | undefined, mensaje?: stri
   return mensaje ? `https://wa.me/${n}?text=${encodeURIComponent(mensaje)}` : `https://wa.me/${n}`;
 }
 
-/** Chat de WhatsApp con la agencia (el teléfono oficial de BRAND). */
+/** Chat de WhatsApp con la agencia (BRAND.whatsapp). */
 export function enlaceWhatsAppAgencia(mensaje = `Hola ${BRAND.name}, quiero información sobre un viaje.`): string {
-  return enlaceWhatsApp(BRAND.telefono, mensaje) as string;
+  return enlaceWhatsApp(BRAND.whatsapp, mensaje) as string;
 }
