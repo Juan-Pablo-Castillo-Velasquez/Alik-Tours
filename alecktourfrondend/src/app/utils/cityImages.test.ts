@@ -21,7 +21,7 @@ describe("getCityImage", () => {
 
   it("arma la URL con ancho 1200 y calidad 80 si no se piden otros", () => {
     expect(getCityImage("Cali")).toMatch(/\?w=1200&q=80&auto=format$/);
-    expect(getCityImage("Cali", { width: 400, quality: 60 })).toMatch(/\?w=400&q=60$/);
+    expect(getCityImage("Cali", { width: 400, quality: 60 })).toMatch(/\?w=400&q=60&auto=format$/);
   });
 });
 
