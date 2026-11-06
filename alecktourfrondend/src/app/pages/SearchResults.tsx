@@ -23,7 +23,7 @@ import { HotelDetailResponse, hotelService } from "../services/hotel.service";
 import { normalizarTexto } from "../utils/normalizarTexto";
 
 export default function SearchResults() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { temaActivo } = useTema();
   const esHalloween = temaActivo?.clave === "halloween";
 
@@ -40,14 +40,17 @@ export default function SearchResults() {
   // denominador real (nunca inventado). null mientras no aplica.
   const [totalCatalogo, setTotalCatalogo] = useState<HotelDetailResponse[] | null>(null);
 
+  // Los filtros viven también en la URL (f_cal, f_pais, f_ciudad, f_precio,
+  // f_serv): antes se perdían al entrar a un hotel y volver con "atrás", y
+  // no se podía compartir una búsqueda filtrada.
   const [calificacionFilter, setCalificacionFilter] =
-    useState<string>("all");
+    useState<string>(() => searchParams.get("f_cal") ?? "all");
 
   const [paisFilter, setPaisFilter] =
-    useState<string>("all");
+    useState<string>(() => searchParams.get("f_pais") ?? "all");
 
   const [ciudadFilter, setCiudadFilter] =
-    useState<string>("all");
+    useState<string>(() => searchParams.get("f_ciudad") ?? "all");
 
   const [ciudadSearch, setCiudadSearch] =
     useState<string>("");
@@ -56,11 +59,38 @@ export default function SearchResults() {
     useState(false);
 
   type PrecioBucket = "all" | "lt300" | "300-600" | "600-1000" | "gt1000";
-  const [precioFilter, setPrecioFilter] = useState<PrecioBucket>("all");
+  const [precioFilter, setPrecioFilter] = useState<PrecioBucket>(() => {
+    const v = searchParams.get("f_precio");
+    return v === "lt300" || v === "300-600" || v === "600-1000" || v === "gt1000" ? v : "all";
+  });
 
   // Filtro de servicios populares (estilo Despegar: checkboxes con conteo
   // real de cuántos hoteles del resultado tienen cada servicio).
-  const [caracteristicasFilter, setCaracteristicasFilter] = useState<string[]>([]);
+  const [caracteristicasFilter, setCaracteristicasFilter] = useState<string[]>(
+    () => searchParams.get("f_serv")?.split("|").filter(Boolean) ?? []
+  );
+
+  // Filtros -> URL (replace: no llena el historial con cada clic).
+  useEffect(() => {
+    const valores: Record<string, string> = {
+      f_cal: calificacionFilter === "all" ? "" : calificacionFilter,
+      f_pais: paisFilter === "all" ? "" : paisFilter,
+      f_ciudad: ciudadFilter === "all" ? "" : ciudadFilter,
+      f_precio: precioFilter === "all" ? "" : precioFilter,
+      f_serv: caracteristicasFilter.join("|"),
+    };
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [k, v] of Object.entries(valores)) {
+          if (v) next.set(k, v);
+          else next.delete(k);
+        }
+        return next.toString() === prev.toString() ? prev : next;
+      },
+      { replace: true }
+    );
+  }, [calificacionFilter, paisFilter, ciudadFilter, precioFilter, caracteristicasFilter, setSearchParams]);
   const toggleCaracteristica = (nombre: string) =>
     setCaracteristicasFilter((prev) =>
       prev.includes(nombre) ? prev.filter((c) => c !== nombre) : [...prev, nombre]
@@ -108,12 +138,17 @@ export default function SearchResults() {
   /*
    * CARGAR HOTELES
    */
+  // Solo la búsqueda (destino, fechas, personas) dispara una nueva carga:
+  // los filtros f_* también están en la URL pero se aplican en el navegador.
+  const paramStart = searchParams.get("start");
+  const paramEnd = searchParams.get("end");
+  const paramPeople = searchParams.get("people");
   useEffect(() => {
     setLoading(true);
 
-    const start = searchParams.get("start");
-    const end = searchParams.get("end");
-    const ppl = searchParams.get("people");
+    const start = paramStart;
+    const end = paramEnd;
+    const ppl = paramPeople;
 
     if (start) setStartDate(start);
     if (end) setEndDate(end);
@@ -142,7 +177,7 @@ export default function SearchResults() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [searchParams]);
+  }, [paramStart, paramEnd, paramPeople]);
 
   /*
    * FILTRADO
