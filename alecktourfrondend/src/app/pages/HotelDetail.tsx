@@ -415,9 +415,11 @@ export default function HotelDetail() {
             </h1>
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <MapPin className="w-4 h-4 text-primary" />
-              <span className="hover:underline cursor-pointer">
-                {hotel.direccion || "Ubicación céntrica"}, {hotel.ciudad}
-              </span>
+              {/* Sin dirección registrada se muestra solo la ciudad (antes
+                  decía "Ubicación céntrica", un dato inventado). */}
+              <a href={enlaceMapa} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                {[hotel.direccion, hotel.ciudad].filter(Boolean).join(", ")}
+              </a>
               <span>•</span>
               {/* Antes era un texto con aspecto de enlace que no hacía nada. */}
               <a
