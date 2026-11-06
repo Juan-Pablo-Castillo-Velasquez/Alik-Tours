@@ -5,6 +5,7 @@ import {
   Globe, UserCheck, PhoneCall, ChevronRight, AlertCircle,
   CheckCircle, Clock, XCircle, FileText, Save, MoreHorizontal,
   MessageCircle, Send, BedDouble, Sparkles, Receipt, Paperclip,
+  ArrowUp, ArrowDown, ArrowUpDown,
 } from "lucide-react";
 import { Reserva, Cliente, Paquete, ESTADO_COLOR, inputCls, resolveFotoUrl } from "./types";
 import { reservaDetailService, reservaService, type PagoResponse } from "../../services/reserva.service";
@@ -903,12 +904,15 @@ interface Props {
   onVerPagos?: (id: number) => void;
 }
 
+type CampoOrden = "id" | "fechas" | "total" | "actualizado";
+
 export default function ModuleReservas({
   reservas, clientes = [], empleados = [], paquetes = [], pagos = [], solicitudes = [],
   onDelete, onNueva, onUpdateEstado, reservaIdInicial = null, estadoInicial = null,
   clienteIdFiltro = null, onVerPagos,
 }: Props) {
   const [search,       setSearch]       = useState("");
+  const [orden, setOrden] = useState<{ campo: CampoOrden; dir: "asc" | "desc" }>({ campo: "id", dir: "desc" });
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>("todos");
   const [pagoFilter,   setPagoFilter]   = useState<PagoFilter>("todos");
   const [canalFilter,  setCanalFilter]  = useState<CanalFilter>("todos");
@@ -1011,16 +1015,44 @@ export default function ModuleReservas({
     return matchEstado && matchPago && matchCanal && matchAsesor && matchCliente && matchSearch;
   });
 
-  const { page, pageCount, slice, setPage } = usePagination(filtered, 10);
+  // Orden por columna (clic en el encabezado; segundo clic invierte). Por
+  // defecto, lo más reciente primero (id descendente).
+  const valorOrden = (r: Reserva): number | string => {
+    switch (orden.campo) {
+      case "fechas": return r.fecha_inicio ?? "";
+      case "total": return r.precio_total ?? 0;
+      case "actualizado": return r.fecha_ultima_actualizacion ?? "";
+      default: return r.id_reserva;
+    }
+  };
+  const ordenadas = [...filtered].sort((a, b) => {
+    const va = valorOrden(a), vb = valorOrden(b);
+    const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb));
+    return orden.dir === "asc" ? cmp : -cmp;
+  });
+  const ordenarPor = (campo: CampoOrden) =>
+    setOrden((o) => ({ campo, dir: o.campo === campo && o.dir === "desc" ? "asc" : "desc" }));
+  const thOrdenable = (campo: CampoOrden, texto: string) => (
+    <th className={thCls} aria-sort={orden.campo === campo ? (orden.dir === "asc" ? "ascending" : "descending") : "none"}>
+      <button type="button" onClick={() => ordenarPor(campo)} className="inline-flex items-center gap-1 uppercase hover:text-foreground">
+        {texto}
+        {orden.campo !== campo ? <ArrowUpDown className="w-3 h-3 opacity-50" />
+          : orden.dir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+      </button>
+    </th>
+  );
+
+  const { page, pageCount, slice, setPage } = usePagination(ordenadas, 10);
 
   const counts = reservas.reduce((acc, r) => {
     acc[r.estado] = (acc[r.estado] ?? 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  // Suma real de precio_total (ya calculado en el backend) — nunca un
-  // número inventado, solo la agregación de lo que ya trae cada reserva.
-  const totalIngresos = reservas.reduce((sum, r) => sum + (r.precio_total ?? 0), 0);
+  // Ingresos = lo COBRADO: suma de los pagos aprobados. Antes se sumaba el
+  // precio_total de TODAS las reservas, incluidas las canceladas y las que
+  // nunca se pagaron, y la cifra salía inflada.
+  const totalIngresos = pagos.reduce((sum, p) => sum + (p.estado === "pagado" ? Number(p.monto) || 0 : 0), 0);
 
   const CANAL_ICON: Record<CanalOrigen, React.ReactNode> = {
     web:      <Globe      className="w-3.5 h-3.5 text-primary/70"    />,
@@ -1054,7 +1086,7 @@ export default function ModuleReservas({
         <MetricCard label="Confirmadas" value={counts.confirmada ?? 0} color="green" />
         <MetricCard label="Pendientes"  value={counts.pendiente  ?? 0} color="amber" />
         <MetricCard label="Canceladas"  value={counts.cancelada  ?? 0} color="red"   />
-        <MetricCard label="Ingresos"    value={`$${totalIngresos.toLocaleString("es-CO")}`} color="green" />
+        <MetricCard label="Cobrado (pagos aprobados)" value={`$${totalIngresos.toLocaleString("es-CO")}`} color="green" />
       </div>
 
       {/* Búsqueda + estado */}
@@ -1219,18 +1251,18 @@ export default function ModuleReservas({
           <table className="w-full text-sm">
             <thead className="bg-muted/40 border-b border-border">
               <tr>
-                <th className={thCls}>ID</th>
+                {thOrdenable("id", "ID")}
                 {isVisible("cliente")    && <th className={thCls}>{COLUMN_LABELS.cliente}</th>}
                 {isVisible("paquete")    && <th className={thCls}>{COLUMN_LABELS.paquete}</th>}
-                {isVisible("fechas")     && <th className={thCls}>{COLUMN_LABELS.fechas}</th>}
+                {isVisible("fechas")     && thOrdenable("fechas", COLUMN_LABELS.fechas)}
                 {isVisible("pax")        && <th className={thCls}>{COLUMN_LABELS.pax}</th>}
-                {isVisible("total")      && <th className={thCls}>{COLUMN_LABELS.total}</th>}
+                {isVisible("total")      && thOrdenable("total", COLUMN_LABELS.total)}
                 {isVisible("metodoPago") && <th className={thCls}>{COLUMN_LABELS.metodoPago}</th>}
                 {isVisible("estadoPago") && <th className={thCls}>{COLUMN_LABELS.estadoPago}</th>}
                 {isVisible("estado")     && <th className={thCls}>{COLUMN_LABELS.estado}</th>}
                 {isVisible("canal")      && <th className={thCls}>{COLUMN_LABELS.canal}</th>}
                 {isVisible("asesor")     && <th className={thCls}>{COLUMN_LABELS.asesor}</th>}
-                {isVisible("actualizado")&& <th className={thCls}>{COLUMN_LABELS.actualizado}</th>}
+                {isVisible("actualizado")&& thOrdenable("actualizado", COLUMN_LABELS.actualizado)}
                 <th className={thCls}></th>
               </tr>
             </thead>
