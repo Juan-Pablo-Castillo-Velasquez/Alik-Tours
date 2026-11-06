@@ -5,12 +5,15 @@ on:
 permissions:
   contents: read
 jobs:
-  enlaces:
+  api:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: npm i --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
-      - run: node .github/scripts/revisar-enlaces.mjs
+      - name: Estado del backend en producción
+        run: |
+          B=https://proyectoalectoursdocker.onrender.com
+          for i in 1 2 3; do curl -s -o /dev/null -w "warmup %{http_code} %{time_total}s\n" --max-time 90 $B/ ; done
+          for p in / /health /api/health /docs /api/hoteles/2 "/api/hoteles/?skip=0&limit=3" /api/resenas/destacadas "/api/resenas?skip=0&limit=3" /api/promociones/seleccion-casa /api/promociones/destacados "/api/comunidad/videos?inicio=true" "/api/comunidad/publicaciones?skip=0&limit=2" /api/temas/activo /api/paquetes/3/detalle "/api/hoteles/destinos-sugeridos?q=&limit=8"; do
+            code=$(curl -s -o body.txt -w "%{http_code} %{time_total}s" --max-time 60 -H "Origin: https://alik-tours.vercel.app" -D h.txt "$B$p")
+            echo "== $code $p | cors: $(grep -i '^access-control-allow-origin' h.txt | tr -d '\r') | ratelimit: $(grep -i 'retry-after\|x-ratelimit' h.txt | tr -d '\r' | tr '\n' ' ')"
+            head -c 300 body.txt; echo
+          done
