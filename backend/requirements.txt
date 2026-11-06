@@ -20,6 +20,8 @@ bcrypt==4.2.0
 # cambiar la API que usa este proyecto (jwt.encode/jwt.decode/JWTError, ver
 # app/core/security.py) — verificado con pytest tras el bump.
 python-jose[cryptography]==3.5.0
+# pyasn1 llega por python-jose; <0.6.5 tiene CVE-2026-119194..119197 (pip-audit).
+pyasn1==0.6.5
 pyasn1==0.6.4
 
 fastapi-mail==1.4.1
