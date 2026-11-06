@@ -84,33 +84,33 @@ const DEFAULT_IMAGE = getDefaultImage({ width: 1200 });
 //      cada hotel muestre siempre la misma combinación y hoteles distintos
 //      no luzcan idénticos entre sí.
 const AMENITY_POOL = [
-  "https://images.unsplash.com/photo-1743525922686-badbeac16a34?w=800&q=80", // piscina
-  "https://images.unsplash.com/photo-1695094411862-0e047fbddcb1?w=800&q=80", // restaurante
-  "https://images.unsplash.com/photo-1660557989695-14fac79c086d?w=800&q=80", // recepción
-  "https://images.unsplash.com/photo-1778331246390-2b91f56864e4?w=800&q=80", // spa
-  "https://images.unsplash.com/photo-1716367840407-f9414a84b325?w=800&q=80", // gimnasio
-  "https://images.unsplash.com/photo-1777113310184-140ff530f4dd?w=800&q=80", // terraza
+  "https://images.unsplash.com/photo-1743525922686-badbeac16a34?w=800&q=80&auto=format", // piscina
+  "https://images.unsplash.com/photo-1695094411862-0e047fbddcb1?w=800&q=80&auto=format", // restaurante
+  "https://images.unsplash.com/photo-1660557989695-14fac79c086d?w=800&q=80&auto=format", // recepción
+  "https://images.unsplash.com/photo-1778331246390-2b91f56864e4?w=800&q=80&auto=format", // spa
+  "https://images.unsplash.com/photo-1716367840407-f9414a84b325?w=800&q=80&auto=format", // gimnasio
+  "https://images.unsplash.com/photo-1777113310184-140ff530f4dd?w=800&q=80&auto=format", // terraza
 ];
 
 const HOTEL_EXTRA_PHOTOS: Record<string, string[]> = {
   "Hotel Paraiso": [
-    "https://images.unsplash.com/photo-1777169794972-12095816073b?w=800&q=80",
-    "https://images.unsplash.com/photo-1777180249046-abf7d640e0d9?w=800&q=80",
+    "https://images.unsplash.com/photo-1777169794972-12095816073b?w=800&q=80&auto=format",
+    "https://images.unsplash.com/photo-1777180249046-abf7d640e0d9?w=800&q=80&auto=format",
   ],
   "Resort Sol y Arena": [
-    "https://images.unsplash.com/photo-1729605411476-defbdab14c54?w=800&q=80",
-    "https://images.unsplash.com/photo-1619329268107-5aba62ca4528?w=800&q=80",
+    "https://images.unsplash.com/photo-1729605411476-defbdab14c54?w=800&q=80&auto=format",
+    "https://images.unsplash.com/photo-1619329268107-5aba62ca4528?w=800&q=80&auto=format",
   ],
   "Montana Magica": [
-    "https://images.unsplash.com/photo-1696860740767-f4211c9209f4?w=800&q=80",
-    "https://images.unsplash.com/photo-1783295541977-a3d9331e2378?w=800&q=80",
+    "https://images.unsplash.com/photo-1696860740767-f4211c9209f4?w=800&q=80&auto=format",
+    "https://images.unsplash.com/photo-1783295541977-a3d9331e2378?w=800&q=80&auto=format",
   ],
   "Gran Hotel Centro": [
-    "https://images.unsplash.com/photo-1758193783649-13371d7fb8dd?w=800&q=80",
-    "https://images.unsplash.com/photo-1744025098626-66c0b9cb1ba8?w=800&q=80",
+    "https://images.unsplash.com/photo-1758193783649-13371d7fb8dd?w=800&q=80&auto=format",
+    "https://images.unsplash.com/photo-1744025098626-66c0b9cb1ba8?w=800&q=80&auto=format",
   ],
   "Cabanas del Bosque": [
-    "https://images.unsplash.com/photo-1782846484501-d4b1c5b57953?w=800&q=80",
+    "https://images.unsplash.com/photo-1782846484501-d4b1c5b57953?w=800&q=80&auto=format",
   ],
 };
 
@@ -137,10 +137,10 @@ function getGalleryImages(hotel: HotelDetailResponse): string[] {
 // La API no guarda foto por habitación individual, así que usamos un pool
 // determinístico de fotos de habitación reales (mismo id -> misma foto siempre).
 const ROOM_IMAGES = [
-  "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80",
-  "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80",
-  "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80",
-  "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80",
+  "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80&auto=format",
+  "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80&auto=format",
+  "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80&auto=format",
+  "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80&auto=format",
 ];
 
 function getRoomImage(idHabitacion: number) {
@@ -291,6 +291,14 @@ export default function HotelDetail() {
   // genérica por ciudad de siempre (ver HotelCard.tsx, mismo criterio).
   const imagen = (hotel.imagen_url && resolveFotoUrl(hotel.imagen_url)) || getImage(hotel.ciudad ?? "");
   const galeria = getGalleryImages(hotel);
+  // Sin fotos propias (ni portada ni galería subidas desde el panel) se ven
+  // imágenes de referencia: se dice claramente para no mostrar como del
+  // hotel una piscina, un spa o un gimnasio que quizá no tiene.
+  const galeriaDeReferencia = !(hotel.imagenes && hotel.imagenes.length > 0);
+  const portadaDeReferencia = !hotel.imagen_url;
+  const enlaceMapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    [hotel.nombre_hotel, hotel.direccion, hotel.ciudad, hotel.pais].filter(Boolean).join(", ")
+  )}`;
   const habitacionesDisponibles =
     hotel.habitaciones?.filter((h) => h.estado === "disponible") ?? [];
   const precioMin = habitacionesDisponibles.length
@@ -411,9 +419,15 @@ export default function HotelDetail() {
                 {hotel.direccion || "Ubicación céntrica"}, {hotel.ciudad}
               </span>
               <span>•</span>
-              <span className="text-primary font-medium cursor-pointer hover:underline">
+              {/* Antes era un texto con aspecto de enlace que no hacía nada. */}
+              <a
+                href={enlaceMapa}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary font-medium hover:underline"
+              >
                 Ver mapa
-              </span>
+              </a>
             </div>
           </div>
 
@@ -421,6 +435,13 @@ export default function HotelDetail() {
               click en cualquier foto para verla ampliada (lightbox), antes
               solo se veían en miniatura. fotosLightbox combina portada +
               galería en un solo arreglo navegable. */}
+          {(galeriaDeReferencia || portadaDeReferencia) && (
+            <p className="text-xs text-muted-foreground mb-2">
+              {portadaDeReferencia && galeriaDeReferencia
+                ? "Imágenes de referencia: el hotel aún no ha publicado sus propias fotos."
+                : "Algunas imágenes son de referencia y pueden no corresponder a este hotel."}
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-2 mb-10 h-[45vh] md:h-[55vh] rounded-2xl overflow-hidden group">
             <div
               className="md:col-span-2 md:row-span-2 relative overflow-hidden h-full cursor-pointer"
@@ -443,7 +464,7 @@ export default function HotelDetail() {
               >
                 <img
                   src={img}
-                  alt="Instalaciones"
+                  alt={galeriaDeReferencia ? "Imagen de referencia" : `Foto de ${hotel.nombre_hotel}`}
                   className="w-full h-full object-cover hover:opacity-90 transition-opacity"
                 />
               </div>

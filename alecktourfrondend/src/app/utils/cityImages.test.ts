@@ -27,6 +27,6 @@ describe("getCityImage", () => {
 
 describe("getDefaultImage", () => {
   it("devuelve la foto genérica con las opciones pedidas", () => {
-    expect(getDefaultImage({ width: 800 })).toBe(`https://images.unsplash.com/${FOTO_POR_DEFECTO}?w=800&q=80`);
+    expect(getDefaultImage({ width: 800 })).toBe(`https://images.unsplash.com/${FOTO_POR_DEFECTO}?w=800&q=80&auto=format`);
   });
 });
