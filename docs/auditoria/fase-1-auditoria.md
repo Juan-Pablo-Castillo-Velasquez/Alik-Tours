@@ -35,7 +35,7 @@ Rutas públicas del frontend: `/`, `/packages`, `/package/:id`, `/hotel/:id`, `/
 
 | # | Problema | Módulo | Severidad | Causa | Solución | Riesgo | Estado |
 |---|---|---|---|---|---|---|---|
-| 1 | El backend de producción responde **500** en `/api/resenas`, `/api/resenas/destacadas`, `/api/promociones/seleccion-casa` y `/api/hoteles/destinos-sugeridos` | Infra / BD | **Crítico** | Probable: la migración `a7c3e9f1b4d2` (columnas nuevas en `resenas` y `comentarios_comunidad`) no se aplicó en Render, o el deploy falló al correrla | Revisar los logs de Render, aplicar `alembic upgrade head` y redeploy | Sin esto no cargan reseñas ni promociones en el inicio | **Bloqueado**: necesita acceso a Render (logs) |
+| 1 | El backend de producción responde **500** en `/api/resenas`, `/api/resenas/destacadas`, `/api/promociones/seleccion-casa` y `/api/hoteles/destinos-sugeridos` | Infra / BD | **Crítico** | Probable: la migración `a7c3e9f1b4d2` (columnas nuevas en `resenas` y `comentarios_comunidad`) no se aplicó en Render, o el deploy falló al correrla | Revisar los logs de Render, aplicar `alembic upgrade head` y redeploy | Sin esto no cargan reseñas ni promociones en el inicio | **Resuelto (verificado el 5 de noviembre, 22:10)**: el backend en Render ya corre el código nuevo (141 rutas, incluidas las de comunidad y reseñas) y la migración está aplicada. `/health` responde ok y las 4 rutas que fallaban responden 200. Los 500 vistos antes ocurrieron mientras Render redesplegaba |
 | 2 | El backend se duerme: 503 al arrancar, y después de varias páginas las peticiones fallan | Infra | Alto | Plan gratuito de Render y protección anti-bots de Cloudflare | Plan pago o ping de mantenimiento; revisar los límites | Primeras visitas lentas o fallidas | Pendiente (decisión de costo) |
 | 3 | Los pagos con tarjeta, PSE y PayPal son simulados y el checkout no lo decía; "Pago aprobado" parecía un cobro real | Pagos | **Crítico** | No hay pasarela conectada (decisión del proyecto) | Aviso claro en el checkout, "Pago de prueba: no se realizó ningún cobro real" y enlace a WhatsApp para pagar | Un cliente real podía creer que pagó | **Completado** (rama) |
 | 4 | Una tarjeta de hotel sin reseñas mostraba "8.0 Excelente" y 4 estrellas inventados | Hoteles | Alto | Valor por defecto `8` y `4` en `HotelCard.tsx` | Mostrar "Aún sin calificaciones" | Publicidad engañosa (Ley 1480) | **Completado** (rama) |
@@ -106,7 +106,7 @@ Rutas públicas del frontend: `/`, `/packages`, `/package/:id`, `/hotel/:id`, `/
 | Botones sin acción | Completado | "Habla con un asesor", "Ver mapa" y dirección | — |
 | WhatsApp de la agencia | Completado (en `main`) | +57 322 817 4200 | `whatsapp.test.ts` |
 | Rendimiento: code splitting e imágenes | Completado | `lazy()` ya existía; Unsplash con `auto=format` | `cityImages.test.ts` |
-| Producción: errores 500 en Render | Bloqueado | Se necesitan los logs de Render | — |
+| Producción: errores 500 en Render | Completado (verificado) | Fueron transitorios durante el redespliegue: hoy `/health` está ok y reseñas, promociones y destinos responden 200 | Diagnóstico de solo lectura con navegador real desde GitHub Actions |
 | Textos legales (datos del prestador, reversión del pago) | Bloqueado / pendiente de revisión jurídica | `docs/legal/propuestas-para-revision-juridica.md` | — |
 | `/faq`, `/terms` y `/privacy` lentas en cargar | Pendiente | Hay que medirlo con el backend sano; hoy los fallos del backend lo enmascaran | — |
 
