@@ -1,5 +1,8 @@
 import { TERMINOS_VERSION } from "../content/terminos";
 import { esCelularValido } from "../utils/validaciones";
+import { enlaceWhatsAppAgencia } from "../utils/whatsapp";
+import { BRAND } from "../config/brand";
+import { IconoWhatsApp } from "../components/BotonWhatsApp";
 import { Bed, Calendar, CheckCircle2, CreditCard, Eye, EyeOff, IdCard, Lock, Mail, MapPin, Phone, Shield, ShieldCheck, Smartphone, Sparkles, User, Users, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -825,11 +828,18 @@ export default function Checkout() {
                         <b className="block text-xs text-foreground">Confirmación por correo</b>
                         <span className="text-[11px] text-muted-foreground">Recibirás el comprobante</span>
                       </div>
-                      <div className="border border-border rounded-xl p-3.5">
-                        <Shield className="w-4 h-4 text-[#C9A227] mb-1.5" />
-                        <b className="block text-xs text-foreground">Soporte 24/7</b>
-                        <span className="text-[11px] text-muted-foreground">Asistencia durante el viaje</span>
-                      </div>
+                      {/* Antes "Soporte 24/7" sin forma de contactar: ahora abre el
+                          chat de WhatsApp de la agencia. */}
+                      <a
+                        href={enlaceWhatsAppAgencia(`Hola ${BRAND.name}, tengo una pregunta sobre mi reserva.`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="border border-border rounded-xl p-3.5 hover:border-[#25D366] transition-colors"
+                      >
+                        <IconoWhatsApp className="w-4 h-4 text-[#25D366] mb-1.5" />
+                        <b className="block text-xs text-foreground">¿Dudas? WhatsApp</b>
+                        <span className="text-[11px] text-muted-foreground">{BRAND.telefono}</span>
+                      </a>
                     </div>
                   </div>
                 </motion.section>

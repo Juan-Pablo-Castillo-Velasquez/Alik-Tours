@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { Mail, MessageCircle, UserPlus, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useAuthModal } from "../context/AuthModalContext";
+import BotonWhatsApp from "./BotonWhatsApp";
 
 // Antes era un enlace directo a WhatsApp ("Hablar con un asesor" ya era el
 // texto del botón, pero abría wa.me en una pestaña nueva). El brief pide
@@ -43,8 +44,14 @@ export default function WhatsAppButton() {
             onClick={(e) => e.stopPropagation()}
             className="w-64 rounded-2xl border border-border bg-card shadow-xl p-3 space-y-1.5"
           >
-            <p className="text-xs text-muted-foreground px-1 pb-1">
-              Solo los usuarios registrados pueden chatear en vivo con un asesor.
+            {/* Lo más rápido sin cuenta: WhatsApp con la agencia. */}
+            <BotonWhatsApp
+              variante="bloque"
+              texto="Escribir por WhatsApp"
+              onClick={() => setMenuAbierto(false)}
+            />
+            <p className="text-xs text-muted-foreground px-1 pt-1.5 pb-1">
+              O chatea en vivo desde tu cuenta:
             </p>
             <button
               type="button"

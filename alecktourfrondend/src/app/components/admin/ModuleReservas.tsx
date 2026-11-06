@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { enlaceWhatsApp } from "../../utils/whatsapp";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
 
@@ -483,7 +484,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
                       <span className="inline-flex items-center gap-2">
                         <a href={`tel:${cliente.celular}`} className="hover:underline">{cliente.celular}</a>
                         <a
-                          href={`https://wa.me/${cliente.celular.replace(/\D/g, "")}`}
+                          href={enlaceWhatsApp(cliente.celular) ?? undefined}
                           target="_blank" rel="noopener noreferrer"
                           title="Contactar por WhatsApp"
                           className="text-emerald-500 hover:text-emerald-600"

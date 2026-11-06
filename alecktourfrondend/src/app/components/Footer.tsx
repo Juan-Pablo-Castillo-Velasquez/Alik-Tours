@@ -1,6 +1,7 @@
 import BrandLogo from "./BrandLogo";
 import { BRAND } from "../config/brand";
 import { Link } from "react-router";
+import BotonWhatsApp from "./BotonWhatsApp";
 import HalloweenAccentDiscreto from "./HalloweenAccentDiscreto";
 import { useTema } from "../context/TemaContext";
 
@@ -58,7 +59,19 @@ export default function Footer() {
               paso.
             </p>
 
-            {/* Social */}
+            {/* Contacto directo: WhatsApp e Instagram oficiales (el bloque
+                "Social" estaba vacío). */}
+            <div className="flex flex-wrap items-center gap-3">
+              <BotonWhatsApp texto="Escríbenos por WhatsApp" detalle={BRAND.telefono} />
+              <a
+                href={BRAND.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-link text-sm font-semibold"
+              >
+                Instagram @aliktours
+              </a>
+            </div>
           </div>
 
           {/* Links Columns */}

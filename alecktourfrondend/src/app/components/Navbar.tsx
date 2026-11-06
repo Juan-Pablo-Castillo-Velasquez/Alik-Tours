@@ -1,3 +1,4 @@
+import BotonWhatsApp from "./BotonWhatsApp";
 import BrandLogo from "./BrandLogo";
 import { BRAND } from "../config/brand";
 import {
@@ -582,34 +583,9 @@ export default function Navbar() {
                 acciones de usuario se lea como un bloque aparte del menú
                 de navegación, no como más links sueltos. */}
             <div className="col-start-3 hidden xl:flex items-center gap-2 2xl:gap-3 pl-4 border-l border-border/60 shrink-0">
-              {/* CONTACT */}
-              <div
-                className="
-                  hidden 2xl:flex
-                  items-center gap-2.5
-                  px-3 py-2
-                  rounded-xl
-                  bg-muted/40
-                  border border-border/40
-                "
-              >
-                <div
-                  className="
-                  w-8 h-8
-                  rounded-lg
-                  bg-primary/10
-                  flex items-center justify-center
-                "
-                >
-                  <Phone className="w-3.5 h-3.5 text-primary" />
-                </div>
-
-                <div className="leading-tight">
-                  <small className="text-[8px] text-muted-foreground">
-                    Asesoría 24/7
-                  </small>
-                </div>
-              </div>
+              {/* CONTACTO: botón de WhatsApp (antes era un recuadro
+                  "Asesoría 24/7" que no hacía nada al tocarlo). */}
+              <BotonWhatsApp className="hidden 2xl:inline-flex shrink-0" />
 
               {isAuthenticated && cliente && (
                 <NotificacionesBell idCliente={cliente.id_cliente} />
@@ -920,30 +896,15 @@ export default function Navbar() {
                     border border-border/50
                   "
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="
-                        w-10 h-10
-                        rounded-xl
-                        bg-primary/10
-                        flex items-center justify-center
-                      "
-                      >
-                        <Phone className="w-4 h-4 text-primary" />
-                      </div>
-
-                      <div>
-                        <p className="text-xs font-bold">¿Necesitas ayuda?</p>
-
-                        <p className="text-[11px] text-muted-foreground">
-                          {/* Mismo número real que ya usa WhatsAppButton.tsx
-                              (573228127104) -- antes este card mostraba un
-                              +57 601 123 4567 de relleno que no coincidía con
-                              ningún canal real de contacto del sitio. */}
-                          +57 322 812 7104 · Asesoría 24/7
-                        </p>
-                      </div>
-                    </div>
+                    {/* Antes: "¿Necesitas ayuda? +57 322 812 7104 · Asesoría
+                        24/7" como texto que no se podía tocar. */}
+                    <p className="text-xs font-bold mb-2.5">¿Necesitas ayuda?</p>
+                    <BotonWhatsApp
+                      variante="bloque"
+                      texto="Escríbenos por WhatsApp"
+                      detalle={BRAND.telefono}
+                      onClick={() => setIsMenuOpen(false)}
+                    />
                   </div>
 
                   {/* AUTH */}

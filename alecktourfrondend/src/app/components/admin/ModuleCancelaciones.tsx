@@ -16,6 +16,7 @@ import { usePagination } from "../../hooks/usePagination";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import Timeline, { type TimelineItem } from "./ui/Timeline";
 import { MOTIVOS } from "../profile/TabReservas/constants";
+import { enlaceWhatsApp } from "../../utils/whatsapp";
 
 // Solo estos 3 estados existen de verdad en la base de datos (CHECK
 // constraint en SolicitudCancelacion.estado, ver reserva_model.py). El
@@ -387,7 +388,7 @@ export default function ModuleCancelaciones({
                       <span className="inline-flex items-center gap-2 justify-end">
                         <a href={`tel:${cl.celular}`} className="hover:underline">{cl.celular}</a>
                         <a
-                          href={`https://wa.me/${cl.celular.replace(/\D/g, "")}`}
+                          href={enlaceWhatsApp(cl.celular) ?? undefined}
                           target="_blank" rel="noopener noreferrer"
                           title="Contactar por WhatsApp"
                           className="text-emerald-500 hover:text-emerald-600"
