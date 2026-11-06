@@ -1,3 +1,4 @@
+import { MotionConfig } from "motion/react";
 import { createRoot } from "react-dom/client";
 import App from "./app/App.tsx";
 import WelcomeSplash from "./app/components/WelcomeSplash.tsx";
@@ -7,6 +8,10 @@ import { TemaProvider } from "./app/context/TemaContext";
 import "./styles/index.css";
 
 createRoot(document.getElementById("root")!).render(
+  // reducedMotion="user": si la persona activó "reducir movimiento" en su
+  // sistema (mareo, migraña, epilepsia), las ~50 animaciones de motion/react
+  // del sitio se vuelven instantáneas en vez de deslizarse.
+  <MotionConfig reducedMotion="user">
   <AuthProvider>
     <FavoritosProvider>
       <TemaProvider>
@@ -19,4 +24,5 @@ createRoot(document.getElementById("root")!).render(
       </TemaProvider>
     </FavoritosProvider>
   </AuthProvider>
+  </MotionConfig>
 );

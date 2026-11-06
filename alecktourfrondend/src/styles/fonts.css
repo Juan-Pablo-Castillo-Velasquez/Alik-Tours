@@ -22,3 +22,18 @@
 html {
   font-synthesis-style: none;
 }
+
+/* "Reducir movimiento" del sistema: las animaciones y transiciones CSS
+   (carruseles, brillos, deslizamientos) pasan a ser instantáneas. Las de
+   motion/react se controlan con <MotionConfig reducedMotion="user"> en
+   main.tsx. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

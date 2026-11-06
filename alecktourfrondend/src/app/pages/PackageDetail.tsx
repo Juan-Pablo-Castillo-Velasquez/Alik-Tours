@@ -646,10 +646,32 @@ export default function PackageDetail() {
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
                     El precio se congela solo cuando el pago queda aprobado — total o el
-                    anticipo del 50% que elijas (el saldo se paga después). En línea aceptamos
-                    Nequi y PayPal.
+                    anticipo del 50% que elijas (el saldo se paga después). Por ahora el pago
+                    se coordina con un asesor: al reservar te contactamos para indicarte cómo
+                    pagar.
                   </AccordionContent>
                 </AccordionItem>
+                {pkg.no_incluye && pkg.no_incluye.trim() && (
+                  <AccordionItem value="no-incluye">
+                    <AccordionTrigger>
+                      <span className="flex items-center gap-2">
+                        <XCircle className="w-4 h-4 text-primary shrink-0" />
+                        Qué no incluye
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                      <ul className="list-disc pl-5 space-y-1">
+                        {pkg.no_incluye
+                          .split("\n")
+                          .map((l) => l.trim())
+                          .filter(Boolean)
+                          .map((l) => (
+                            <li key={l}>{l}</li>
+                          ))}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
                 {pkg.condiciones && (
                   <AccordionItem value="condiciones">
                     <AccordionTrigger>

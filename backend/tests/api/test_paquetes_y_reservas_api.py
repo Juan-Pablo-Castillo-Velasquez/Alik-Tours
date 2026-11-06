@@ -68,6 +68,14 @@ class TestPaquetes:
         assert r.status_code == 200
         assert r.json()["hoteles"] == []
 
+    def test_que_no_incluye_se_guarda_y_sale_en_el_detalle(self, client, admin):
+        datos = {**_paquete(), "no_incluye": "Tiquetes aéreos\nTasas aeroportuarias"}
+        id_paquete = client.post("/api/paquetes", json=datos, headers=admin).json()["id_paquete"]
+
+        detalle = client.get(f"/api/paquetes/{id_paquete}/detalle").json()
+
+        assert detalle["no_incluye"] == "Tiquetes aéreos\nTasas aeroportuarias"
+
     @pytest.mark.parametrize("ruta", ["/api/paquetes/999", "/api/paquetes/999/detalle"], ids=["paquete", "detalle"])
     def test_un_paquete_inexistente_responde_404(self, client, ruta):
         assert client.get(ruta).status_code == 404

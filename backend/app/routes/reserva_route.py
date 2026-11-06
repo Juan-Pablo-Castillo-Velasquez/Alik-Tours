@@ -282,6 +282,7 @@ def get_paquete_detalle(paquete_id: int, db: Session = Depends(get_db)):
         activo=paquete.activo,
         ciudad_salida=paquete.ciudad_salida,
         condiciones=paquete.condiciones,
+        no_incluye=paquete.no_incluye,
         imagen_url=paquete.imagen_url,
         destinos=destinos,
         hoteles=hoteles,

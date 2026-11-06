@@ -23,6 +23,8 @@ export interface PaqueteResponse {
   // (ver PaqueteDetalleResponse.hoteles[].ciudad).
   ciudad_salida?: string | null;
   condiciones?: string | null;
+  /** Qué no incluye, una línea por ítem. */
+  no_incluye?: string | null;
   // Calculada en el backend (primer hotel vinculado) — null si el paquete
   // todavía no tiene ningún hotel real asociado.
   ciudad_destino?: string | null;

@@ -42,6 +42,9 @@ class Paquete(Base):
     # documentos...) administradas desde el panel. Nullable: se omite en
     # la vista pública si está vacío.
     condiciones = Column(Text, nullable=True)
+    # Qué NO incluye el paquete (vuelos, tasas, comidas...), una línea por
+    # ítem. Informar las exclusiones antes de la compra (Ley 1480).
+    no_incluye = Column(Text, nullable=True)
 
     paquete_servicios = relationship("PaqueteServicio", back_populates="paquete", cascade="all, delete-orphan")
     paquete_hotel = relationship("PaqueteHotel", back_populates="paquete", cascade="all, delete-orphan")

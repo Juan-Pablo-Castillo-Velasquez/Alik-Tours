@@ -26,6 +26,7 @@ import asyncio
 import contextlib
 import html
 import json
+import logging
 import os
 import smtplib
 import socket
@@ -35,6 +36,16 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+def _ocultar_correo(email: str) -> str:
+    """Para los logs: 'ju***@gmail.com'. El correo completo es un dato
+    personal (Ley 1581) y los logs de Render los ve más gente."""
+    usuario, _, dominio = (email or "").partition("@")
+    return f"{usuario[:2]}***@{dominio}" if dominio else "***"
+
 
 # Paleta de marca Alik Tours (la misma que --primary/--gold en theme.css,
 # ver comentario "BRAND (GRANATE AGENCIA)") -- se repite como literales
@@ -141,10 +152,10 @@ def _enviar_via_brevo_api(email: str, subject: str, body: str, html_body: str | 
         # inválida) es justo lo que hace falta para diagnosticar sin
         # adivinar -- se imprime completo en vez de solo el código.
         detalle = e.read().decode("utf-8", errors="replace")
-        print(f"Error al enviar email a {email} vía API de Brevo ({e.code}): {detalle}")
+        logger.error("Error al enviar email a %s vía API de Brevo (%s): %s", _ocultar_correo(email), e.code, detalle)
         return False
     except urllib.error.URLError as e:
-        print(f"Error de red al enviar email a {email} vía API de Brevo: {e.reason}")
+        logger.error("Error de red al enviar email a %s vía API de Brevo: %s", _ocultar_correo(email), e.reason)
         return False
 
 
@@ -210,7 +221,7 @@ async def send_email(email: str, subject: str, body: str, html_body: str | None 
         return True
 
     except Exception as e:
-        print(f"Error al enviar email a {email}: {str(e)}")
+        logger.error("Error al enviar email a %s: %s", _ocultar_correo(email), e)
         return False
 
 

@@ -36,6 +36,7 @@ class PaqueteCreate(BaseModel):
     # de destino, que se deriva de los hoteles reales vinculados.
     ciudad_salida: str | None = Field(None, max_length=100)
     condiciones: str | None = Field(None, max_length=5000)
+    no_incluye: str | None = Field(None, max_length=3000)
     hoteles: list[PaqueteHotelInput] | None = None
     servicios: list[PaqueteServicioInput] | None = None
 
@@ -48,6 +49,7 @@ class PaqueteUpdate(BaseModel):
     activo: bool | None = None
     ciudad_salida: str | None = Field(None, max_length=100)
     condiciones: str | None = Field(None, max_length=5000)
+    no_incluye: str | None = Field(None, max_length=3000)
     # None = no tocar servicios ya vinculados; [] = quitar todos — mismo
     # patrón exclude_unset ya usado para "hoteles".
     servicios: list[PaqueteServicioInput] | None = None
@@ -66,6 +68,7 @@ class PaqueteResponse(BaseModel):
     activo: bool
     ciudad_salida: str | None = None
     condiciones: str | None = None
+    no_incluye: str | None = None
     # Calculada (Paquete.ciudad_destino), no una columna — ver el property
     # en el modelo. None si el paquete no tiene ningún hotel vinculado.
     ciudad_destino: str | None = None

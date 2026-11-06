@@ -28,6 +28,7 @@ const EMPTY_FORM = {
   // Condiciones propias del paquete (requisitos, cambios, no reembolsables,
   // documentos). Opcional: la ficha pública omite la sección si está vacía.
   condiciones: "",
+  no_incluye: "",
   // paquete_hotel ya existía en el modelo (lo usa la página pública de
   // detalle vía GET /paquetes/{id}/detalle) pero no había forma de
   // editarlo desde el admin — todo paquete nuevo quedaba sin ningún hotel
@@ -185,7 +186,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
     setForm({
       nombre_paquete: p.nombre_paquete, descripcion: p.descripcion ?? "",
       duracion_dias: String(p.duracion_dias ?? 1), precio_base: String(p.precio_base ?? ""),
-      activo: p.activo, ciudad_salida: p.ciudad_salida ?? "", condiciones: p.condiciones ?? "", hoteles: [], servicios: [],
+      activo: p.activo, ciudad_salida: p.ciudad_salida ?? "", condiciones: p.condiciones ?? "", no_incluye: p.no_incluye ?? "", hoteles: [], servicios: [],
     });
     setMsg(null);
     setImagenFile(null);
@@ -275,6 +276,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
           precio_base: parseFloat(form.precio_base),
           ciudad_salida: form.ciudad_salida.trim() || null,
           condiciones: form.condiciones.trim() || null,
+          no_incluye: form.no_incluye.trim() || null,
           hoteles: form.hoteles.map((h) => ({
             id_hotel: h.id_hotel,
             noches_incluidas: h.noches_incluidas ? parseInt(h.noches_incluidas, 10) : null,
@@ -513,6 +515,12 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
             <textarea value={form.condiciones} onChange={e => setForm({ ...form, condiciones: e.target.value })}
               className={inputCls + " resize-none"} rows={3} maxLength={5000}
               placeholder="Documentos requeridos, cambios, servicios no reembolsables..." />
+          </div>
+          <div>
+            <label className={labelCls}>Qué NO incluye (opcional, uno por línea)</label>
+            <textarea value={form.no_incluye} onChange={e => setForm({ ...form, no_incluye: e.target.value })}
+              className={inputCls + " resize-none"} rows={3} maxLength={3000}
+              placeholder={"Tiquetes aéreos\nTasas aeroportuarias\nGastos personales"} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
