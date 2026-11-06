@@ -8,8 +8,8 @@ for (let i = 0; i < 20 && !ok; i++) {
   const r = await p.goto(`${B}/openapi.json`, { timeout: 90000 }).catch(() => null);
   try {
     const j = JSON.parse(await p.evaluate(() => document.body.innerText));
-    ok = !!j.components?.schemas?.ReservaCreate?.properties?.clave_idempotencia;
-    console.log("intento", i, "status", r?.status(), "clave_idempotencia en ReservaCreate:", ok);
+    ok = !!j.components?.schemas?.PaqueteDetalleResponse?.properties?.no_incluye;
+    console.log("intento", i, "status", r?.status(), "no_incluye en PaqueteDetalleResponse:", ok);
   } catch { console.log("intento", i, "status", r?.status(), "(sin JSON)"); }
   if (!ok) await p.waitForTimeout(30000);
 }
