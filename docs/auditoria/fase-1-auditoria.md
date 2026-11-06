@@ -1,0 +1,77 @@
+# Auditoría integral de Alik Tours: fase 1
+
+- Fecha: 5 de noviembre de 2026
+- Rama: `mejora/fase-1-auditoria`. Ningún cambio de esta fase va directo a `main` ni a producción.
+- Autor del proyecto: Juan Pablo Castillo Velásquez
+
+## 1. Resumen ejecutivo
+
+Alik Tours tiene una base técnica sólida para su tamaño:
+- **Backend:** FastAPI con PostgreSQL y Redis, migraciones Alembic, 400 pruebas y 83 % de cobertura.
+- **Permisos:** se verifican en el backend, incluida la propiedad de reservas y pagos.
+- **Pagos:** tienen bloqueo contra pagos duplicados.
+- **Chat:** tiene idempotencia por `client_msg_id`.
+- **Frontend:** React con TypeScript y pruebas Vitest, MSW y Playwright.
+
+Los problemas más graves no están en el código de negocio. Están en tres frentes:
+
+1. **Producción.** El backend en Render responde 500 en reseñas y promociones. La causa probable es una migración sin aplicar. Además se duerme por inactividad (plan gratuito).
+2. **Confianza comercial.** El sitio mostraba datos que no salen de la base de datos (calificaciones, urgencia, reglas de hotel) y pagos simulados sin decir que lo son.
+3. **Dependencias.** Había paquetes con vulnerabilidades conocidas, 17 en el frontend y 26 en el backend.
+
+## 2. Mapa técnico
+
+| Capa | Tecnología | Dónde |
+|---|---|---|
+| Frontend | React 18, TypeScript, Vite 6, Tailwind 4, React Router 7 (modo librería, SPA) | `alecktourfrondend/` → Vercel |
+| Backend | FastAPI 0.115, SQLAlchemy, Alembic, Redis (caché y límite de intentos), Sentry | `backend/` → Render (Docker, `entrypoint.sh` corre `alembic upgrade head`) |
+| BD | PostgreSQL 16 | 24 routers, unas 25 tablas, migraciones en `backend/alembic/versions` |
+| Pagos | **Simulados** (`services/payment_service.py`). Ninguna pasarela real conectada. | Tarjeta, PSE y PayPal resuelven al instante. Nequi queda en verificación manual de un asesor. |
+| Pruebas | pytest (unitarias, API e integración con Postgres), Vitest + MSW, Playwright E2E con Mailpit | CI de GitHub Actions: `tests.yml` y `ci.yml` |
+
+Rutas públicas del frontend: `/`, `/packages`, `/package/:id`, `/hotel/:id`, `/search`, `/checkout/:id`, `/comunidad`, `/testimonios`, `/benefits`, `/corporate`, `/travel-info`, `/faq`, `/contact`, `/terms` y `/privacy`. Las protegidas son `/profile` y `/admin`.
+
+## 3. Matriz de hallazgos
+
+| # | Problema | Módulo | Severidad | Causa | Solución | Riesgo | Estado |
+|---|---|---|---|---|---|---|---|
+| 1 | El backend de producción responde **500** en `/api/resenas`, `/api/resenas/destacadas`, `/api/promociones/seleccion-casa` y `/api/hoteles/destinos-sugeridos` | Infra / BD | **Crítico** | Probable: la migración `a7c3e9f1b4d2` (columnas nuevas en `resenas` y `comentarios_comunidad`) no se aplicó en Render, o el deploy falló al correrla | Revisar los logs de Render, aplicar `alembic upgrade head` y redeploy | Sin esto no cargan reseñas ni promociones en el inicio | **Bloqueado**: necesita acceso a Render (logs) |
+| 2 | El backend se duerme: 503 al arrancar, y después de varias páginas las peticiones fallan | Infra | Alto | Plan gratuito de Render y protección anti-bots de Cloudflare | Plan pago o ping de mantenimiento; revisar los límites | Primeras visitas lentas o fallidas | Pendiente (decisión de costo) |
+| 3 | Los pagos con tarjeta, PSE y PayPal son simulados y el checkout no lo decía; "Pago aprobado" parecía un cobro real | Pagos | **Crítico** | No hay pasarela conectada (decisión del proyecto) | Aviso claro en el checkout, "Pago de prueba: no se realizó ningún cobro real" y enlace a WhatsApp para pagar | Un cliente real podía creer que pagó | **Completado** (rama) |
+| 4 | Una tarjeta de hotel sin reseñas mostraba "8.0 Excelente" y 4 estrellas inventados | Hoteles | Alto | Valor por defecto `8` y `4` en `HotelCard.tsx` | Mostrar "Aún sin calificaciones" | Publicidad engañosa (Ley 1480) | **Completado** (rama) |
+| 5 | "¡Muy solicitado! Este hotel se reserva frecuentemente" aparecía fijo en todos los hoteles | Hoteles | Alto | Texto de urgencia sin datos (FOMO) | Quitado | Publicidad engañosa | **Completado** (rama) |
+| 6 | "Reglas del alojamiento" fijas (check-in 15:00, check-out 12:00) iguales para todos los hoteles | Hoteles | Medio | Bloque estático "Políticas simuladas" | Quitado; ya se muestran las `politicas` reales de cada hotel | Información falsa al cliente | **Completado** (rama) |
+| 7 | 17 vulnerabilidades en el frontend: 1 crítica en DOMPurify (vía jspdf) y 7 altas en react-router | Seguridad | Alto | Versiones viejas; `pnpm.overrides` ignorado por pnpm 11 | react-router 7.18.2, `dompurify>=3.4.17` y overrides movidos a `pnpm-workspace.yaml` | Bajo: mismo major | **Completado**: `pnpm audit` da 0 |
+| 8 | 26 avisos de pip-audit en el backend: starlette 0.38.6, python-jose, ecdsa, aiosmtplib, pyasn1 y pytest | Seguridad | Alto | FastAPI 0.115 fija starlette viejo; python-jose está sin mantenimiento | pyasn1 0.6.5 ya está. Falta: subir FastAPI/starlette, cambiar python-jose por PyJWT, y subir fastapi-mail/aiosmtplib | Cambios de versión mayor: hay que probarlos | Parcial |
+| 9 | `[Pendiente: razón social]`, `[Pendiente: NIT]` y `[Pendiente: dirección]` visibles en los Términos | Legal | Alto | Faltan los datos reales de la agencia | El propietario debe dar los datos; no se inventan | Falta de identificación del prestador (Ley 1480, comercio electrónico) | **Bloqueado**: faltan datos reales |
+| 10 | Los Términos no mencionan la **reversión del pago** (Ley 1480, art. 51). Hay que revisar si el **retracto** aplica a servicios turísticos con fecha determinada | Legal | Medio | Redacción incompleta | Texto propuesto para revisión de un abogado; no se publica sin revisión | Derechos del consumidor | Pendiente (revisión jurídica) |
+| 11 | Los enlaces de WhatsApp a clientes en el panel abrían chats inexistentes (sin el indicativo 57) | Panel | Medio | `wa.me/3001234567` | `utils/whatsapp.ts` normaliza el número; tiene pruebas | — | **Completado** (en `main`) |
+| 12 | Chat: posibles mensajes duplicados | Chat | — | Revisado: `fusionarMensajes` deduplica por id y el envío usa `client_msg_id` idempotente y un candado contra doble clic | No requiere cambio | — | Verificado sin hallazgo |
+| 13 | Permisos | Seguridad | — | Revisados los 24 routers. Las rutas públicas sin sesión son solo de catálogo (hoteles, paquetes, reseñas, temas). Reservas y pagos verifican `exigir_propietario_o_admin` | No requiere cambio | — | Verificado sin hallazgo |
+| 14 | Las alertas de Dependabot están desactivadas en el repositorio | Infra | Bajo | Configuración de GitHub | Nuevo workflow `auditoria-dependencias` (semanal, solo informa) | — | **Completado** (rama) |
+| 15 | `/faq`, `/terms` y `/privacy` no llegan a "red inactiva" en 45 s | Rendimiento | Bajo | Peticiones que siguen activas (por investigar: video o polling) | Medir en la fase 6 | — | Pendiente |
+
+## 4. Plan priorizado (fases siguientes)
+
+1. **Ahora (necesita al propietario):**
+   - Logs de Render y aplicar la migración (hallazgo 1).
+   - Datos legales reales: razón social, NIT y dirección (hallazgo 9).
+   - Decidir si se conecta una pasarela real (Wompi, PayU o Mercado Pago) o se mantiene el pago asistido por asesor.
+2. **Fase 3, Operación:** idempotencia por clave en `POST /reservas`, transacción única para crear reserva con habitaciones, y comprobantes que digan "comprobante", no "factura electrónica DIAN".
+3. **Fase 5, Seguridad:** subir FastAPI/starlette, cambiar python-jose por PyJWT y subir aiosmtplib, cada uno con toda la batería de pruebas.
+4. **Fases 2 y 4, UX y panel:** filtros de hoteles con datos reales, paginación del lado del servidor en las tablas del panel y exportación CSV.
+5. **Fase 6:** rendimiento (code splitting medido con Lighthouse) e investigación del hallazgo 15.
+
+## 5. Pruebas de esta fase
+
+| Prueba | Resultado | Evidencia |
+|---|---|---|
+| Recorrido del sitio publicado (37 páginas, Playwright desde GitHub Actions) | Ningún enlace interno lleva a 404; hay errores 500 del backend (hallazgo 1) | Workflow temporal `revisar-enlaces` |
+| `pnpm audit --prod` | 0 vulnerabilidades (antes 17) | Run 42146013837 |
+| `pip-audit` | 26 avisos antes; pyasn1 corregido, el resto planificado | Run 42145767790 |
+| CI completo (frontend, backend, integración, e2e) | Ver el PR de esta rama | GitHub Actions |
+
+## 6. Despliegue y rollback
+
+- **Despliegue:** se revisa el PR de `mejora/fase-1-auditoria`, y cuando el CI esté verde se hace merge a `main`. Vercel publica solo y Render redeploya (corre las migraciones).
+- **Rollback:** se revierte el merge en GitHub (`Revert`). Esta fase no tiene cambios de base de datos.
