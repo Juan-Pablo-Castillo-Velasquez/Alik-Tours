@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.schemas.validadores import Celular, FechaValida
 
@@ -72,8 +72,7 @@ class ClienteResponse(BaseModel):
     # admin. No requiere ninguna migración.
     fecha_registro: datetime | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EmpleadoCreate(BaseModel):
@@ -117,5 +116,4 @@ class EmpleadoResponse(BaseModel):
     # Ver Empleado.foto_perfil / ClienteResponse.foto_perfil — mismo criterio.
     foto_perfil: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

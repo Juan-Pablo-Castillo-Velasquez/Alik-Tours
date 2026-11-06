@@ -65,7 +65,7 @@ def actualizar_metodo_guardado(
     la actual.
     """
     id_cliente = _require_cliente(usuario)
-    cambios = data.dict(exclude_unset=True)
+    cambios = data.model_dump(exclude_unset=True)
     if "clave" in cambios and cambios["clave"]:
         cambios["clave_hash"] = hash_password(cambios.pop("clave"))
     else:

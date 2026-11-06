@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class MetodoPagoGuardadoCreate(BaseModel):
@@ -35,8 +35,7 @@ class MetodoPagoGuardadoResponse(BaseModel):
     predeterminado: bool
     fecha_creacion: datetime | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MetodoPagoGuardadoUpdate(BaseModel):

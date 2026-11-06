@@ -48,7 +48,7 @@ def get_servicio(servicio_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=ServicioResponse, status_code=201)
 def create_servicio(data: ServicioCreate, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
-    servicio = Servicio(**data.dict())
+    servicio = Servicio(**data.model_dump())
     db.add(servicio)
     db.commit()
     db.refresh(servicio)
@@ -62,7 +62,7 @@ def update_servicio(
     servicio = db.query(Servicio).filter(Servicio.id_servicio == servicio_id).first()
     if not servicio:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
-    for key, value in data.dict(exclude_unset=True).items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(servicio, key, value)
     db.commit()
     db.refresh(servicio)

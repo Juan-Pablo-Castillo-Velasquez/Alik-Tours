@@ -63,7 +63,7 @@ def get_destino(destino_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=DestinoResponse, status_code=201)
 def create_destino(data: DestinoCreate, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
-    destino = Destino(**data.dict())
+    destino = Destino(**data.model_dump())
     db.add(destino)
     db.commit()
     db.refresh(destino)
@@ -77,7 +77,7 @@ def update_destino(
     destino = db.query(Destino).filter(Destino.id_destino == destino_id).first()
     if not destino:
         raise HTTPException(status_code=404, detail="Destino no encontrado")
-    for key, value in data.dict(exclude_unset=True).items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(destino, key, value)
     db.commit()
     db.refresh(destino)

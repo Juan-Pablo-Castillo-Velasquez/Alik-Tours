@@ -31,7 +31,7 @@ def crear_configuracion(
 ):
     if db.query(ConfiguracionSistema).filter(ConfiguracionSistema.clave == data.clave).first():
         raise HTTPException(status_code=409, detail=f"Ya existe un parámetro con la clave '{data.clave}'")
-    nuevo = ConfiguracionSistema(**data.dict())
+    nuevo = ConfiguracionSistema(**data.model_dump())
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
@@ -46,7 +46,7 @@ def actualizar_configuracion(
     item = db.query(ConfiguracionSistema).filter(ConfiguracionSistema.id_config == id_config).first()
     if not item:
         raise HTTPException(status_code=404, detail="Parámetro no encontrado")
-    for key, value in data.dict(exclude_unset=True).items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
     db.commit()
     db.refresh(item)

@@ -296,7 +296,7 @@ def create_paquete(paquete: PaqueteCreate, db: Session = Depends(get_db), admin_
     """Crea un nuevo paquete turístico, opcionalmente vinculado a hotel(es)
     reales (paquete_hotel — ver PaqueteRepository._sync_hoteles)."""
     try:
-        nuevo = PaqueteRepository.create(db, paquete.dict())
+        nuevo = PaqueteRepository.create(db, paquete.model_dump())
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=e.detail) from e
     delete_pattern(PAQUETES_CACHE_PATTERN)
@@ -312,7 +312,7 @@ def update_paquete(
     if not db_paquete:
         raise HTTPException(status_code=404, detail="Paquete no encontrado")
     try:
-        actualizado = PaqueteRepository.update(db, paquete_id, paquete.dict(exclude_unset=True))
+        actualizado = PaqueteRepository.update(db, paquete_id, paquete.model_dump(exclude_unset=True))
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=e.detail) from e
     delete_pattern(PAQUETES_CACHE_PATTERN)
@@ -651,7 +651,7 @@ def create_reserva(
     if current_user.id_cliente != reserva.id_cliente and not usuario_es_staff(authorization):
         raise HTTPException(status_code=403, detail="No puedes crear una reserva a nombre de otro cliente")
     try:
-        nueva = ReservaRepository.create(db, reserva.dict())
+        nueva = ReservaRepository.create(db, reserva.model_dump())
         if getattr(nueva, "_recien_creada", False):
             _avisar_reserva_creada(db, nueva)
         delete_pattern(RESERVAS_CACHE_PATTERN)
@@ -909,7 +909,7 @@ def update_reserva(
     if not db_reserva:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
     estado_anterior = db_reserva.estado
-    actualizada = ReservaRepository.update(db, reserva_id, reserva.dict(exclude_unset=True))
+    actualizada = ReservaRepository.update(db, reserva_id, reserva.model_dump(exclude_unset=True))
     # Aviso al cliente solo si el estado de verdad cambió en ESTA llamada.
     if actualizada and actualizada.estado != estado_anterior and actualizada.estado in _AVISO_ESTADO_RESERVA:
         titulo, mensaje = _AVISO_ESTADO_RESERVA[actualizada.estado]
@@ -967,7 +967,7 @@ def get_metodos_pago(db: Session = Depends(get_db)):
 @router.post("/metodos-pago", response_model=MetodoPagoResponse, status_code=201)
 def create_metodo_pago(metodo: MetodoPagoCreate, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
     """Crea un nuevo método de pago"""
-    nuevo = MetodoPagoRepository.create(db, metodo.dict())
+    nuevo = MetodoPagoRepository.create(db, metodo.model_dump())
     delete_pattern(METODOS_PAGO_CACHE_KEY)
     return nuevo
 
@@ -1046,7 +1046,7 @@ def get_pago(
 @router.post("/pagos", response_model=PagoResponse, status_code=201)
 def create_pago(pago: PagoCreate, db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
     """Crea un nuevo pago"""
-    nuevo = PagoRepository.create(db, pago.dict())
+    nuevo = PagoRepository.create(db, pago.model_dump())
     delete_pattern(PAGOS_CACHE_PATTERN)
     # KPIs del dashboard dependen de reservas/pagos — invalida también su
     # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
@@ -1070,7 +1070,7 @@ def update_pago(
     db_pago = db.query(Pago).filter(Pago.id_pago == pago_id).with_for_update().first()
     if not db_pago:
         raise HTTPException(status_code=404, detail="Pago no encontrado")
-    cambios = pago.dict(exclude_unset=True)
+    cambios = pago.model_dump(exclude_unset=True)
 
     if cambios.get("monto") is not None and float(cambios["monto"]) != float(db_pago.monto):
         if db_pago.estado not in ("pendiente", "procesando"):

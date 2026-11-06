@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.cache import delete_pattern, get_cached, redis_client, set_cached
@@ -65,8 +65,7 @@ class ResenaResponse(BaseModel):
     visible: bool = True
     nombre_hotel: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 def _avatar_url(nombre_completo: str) -> str:

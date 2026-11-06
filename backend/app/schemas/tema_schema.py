@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 _HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
@@ -84,5 +84,4 @@ class TemaResponse(TemaBase):
     video_url: str | None = None
     fecha_creacion: datetime | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

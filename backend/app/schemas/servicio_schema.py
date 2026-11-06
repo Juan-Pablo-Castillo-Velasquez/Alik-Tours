@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ServicioCreate(BaseModel):
@@ -31,13 +31,11 @@ class ServicioResponse(BaseModel):
     precio_base: float
     capacidad_maxima: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CategoriaServicioResponse(BaseModel):
     id_categoria: int
     nombre_categoria: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

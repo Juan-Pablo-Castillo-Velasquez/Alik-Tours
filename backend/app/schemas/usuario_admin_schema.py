@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UsuarioAdminResponse(BaseModel):
@@ -20,8 +20,7 @@ class UsuarioAdminResponse(BaseModel):
     fecha_creacion: datetime | None = None
     ultimo_login: datetime | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UsuarioAdminCreate(BaseModel):
@@ -41,8 +40,7 @@ class RolResponse(BaseModel):
     id_rol: int
     nombre_rol: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RolCreate(BaseModel):
@@ -55,8 +53,7 @@ class PermisoResponse(BaseModel):
     nombre: str
     categoria: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RolConPermisosResponse(BaseModel):

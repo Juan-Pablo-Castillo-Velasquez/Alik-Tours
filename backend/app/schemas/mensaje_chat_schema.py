@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ReservaResumenChatResponse(BaseModel):
@@ -17,8 +17,7 @@ class ReservaResumenChatResponse(BaseModel):
     fecha_inicio: date | None = None
     fecha_fin: date | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MensajeChatResponse(BaseModel):
@@ -47,8 +46,7 @@ class MensajeChatResponse(BaseModel):
     remitente_nombre: str | None = None
     remitente_foto: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HiloResumenResponse(BaseModel):

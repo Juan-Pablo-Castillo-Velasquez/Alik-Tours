@@ -182,7 +182,7 @@ def reordenar_banners(
     db: Session = Depends(get_db),
     admin_id: int = Depends(require_admin),
 ):
-    resultado = BannerRepository.reorder(db, [item.dict() for item in items])
+    resultado = BannerRepository.reorder(db, [item.model_dump() for item in items])
     delete_pattern(BANNERS_CACHE_PATTERN)
     return resultado
 

@@ -1,6 +1,6 @@
 from datetime import date
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CaracteristicaCreate(BaseModel):
@@ -11,8 +11,7 @@ class CaracteristicaResponse(BaseModel):
     id_caracteristica: int
     nombre_caracteristica: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TipoHabitacionCreate(BaseModel):
@@ -27,8 +26,7 @@ class TipoHabitacionResponse(BaseModel):
     descripcion: str | None
     capacidad_personas: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HabitacionCreate(BaseModel):
@@ -73,8 +71,7 @@ class HabitacionResponse(BaseModel):
     estado: str
     tipo_habitacion: TipoHabitacionResponse | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RangoOcupado(BaseModel):
@@ -107,8 +104,7 @@ class HotelCaracteristicaResponse(BaseModel):
     disponible: bool
     caracteristica: CaracteristicaResponse | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HabitacionNuevaEnHotel(BaseModel):
@@ -188,8 +184,7 @@ class HotelResponse(BaseModel):
     total_resenas: int = 0
     calificacion_promedio: float | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ImagenGaleriaResponse(BaseModel):
@@ -201,8 +196,7 @@ class ImagenGaleriaResponse(BaseModel):
     url: str
     orden: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HotelDetailResponse(HotelResponse):

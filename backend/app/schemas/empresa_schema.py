@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 ESTADOS_VALIDOS = ["nuevo", "contactado", "cerrado", "descartado"]
 
@@ -36,5 +36,4 @@ class SolicitudCorporativaResponse(BaseModel):
     estado: str
     fecha_creacion: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

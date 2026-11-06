@@ -1,6 +1,6 @@
 from datetime import date
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.validadores import FechaValida
 
@@ -32,8 +32,7 @@ class DestinoResponse(BaseModel):
     temporada_alta_inicio: date | None = None
     temporada_alta_fin: date | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DestinoSugerenciaResponse(BaseModel):
@@ -42,5 +41,4 @@ class DestinoSugerenciaResponse(BaseModel):
     ciudad: str | None = None
     pais: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

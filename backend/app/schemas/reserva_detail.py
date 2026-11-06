@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ReservaHabitacionDetail(BaseModel):
@@ -14,8 +14,7 @@ class ReservaHabitacionDetail(BaseModel):
     precio_noche: float
     estado: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReservaServicioDetail(BaseModel):
@@ -28,8 +27,7 @@ class ReservaServicioDetail(BaseModel):
     numero_personas: int | None = None
     precio_acordado: float | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReservaHistorialDetail(BaseModel):
@@ -40,8 +38,7 @@ class ReservaHistorialDetail(BaseModel):
     comentarios: str | None = None
     nombre_empleado: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NotaInternaCreate(BaseModel):
@@ -67,5 +64,4 @@ class ActividadRecienteItem(BaseModel):
     comentarios: str | None = None
     nombre_empleado: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

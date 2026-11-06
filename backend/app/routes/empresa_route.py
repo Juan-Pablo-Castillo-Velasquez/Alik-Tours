@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/solicitudes-corporativas", tags=["Empresas y Con
 def crear_solicitud_corporativa(data: SolicitudCorporativaCreate, db: Session = Depends(get_db)):
     """Recibe el formulario 'Solicita una cotización' de /corporate — sin
     autenticación, es un formulario público de captación de leads B2B."""
-    nueva = SolicitudCorporativa(**data.dict())
+    nueva = SolicitudCorporativa(**data.model_dump())
     db.add(nueva)
     db.commit()
     db.refresh(nueva)

@@ -118,7 +118,7 @@ def create_tipo_habitacion(
     admin_id: int = Depends(require_admin),
 ):
     """Crea un nuevo tipo de habitación"""
-    return TipoHabitacionRepository.create(db, tipo.dict())
+    return TipoHabitacionRepository.create(db, tipo.model_dump())
 
 
 @router.get("/caracteristicas", response_model=list[CaracteristicaResponse])
@@ -134,7 +134,7 @@ def create_caracteristica(
     admin_id: int = Depends(require_admin),
 ):
     """Crea una nueva característica"""
-    return CaracteristicaRepository.create(db, caracteristica.dict())
+    return CaracteristicaRepository.create(db, caracteristica.model_dump())
 
 
 @router.get("/destinos-sugeridos", response_model=list[DestinoRealResponse])
@@ -184,7 +184,7 @@ def create_hotel(hotel: HotelCreate, db: Session = Depends(get_db), admin_id: in
     no se guarda nada -- nunca queda un hotel a medio crear. Antes las
     habitaciones solo se podían agregar una por una después de crear el
     hotel."""
-    datos = hotel.dict(exclude={"habitaciones"})
+    datos = hotel.model_dump(exclude={"habitaciones"})
     habitaciones = hotel.habitaciones or []
 
     tipos_validos = {t.id_tipo_habitacion for t in db.query(TipoHabitacion.id_tipo_habitacion).all()}
@@ -197,7 +197,7 @@ def create_hotel(hotel: HotelCreate, db: Session = Depends(get_db), admin_id: in
         db.add(nuevo)
         db.flush()
         for h in habitaciones:
-            db.add(Habitacion(id_hotel=nuevo.id_hotel, **h.dict()))
+            db.add(Habitacion(id_hotel=nuevo.id_hotel, **h.model_dump()))
         db.commit()
     except Exception as e:
         db.rollback()
@@ -216,7 +216,7 @@ def update_hotel(
     db_hotel = HotelRepository.get_by_id(db, hotel_id)
     if not db_hotel:
         raise HTTPException(status_code=404, detail="Hotel no encontrado")
-    actualizado = HotelRepository.update(db, hotel_id, hotel.dict(exclude_unset=True))
+    actualizado = HotelRepository.update(db, hotel_id, hotel.model_dump(exclude_unset=True))
     delete_pattern(HOTELES_CACHE_PATTERN)
     return actualizado
 
@@ -383,7 +383,7 @@ def create_habitacion(
         # 409 Conflict (antes 400): el dato es válido, choca con uno guardado.
         raise HTTPException(status_code=409, detail="Ya existe habitación con ese número")
 
-    habitacion_data = habitacion.dict()
+    habitacion_data = habitacion.model_dump()
     habitacion_data["id_hotel"] = hotel_id
     nueva = HabitacionRepository.create(db, habitacion_data)
     delete_pattern(HOTELES_CACHE_PATTERN)  # cambia Hotel.habitaciones en el listado
@@ -411,7 +411,7 @@ def update_habitacion(
         and HabitacionRepository.get_by_hotel_and_number(db, db_habitacion.id_hotel, nuevo_numero)
     ):
         raise HTTPException(status_code=409, detail="Ya existe habitación con ese número")
-    actualizada = HabitacionRepository.update(db, habitacion_id, habitacion.dict(exclude_unset=True))
+    actualizada = HabitacionRepository.update(db, habitacion_id, habitacion.model_dump(exclude_unset=True))
     delete_pattern(HOTELES_CACHE_PATTERN)
     return actualizada
 

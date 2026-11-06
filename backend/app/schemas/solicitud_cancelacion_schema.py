@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # Debe coincidir con el array MOTIVOS del modal en TabReservas.tsx
 MOTIVOS_VALIDOS = [
@@ -43,8 +43,7 @@ class SolicitudCancelacionResponse(BaseModel):
     # mostrar qué asesor tomó la decisión (trazabilidad).
     id_empleado_resolutor: int | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SolicitudCancelacionResolve(BaseModel):

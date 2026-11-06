@@ -3,7 +3,7 @@
 
 import re
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 # Misma regla que el formulario de registro (RegisterModal.tsx,
 # PASSWORD_REGEX). Hallazgo de la semana 6 del bootcamp: el backend no la
@@ -55,8 +55,7 @@ class UsuarioResponse(BaseModel):
     verificado: bool = False
     activo: bool = True
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PasswordResetRequest(BaseModel):

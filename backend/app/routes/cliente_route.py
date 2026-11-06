@@ -95,7 +95,7 @@ def create_cliente(
         raise HTTPException(status_code=409, detail="Cliente con esa cédula ya existe")
     if cliente.correo and ClienteRepository.get_by_email(db, cliente.correo):
         raise HTTPException(status_code=409, detail="Email ya registrado")
-    nuevo = ClienteRepository.create(db, cliente.dict())
+    nuevo = ClienteRepository.create(db, cliente.model_dump())
     delete_pattern("clientes:list:*")
     return nuevo
 
@@ -203,7 +203,7 @@ def update_cliente(
     # datos reventara con un IntegrityError sin capturar (500 crudo).
     if cliente.correo and ClienteRepository.existe_otro_con_correo(db, cliente_id, cliente.correo):
         raise HTTPException(status_code=409, detail="Email ya registrado por otro cliente")
-    actualizado = ClienteRepository.update(db, cliente_id, cliente.dict(exclude_unset=True))
+    actualizado = ClienteRepository.update(db, cliente_id, cliente.model_dump(exclude_unset=True))
     delete_pattern("clientes:list:*")
     return actualizado
 
@@ -268,7 +268,7 @@ def create_empleado(empleado: EmpleadoCreate, db: Session = Depends(get_db), adm
         raise HTTPException(status_code=409, detail="Empleado con esa cédula ya existe")
     if empleado.correo_electronico and EmpleadoRepository.get_by_email(db, empleado.correo_electronico):
         raise HTTPException(status_code=409, detail="Email ya registrado")
-    nuevo = EmpleadoRepository.create(db, empleado.dict())
+    nuevo = EmpleadoRepository.create(db, empleado.model_dump())
     delete_pattern("empleados:list:*")
     return nuevo
 
@@ -279,7 +279,7 @@ def update_empleado(
 ):
     if not EmpleadoRepository.get_by_id(db, empleado_id):
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
-    actualizado = EmpleadoRepository.update(db, empleado_id, empleado.dict(exclude_unset=True))
+    actualizado = EmpleadoRepository.update(db, empleado_id, empleado.model_dump(exclude_unset=True))
     delete_pattern("empleados:list:*")
     return actualizado
 

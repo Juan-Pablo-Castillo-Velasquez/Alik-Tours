@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.hotel_schema import ImagenGaleriaResponse
 from app.schemas.validadores import FechaValida
@@ -77,8 +77,7 @@ class PaqueteResponse(BaseModel):
     # /paquetes/{id}/imagen en reserva_route.py.
     imagen_url: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaqueteHotelDetalle(BaseModel):
@@ -131,8 +130,7 @@ class MetodoPagoResponse(BaseModel):
     nombre_metodo: str
     codigo: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PagoCreate(BaseModel):
@@ -168,8 +166,7 @@ class PagoResponse(BaseModel):
     celular_nequi: str | None = None
     metodo_pago: MetodoPagoResponse | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ===================== NUEVO: Habitación dentro de una reserva =====================
@@ -196,8 +193,7 @@ class HabitacionReservaResponse(BaseModel):
     fecha_checkout: date
     precio_acordado: float | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReservaCreate(BaseModel):
@@ -282,8 +278,7 @@ class ReservaResponse(BaseModel):
     # load agregado (selectinload) que evita N+1 al resolver esto por fila.
     pagos: list[PagoResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AsesorResponse(BaseModel):
@@ -296,8 +291,7 @@ class AsesorResponse(BaseModel):
     correo_electronico: str | None = None
     celular: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PagarRequest(BaseModel):
@@ -340,6 +334,4 @@ class ReservaDetailResponse(ReservaResponse):
     # canal_origen y pagos ya vienen heredados de ReservaResponse (ver
     # arriba) — se quitó la redeclaración duplicada que había acá.
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

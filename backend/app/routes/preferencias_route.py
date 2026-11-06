@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
@@ -35,8 +35,7 @@ class PreferenciaResponse(BaseModel):
     ritmo: str | None = None
     transporte: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 @router.post("/", response_model=PreferenciaResponse, status_code=201)
@@ -58,13 +57,13 @@ def create_preferencia(
     existente = db.query(PreferenciaCliente).filter(PreferenciaCliente.id_cliente == data.id_cliente).first()
     if existente:
         # Actualiza si ya existe
-        for key, value in data.dict(exclude={"id_cliente"}).items():
+        for key, value in data.model_dump(exclude={"id_cliente"}).items():
             setattr(existente, key, value)
         db.commit()
         db.refresh(existente)
         return existente
 
-    preferencia = PreferenciaCliente(**data.dict())
+    preferencia = PreferenciaCliente(**data.model_dump())
     db.add(preferencia)
     db.commit()
     db.refresh(preferencia)
