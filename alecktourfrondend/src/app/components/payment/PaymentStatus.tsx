@@ -45,7 +45,9 @@ export default function PaymentStatus({
       <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-xl border border-success/20 bg-success/5 p-8 text-center">
         <CheckCircle2 className="w-8 h-8 text-success mx-auto mb-4" />
         <p className="font-medium text-foreground">Pago aprobado</p>
-        <p className="text-xs text-muted-foreground mt-1">Redirigiendo a la confirmación de tu reserva…</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Pago de prueba: no se realizó ningún cobro real. Redirigiendo a la confirmación de tu reserva…
+        </p>
       </motion.div>
     );
   }

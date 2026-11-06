@@ -7,12 +7,10 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  Clock,
   CreditCard,
   Dice5,
   Dumbbell,
   Heart,
-  Info,
   MapPin,
   PawPrint,
   PlaneTakeoff,
@@ -776,56 +774,19 @@ export default function HotelDetail() {
 
               <hr className="border-border" />
 
-              {/* Políticas simuladas */}
-              <section>
-                <h2 className="text-2xl font-semibold mb-6">
-                  Reglas del alojamiento
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex gap-4 p-5 rounded-2xl border border-border bg-card">
-                    <Clock className="w-6 h-6 text-primary shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-foreground">
-                        Horarios
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Check-in: 15:00 - 23:00
-                        <br />
-                        Check-out: Hasta las 12:00
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4 p-5 rounded-2xl border border-border bg-card">
-                    <Info className="w-6 h-6 text-primary shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-foreground">
-                        Políticas
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Se requiere presentar documento de identidad al momento
-                        del registro.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </section>
+              {/* Antes aquí había "Reglas del alojamiento" fijas (check-in
+                  15:00, check-out 12:00...) iguales para todos los hoteles,
+                  sin respaldo en los datos. Las políticas reales de cada
+                  hotel se muestran arriba (hotel.politicas). */}
             </div>
 
             {/* ── Sidebar de Reserva (Sticky) ── */}
             <div className="lg:col-span-1 relative">
               <div className="bg-card rounded-2xl border border-border p-6 shadow-xl sticky top-24 transition-colors">
-                {/* Gatillo de Urgencia (FOMO) */}
-                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3 mb-6 flex items-start gap-3">
-                  <span className="relative flex h-2.5 w-2.5 mt-1.5 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive"></span>
-                  </span>
-                  <div className="text-sm text-destructive dark:text-red-400">
-                    <span className="font-bold block">¡Muy solicitado!</span>
-                    Este hotel se reserva frecuentemente.
-                  </div>
-                </div>
-
+                {/* Se quitó el aviso fijo "¡Muy solicitado! Este hotel se
+                    reserva frecuentemente": salía en todos los hoteles sin
+                    ningún dato que lo respaldara (publicidad engañosa,
+                    Ley 1480 de 2011). */}
                 {/* Info superior */}
                 <div className="mb-6">
                   <h3 className="text-xl font-bold leading-tight mb-2">

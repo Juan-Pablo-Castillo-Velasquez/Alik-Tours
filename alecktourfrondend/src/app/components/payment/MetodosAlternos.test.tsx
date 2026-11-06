@@ -72,6 +72,12 @@ describe("PayPalPayment", () => {
 });
 
 describe("PaymentStatus", () => {
+  it("un pago aprobado aclara que es de prueba y no hubo cobro real", () => {
+    render(<PaymentStatus state="approved" amount={500000} />);
+    expect(screen.getByText(/no se realizó ningún cobro real/)).toBeInTheDocument();
+  });
+
+
   it.each([
     ["processing", "Procesando tu pago…"],
     ["approved", "Pago aprobado"],

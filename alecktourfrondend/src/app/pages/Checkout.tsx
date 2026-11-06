@@ -1185,6 +1185,23 @@ export default function Checkout() {
                             'Por ahora aceptamos pagos con Nequi o PayPal.'
                           )}
                         </p>
+                        {/* Los pagos en línea son SIMULADOS (payment_service.py: ninguna
+                            pasarela real conectada). Se dice claramente para no
+                            presentar una transacción simulada como un cobro real. */}
+                        <div role="note" className="mb-4 rounded-xl border border-warning/40 bg-warning/10 p-3.5 text-xs text-foreground">
+                          <b className="block mb-0.5">Pagos en línea en modo de prueba</b>
+                          Este sitio todavía no está conectado a una pasarela bancaria: al confirmar no se realiza
+                          ningún cobro. Tu reserva queda registrada y un asesor te contacta para indicarte cómo pagar.
+                          {" "}
+                          <a
+                            href={enlaceWhatsAppAgencia(`Hola ${BRAND.name}, quiero pagar mi reserva.`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold underline"
+                          >
+                            Escríbenos por WhatsApp
+                          </a>
+                        </div>
                         <PaymentSelector metodos={metodosPermitidos} selectedId={metodoPago} onSelect={setMetodoPago} />
                       </>
                     )}
