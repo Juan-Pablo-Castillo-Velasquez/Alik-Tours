@@ -195,6 +195,20 @@ class HabitacionNoDisponibleError(BaseAPIException):
         super().__init__(status_code=409, detail=detail, code="HABITACION_NO_DISPONIBLE")
 
 
+class CapacidadInsuficienteError(BaseAPIException):
+    """Más huéspedes de los que caben en las habitaciones elegidas."""
+
+    def __init__(self, personas: int, capacidad: int):
+        super().__init__(
+            status_code=422,
+            detail=(
+                f"Las habitaciones elegidas son para máximo {capacidad} persona(s) y la reserva es para {personas}. "
+                "Agrega otra habitación o elige una más grande."
+            ),
+            code="CAPACIDAD_INSUFICIENTE",
+        )
+
+
 class PaqueteNoEncontradoError(NotFoundError):
     """El paquete referenciado en la reserva no existe"""
 

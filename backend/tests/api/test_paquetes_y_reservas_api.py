@@ -127,6 +127,57 @@ class TestReservas:
             headers=headers,
         )
 
+    def test_no_se_reservan_mas_huespedes_de_los_que_caben(self, client, crear_usuario, habitacion):
+        usuario, h = crear_usuario()
+        inicio, fin = HOY + timedelta(days=10), HOY + timedelta(days=12)
+
+        r = client.post(
+            "/api/reservas",
+            json={
+                "id_cliente": usuario.id_cliente,
+                "fecha_inicio": inicio.isoformat(),
+                "fecha_fin": fin.isoformat(),
+                "numero_personas": 5,  # la habitación es Doble (capacidad 2)
+                "habitaciones": [
+                    {
+                        "id_habitacion": habitacion.id_habitacion,
+                        "fecha_checkin": inicio.isoformat(),
+                        "fecha_checkout": fin.isoformat(),
+                    }
+                ],
+            },
+            headers=h,
+        )
+
+        assert r.status_code == 422
+        assert "máximo 2 persona" in r.json()["detail"]
+
+    def test_la_misma_habitacion_dos_veces_con_fechas_cruzadas_da_409(self, client, crear_usuario, habitacion):
+        usuario, h = crear_usuario()
+        inicio, fin = HOY + timedelta(days=10), HOY + timedelta(days=14)
+        tramo = {"id_habitacion": habitacion.id_habitacion}
+
+        r = client.post(
+            "/api/reservas",
+            json={
+                "id_cliente": usuario.id_cliente,
+                "fecha_inicio": inicio.isoformat(),
+                "fecha_fin": fin.isoformat(),
+                "numero_personas": 2,
+                "habitaciones": [
+                    {**tramo, "fecha_checkin": inicio.isoformat(), "fecha_checkout": fin.isoformat()},
+                    {
+                        **tramo,
+                        "fecha_checkin": (inicio + timedelta(days=1)).isoformat(),
+                        "fecha_checkout": fin.isoformat(),
+                    },
+                ],
+            },
+            headers=h,
+        )
+
+        assert r.status_code == 409
+
     def test_un_cliente_reserva_y_ve_su_reserva_con_el_precio_real(self, client, crear_usuario, habitacion):
         usuario, h = crear_usuario()
 
