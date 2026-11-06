@@ -144,7 +144,11 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
   // número inventado.
   const calificacionBase = hotel.calificacion_promedio ?? hotel.calificacion;
 
-  const rating = calificacionBase ? calificacionBase * 2 : 8;
+  // Sin calificación real (ni reseñas ni calificación del hotel) no se
+  // muestra ningún puntaje: antes salía "8.0 Excelente" y 4 estrellas
+  // inventados para cualquier hotel nuevo.
+  const tieneCalificacion = calificacionBase != null && calificacionBase > 0;
+  const rating = tieneCalificacion ? calificacionBase * 2 : 0;
 
   // Etiqueta comercial estilo Despegar derivada del rating real del hotel
   // (nunca un texto fijo): a mayor calificación, mejor palabra en la escala.
@@ -159,7 +163,7 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
             ? "Bueno"
             : "Aceptable";
 
-  const estrellas = Math.min(Math.max(Math.round(calificacionBase || 4), 1), 5);
+  const estrellas = tieneCalificacion ? Math.min(Math.max(Math.round(calificacionBase), 1), 5) : 0;
 
   // Urgencia de disponibilidad: siempre calculada de las habitaciones reales
   // del hotel, nunca un "-23%" o "mejor precio" fijo sin base real.
@@ -281,11 +285,16 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
           </Link>
 
           <div className="mt-1.5 flex items-center gap-2">
-            <span className="rounded-md bg-primary px-2 py-1 text-xs font-bold text-primary-foreground">
-              {rating.toFixed(1)}
-            </span>
-
-            <span className="text-xs font-semibold text-foreground">{ratingLabel}</span>
+            {tieneCalificacion ? (
+              <>
+                <span className="rounded-md bg-primary px-2 py-1 text-xs font-bold text-primary-foreground">
+                  {rating.toFixed(1)}
+                </span>
+                <span className="text-xs font-semibold text-foreground">{ratingLabel}</span>
+              </>
+            ) : (
+              <span className="text-xs font-medium text-muted-foreground">Aún sin calificaciones</span>
+            )}
 
             {hotel.total_resenas > 0 && (
               <span className="text-xs text-muted-foreground">({hotel.total_resenas})</span>

@@ -49,6 +49,8 @@ export interface ReservaCreate {
   habitaciones?: HabitacionReservaCreate[];
   /** Versión de los términos aceptada en el checkout (content/terminos.ts). */
   terminos_version?: string;
+  /** Una por intento: el mismo intento enviado dos veces crea UNA reserva. */
+  clave_idempotencia?: string;
 }
 
 export interface ReservaUpdate extends Partial<ReservaCreate> { }

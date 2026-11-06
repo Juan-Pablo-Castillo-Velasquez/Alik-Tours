@@ -10,8 +10,8 @@ Autor (semana 4, capa E2E, ángulo transversal): Juan Pablo Castillo.
 
 from datetime import timedelta
 
+import jwt
 import pytest
-from jose import jwt
 
 from app.core.security import create_access_token
 

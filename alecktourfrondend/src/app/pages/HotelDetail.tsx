@@ -7,12 +7,10 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  Clock,
   CreditCard,
   Dice5,
   Dumbbell,
   Heart,
-  Info,
   MapPin,
   PawPrint,
   PlaneTakeoff,
@@ -86,33 +84,33 @@ const DEFAULT_IMAGE = getDefaultImage({ width: 1200 });
 //      cada hotel muestre siempre la misma combinación y hoteles distintos
 //      no luzcan idénticos entre sí.
 const AMENITY_POOL = [
-  "https://images.unsplash.com/photo-1743525922686-badbeac16a34?w=800&q=80", // piscina
-  "https://images.unsplash.com/photo-1695094411862-0e047fbddcb1?w=800&q=80", // restaurante
-  "https://images.unsplash.com/photo-1660557989695-14fac79c086d?w=800&q=80", // recepción
-  "https://images.unsplash.com/photo-1778331246390-2b91f56864e4?w=800&q=80", // spa
-  "https://images.unsplash.com/photo-1716367840407-f9414a84b325?w=800&q=80", // gimnasio
-  "https://images.unsplash.com/photo-1777113310184-140ff530f4dd?w=800&q=80", // terraza
+  "https://images.unsplash.com/photo-1743525922686-badbeac16a34?w=800&q=80&auto=format", // piscina
+  "https://images.unsplash.com/photo-1695094411862-0e047fbddcb1?w=800&q=80&auto=format", // restaurante
+  "https://images.unsplash.com/photo-1660557989695-14fac79c086d?w=800&q=80&auto=format", // recepción
+  "https://images.unsplash.com/photo-1778331246390-2b91f56864e4?w=800&q=80&auto=format", // spa
+  "https://images.unsplash.com/photo-1716367840407-f9414a84b325?w=800&q=80&auto=format", // gimnasio
+  "https://images.unsplash.com/photo-1777113310184-140ff530f4dd?w=800&q=80&auto=format", // terraza
 ];
 
 const HOTEL_EXTRA_PHOTOS: Record<string, string[]> = {
   "Hotel Paraiso": [
-    "https://images.unsplash.com/photo-1777169794972-12095816073b?w=800&q=80",
-    "https://images.unsplash.com/photo-1777180249046-abf7d640e0d9?w=800&q=80",
+    "https://images.unsplash.com/photo-1777169794972-12095816073b?w=800&q=80&auto=format",
+    "https://images.unsplash.com/photo-1777180249046-abf7d640e0d9?w=800&q=80&auto=format",
   ],
   "Resort Sol y Arena": [
-    "https://images.unsplash.com/photo-1729605411476-defbdab14c54?w=800&q=80",
-    "https://images.unsplash.com/photo-1619329268107-5aba62ca4528?w=800&q=80",
+    "https://images.unsplash.com/photo-1729605411476-defbdab14c54?w=800&q=80&auto=format",
+    "https://images.unsplash.com/photo-1619329268107-5aba62ca4528?w=800&q=80&auto=format",
   ],
   "Montana Magica": [
-    "https://images.unsplash.com/photo-1696860740767-f4211c9209f4?w=800&q=80",
-    "https://images.unsplash.com/photo-1783295541977-a3d9331e2378?w=800&q=80",
+    "https://images.unsplash.com/photo-1696860740767-f4211c9209f4?w=800&q=80&auto=format",
+    "https://images.unsplash.com/photo-1783295541977-a3d9331e2378?w=800&q=80&auto=format",
   ],
   "Gran Hotel Centro": [
-    "https://images.unsplash.com/photo-1758193783649-13371d7fb8dd?w=800&q=80",
-    "https://images.unsplash.com/photo-1744025098626-66c0b9cb1ba8?w=800&q=80",
+    "https://images.unsplash.com/photo-1758193783649-13371d7fb8dd?w=800&q=80&auto=format",
+    "https://images.unsplash.com/photo-1744025098626-66c0b9cb1ba8?w=800&q=80&auto=format",
   ],
   "Cabanas del Bosque": [
-    "https://images.unsplash.com/photo-1782846484501-d4b1c5b57953?w=800&q=80",
+    "https://images.unsplash.com/photo-1782846484501-d4b1c5b57953?w=800&q=80&auto=format",
   ],
 };
 
@@ -139,10 +137,10 @@ function getGalleryImages(hotel: HotelDetailResponse): string[] {
 // La API no guarda foto por habitación individual, así que usamos un pool
 // determinístico de fotos de habitación reales (mismo id -> misma foto siempre).
 const ROOM_IMAGES = [
-  "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80",
-  "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80",
-  "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80",
-  "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80",
+  "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80&auto=format",
+  "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80&auto=format",
+  "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80&auto=format",
+  "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80&auto=format",
 ];
 
 function getRoomImage(idHabitacion: number) {
@@ -293,6 +291,14 @@ export default function HotelDetail() {
   // genérica por ciudad de siempre (ver HotelCard.tsx, mismo criterio).
   const imagen = (hotel.imagen_url && resolveFotoUrl(hotel.imagen_url)) || getImage(hotel.ciudad ?? "");
   const galeria = getGalleryImages(hotel);
+  // Sin fotos propias (ni portada ni galería subidas desde el panel) se ven
+  // imágenes de referencia: se dice claramente para no mostrar como del
+  // hotel una piscina, un spa o un gimnasio que quizá no tiene.
+  const galeriaDeReferencia = !(hotel.imagenes && hotel.imagenes.length > 0);
+  const portadaDeReferencia = !hotel.imagen_url;
+  const enlaceMapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    [hotel.nombre_hotel, hotel.direccion, hotel.ciudad, hotel.pais].filter(Boolean).join(", ")
+  )}`;
   const habitacionesDisponibles =
     hotel.habitaciones?.filter((h) => h.estado === "disponible") ?? [];
   const precioMin = habitacionesDisponibles.length
@@ -409,13 +415,21 @@ export default function HotelDetail() {
             </h1>
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <MapPin className="w-4 h-4 text-primary" />
-              <span className="hover:underline cursor-pointer">
-                {hotel.direccion || "Ubicación céntrica"}, {hotel.ciudad}
-              </span>
+              {/* Sin dirección registrada se muestra solo la ciudad (antes
+                  decía "Ubicación céntrica", un dato inventado). */}
+              <a href={enlaceMapa} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                {[hotel.direccion, hotel.ciudad].filter(Boolean).join(", ")}
+              </a>
               <span>•</span>
-              <span className="text-primary font-medium cursor-pointer hover:underline">
+              {/* Antes era un texto con aspecto de enlace que no hacía nada. */}
+              <a
+                href={enlaceMapa}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary font-medium hover:underline"
+              >
                 Ver mapa
-              </span>
+              </a>
             </div>
           </div>
 
@@ -423,6 +437,13 @@ export default function HotelDetail() {
               click en cualquier foto para verla ampliada (lightbox), antes
               solo se veían en miniatura. fotosLightbox combina portada +
               galería en un solo arreglo navegable. */}
+          {(galeriaDeReferencia || portadaDeReferencia) && (
+            <p className="text-xs text-muted-foreground mb-2">
+              {portadaDeReferencia && galeriaDeReferencia
+                ? "Imágenes de referencia: el hotel aún no ha publicado sus propias fotos."
+                : "Algunas imágenes son de referencia y pueden no corresponder a este hotel."}
+            </p>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-2 mb-10 h-[45vh] md:h-[55vh] rounded-2xl overflow-hidden group">
             <div
               className="md:col-span-2 md:row-span-2 relative overflow-hidden h-full cursor-pointer"
@@ -445,7 +466,7 @@ export default function HotelDetail() {
               >
                 <img
                   src={img}
-                  alt="Instalaciones"
+                  alt={galeriaDeReferencia ? "Imagen de referencia" : `Foto de ${hotel.nombre_hotel}`}
                   className="w-full h-full object-cover hover:opacity-90 transition-opacity"
                 />
               </div>
@@ -776,56 +797,19 @@ export default function HotelDetail() {
 
               <hr className="border-border" />
 
-              {/* Políticas simuladas */}
-              <section>
-                <h2 className="text-2xl font-semibold mb-6">
-                  Reglas del alojamiento
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex gap-4 p-5 rounded-2xl border border-border bg-card">
-                    <Clock className="w-6 h-6 text-primary shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-foreground">
-                        Horarios
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Check-in: 15:00 - 23:00
-                        <br />
-                        Check-out: Hasta las 12:00
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4 p-5 rounded-2xl border border-border bg-card">
-                    <Info className="w-6 h-6 text-primary shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-foreground">
-                        Políticas
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Se requiere presentar documento de identidad al momento
-                        del registro.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </section>
+              {/* Antes aquí había "Reglas del alojamiento" fijas (check-in
+                  15:00, check-out 12:00...) iguales para todos los hoteles,
+                  sin respaldo en los datos. Las políticas reales de cada
+                  hotel se muestran arriba (hotel.politicas). */}
             </div>
 
             {/* ── Sidebar de Reserva (Sticky) ── */}
             <div className="lg:col-span-1 relative">
               <div className="bg-card rounded-2xl border border-border p-6 shadow-xl sticky top-24 transition-colors">
-                {/* Gatillo de Urgencia (FOMO) */}
-                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3 mb-6 flex items-start gap-3">
-                  <span className="relative flex h-2.5 w-2.5 mt-1.5 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-destructive"></span>
-                  </span>
-                  <div className="text-sm text-destructive dark:text-red-400">
-                    <span className="font-bold block">¡Muy solicitado!</span>
-                    Este hotel se reserva frecuentemente.
-                  </div>
-                </div>
-
+                {/* Se quitó el aviso fijo "¡Muy solicitado! Este hotel se
+                    reserva frecuentemente": salía en todos los hoteles sin
+                    ningún dato que lo respaldara (publicidad engañosa,
+                    Ley 1480 de 2011). */}
                 {/* Info superior */}
                 <div className="mb-6">
                   <h3 className="text-xl font-bold leading-tight mb-2">

@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { enlaceWhatsApp } from "../../utils/whatsapp";
+import BotonExportarCsv from "./ui/BotonExportarCsv";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
 
@@ -1071,6 +1072,33 @@ export default function ModuleReservas({
               focus:ring-2 focus:ring-primary/40 focus:border-transparent"
           />
         </div>
+
+        <BotonExportarCsv
+          nombre="reservas"
+          filas={filtered}
+          columnas={[
+            { titulo: "ID", valor: (r) => r.id_reserva },
+            {
+              titulo: "Cliente",
+              valor: (r) => {
+                const c = clientes.find((x) => x.id_cliente === r.id_cliente);
+                return c ? `${c.nombre} ${c.apellido}` : r.id_cliente;
+              },
+            },
+            {
+              titulo: "Paquete / hotel",
+              valor: (r) => paquetes.find((x) => x.id_paquete === r.id_paquete)?.nombre_paquete ?? r.hotel_nombre,
+            },
+            { titulo: "Destino", valor: (r) => r.destino },
+            { titulo: "Inicio", valor: (r) => r.fecha_inicio?.slice(0, 10) },
+            { titulo: "Fin", valor: (r) => r.fecha_fin?.slice(0, 10) },
+            { titulo: "Personas", valor: (r) => r.numero_personas },
+            { titulo: "Estado", valor: (r) => r.estado },
+            { titulo: "Total", valor: (r) => r.precio_total },
+            { titulo: "Canal", valor: (r) => r.canal_origen },
+            { titulo: "Creada", valor: (r) => r.fecha_reserva?.slice(0, 10) },
+          ]}
+        />
 
         <div className="flex gap-1 bg-muted p-1 rounded-xl border border-border">
           {ESTADOS.map(e => (

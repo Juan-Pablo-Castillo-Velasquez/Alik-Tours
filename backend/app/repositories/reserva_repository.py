@@ -1,9 +1,11 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import and_, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.exceptions import (
+    CapacidadInsuficienteError,
     HabitacionNoDisponibleError,
     HabitacionNoEncontradaError,
     NotFoundError,
@@ -330,7 +332,13 @@ class ReservaRepository:
         Revisa que la habitación exista, esté operativa, y que no tenga
         otra reserva activa que se cruce con el rango de fechas solicitado.
         """
-        habitacion = db.query(Habitacion).filter(Habitacion.id_habitacion == id_habitacion).first()
+        # SELECT ... FOR UPDATE sobre la habitación: dos reservas simultáneas
+        # de la misma habitación (dos clientes a la vez, o doble clic) podían
+        # pasar las dos el chequeo de cruce de abajo antes de que cualquiera
+        # hiciera commit -> reserva doble. Con el lock la segunda espera a
+        # que la primera termine y entonces sí ve el cruce. (En SQLite, que
+        # usan las pruebas unitarias, el lock no aplica y se ignora.)
+        habitacion = db.query(Habitacion).filter(Habitacion.id_habitacion == id_habitacion).with_for_update().first()
         if not habitacion:
             raise HabitacionNoEncontradaError(id_habitacion)
 
@@ -364,12 +372,32 @@ class ReservaRepository:
         """
         habitaciones_solicitadas = reserva_data.pop("habitaciones", None) or []
 
+        # Idempotencia: el mismo intento (misma clave del mismo cliente) que
+        # llega dos veces devuelve la reserva ya creada, sin crear otra.
+        clave = reserva_data.get("clave_idempotencia")
+        if clave:
+            existente = ReservaRepository._por_clave(db, reserva_data["id_cliente"], clave)
+            if existente:
+                return existente
+
         # Si mandan id_paquete, verificar que exista de verdad
         id_paquete = reserva_data.get("id_paquete")
         if id_paquete is not None:
             paquete = db.query(Paquete).filter(Paquete.id_paquete == id_paquete).first()
             if not paquete:
                 raise PaqueteNoEncontradoError(id_paquete)
+
+        # La misma habitación dos veces en la misma reserva con fechas que se
+        # cruzan: el chequeo de disponibilidad no lo ve (la primera todavía no
+        # está guardada) y quedaba reservada dos veces.
+        for i, a in enumerate(habitaciones_solicitadas):
+            for b in habitaciones_solicitadas[i + 1 :]:
+                if (
+                    a["id_habitacion"] == b["id_habitacion"]
+                    and a["fecha_checkin"] < b["fecha_checkout"]
+                    and b["fecha_checkin"] < a["fecha_checkout"]
+                ):
+                    raise HabitacionNoDisponibleError(a["id_habitacion"], b["fecha_checkin"], b["fecha_checkout"])
 
         # Validar TODAS las habitaciones antes de crear nada (evita reservas a medias)
         habitaciones_validadas = []
@@ -378,6 +406,17 @@ class ReservaRepository:
                 db, h["id_habitacion"], h["fecha_checkin"], h["fecha_checkout"]
             )
             habitaciones_validadas.append((h, habitacion))
+
+        # Capacidad: el checkout ya limita los huéspedes a la capacidad del
+        # tipo de habitación, pero el backend no lo verificaba (una llamada
+        # directa a la API podía meter 10 personas en una sencilla).
+        if habitaciones_validadas:
+            capacidad = sum(
+                (hab.tipo_habitacion.capacidad_personas if hab.tipo_habitacion else 0)
+                for _, hab in habitaciones_validadas
+            )
+            if capacidad and reserva_data.get("numero_personas", 0) > capacidad:
+                raise CapacidadInsuficienteError(reserva_data["numero_personas"], capacidad)
 
         if reserva_data.get("terminos_version"):
             reserva_data["terminos_aceptados_en"] = datetime.now(UTC).replace(tzinfo=None)
@@ -408,9 +447,23 @@ class ReservaRepository:
             )
             db.add(reserva_habitacion)
 
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            # Dos envíos del mismo intento al mismo tiempo: el segundo choca
+            # con la restricción única y devuelve la reserva del primero.
+            db.rollback()
+            if clave:
+                existente = ReservaRepository._por_clave(db, reserva_data["id_cliente"], clave)
+                if existente:
+                    return existente
+            raise
         db.refresh(reserva)
         return reserva
+
+    @staticmethod
+    def _por_clave(db: Session, id_cliente: int, clave: str):
+        return db.query(Reserva).filter(Reserva.id_cliente == id_cliente, Reserva.clave_idempotencia == clave).first()
 
     @staticmethod
     def update(db: Session, reserva_id: int, reserva_data: dict):

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { nuevoClientMsgId } from "../services/mensajeChat.service";
 import { useNavigate } from "react-router";
 import {
   PlusCircle, Hotel, Package, Users,
@@ -7,6 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch } from "../api/v1/api";
+import { cargarTodo } from "../utils/cargarTodo";
 import { Reserva, HotelData, Paquete, Cliente, Empleado, Pago, Usuario, Rol, Module } from "../components/admin/types";
 import ModuleDashboard from "../components/admin/ModuleDashboard";
 import ModuleReservas from "../components/admin/ModuleReservas";
@@ -60,6 +62,8 @@ export default function AdminDashboard() {
   const { usuario, logout, isAdmin, isEmpleado, updateUsuario } = useAuth();
   const { refrescarTemaActivo } = useTema();
   const navigate = useNavigate();
+  // Clave de idempotencia del formulario "Crear reserva" (ver submitReserva).
+  const claveReservaRef = useRef(nuevoClientMsgId());
   const [activeModule, setActiveModule] = useState<Module>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -206,7 +210,9 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, isEmpleado]);
 
-  const fetchReservas  = async () => { try { setReservas(await apiFetch<Reserva[]>("/reservas?limit=100"));      } catch { /* no crítico */ } };
+  // cargarTodo: antes se pedía UNA sola página (limit=100/300) y con más
+  // registros el resto desaparecía del panel sin aviso (ver cargarTodo.ts).
+  const fetchReservas  = async () => { try { setReservas(await cargarTodo<Reserva>("/reservas", 100));      } catch { /* no crítico */ } };
   // TTL de 120s: mismo valor que usa el backend para cachear estas listas en
   // Redis (GET /hoteles, /clientes) — no tiene sentido que el navegador
   // guarde una copia "más fresca" que la que el propio backend serviría.
@@ -236,13 +242,13 @@ export default function AdminDashboard() {
     const cached = getLocalCache<Cliente[]>("admin_cache_clientes");
     if (cached) setClientes(cached);
     try {
-      const fresh = await apiFetch<Cliente[]>("/clientes?limit=300");
+      const fresh = await cargarTodo<Cliente>("/clientes", 300);
       setClientes(fresh);
       setLocalCache("admin_cache_clientes", fresh, ADMIN_CACHE_TTL);
     } catch { /* no crítico */ }
   };
   const fetchEmpleados = async () => { try { setEmpleados(await apiFetch<Empleado[]>("/empleados?limit=100"));   } catch { /* no crítico */ } };
-  const fetchPagos     = async () => { try { setPagos(await apiFetch<Pago[]>("/pagos?limit=300"));               } catch { /* no crítico */ } };
+  const fetchPagos     = async () => { try { setPagos(await cargarTodo<Pago>("/pagos", 300));               } catch { /* no crítico */ } };
   const fetchMetodosPago = async () => { try { setMetodosPago(await apiFetch<MetodoPago[]>("/metodos-pago"));    } catch { /* no crítico */ } };
   const fetchUsuarios  = async () => {
     try {
@@ -647,8 +653,12 @@ export default function AdminDashboard() {
       // importar quien la creara, y ni el KPI "reservas gestionadas" del
       // dashboard de empleado ni su filtro de "mis reservas" tenian de
       // donde sacar el dato.
-      const payload = usuario?.id_empleado != null ? { ...data, id_empleado: usuario.id_empleado } : data;
+      const base = usuario?.id_empleado != null ? { ...data, id_empleado: usuario.id_empleado } : data;
+      // Misma clave mientras sea el mismo formulario: un doble envío no
+      // crea dos reservas. Se renueva al crear una con éxito.
+      const payload = { ...base, clave_idempotencia: claveReservaRef.current };
       await apiFetch("/reservas", { method: "POST", body: payload });
+      claveReservaRef.current = nuevoClientMsgId();
       await fetchReservas();
       toast.success("Reserva creada correctamente");
       // Tras crear, llevar al admin al listado para que la vea de una vez

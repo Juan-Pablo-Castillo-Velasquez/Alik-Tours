@@ -14,6 +14,7 @@ from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
 from app.core.deps import exigir_propietario_o_admin, get_current_usuario, usuario_es_staff
 from app.core.exceptions import (
+    CapacidadInsuficienteError,
     HabitacionNoDisponibleError,
     HabitacionNoEncontradaError,
     NotFoundError,
@@ -613,7 +614,8 @@ def create_reserva(
         # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
         delete_pattern("kpi:dashboard:resumen")
         return nueva
-    except HabitacionNoDisponibleError as e:
+    except (HabitacionNoDisponibleError, CapacidadInsuficienteError) as e:
+        db.rollback()
         raise HTTPException(status_code=e.status_code, detail=e.detail) from e
     except HabitacionNoEncontradaError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail) from e

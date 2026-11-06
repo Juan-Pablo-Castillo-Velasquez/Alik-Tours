@@ -21,3 +21,11 @@ allowBuilds:
   # copia su service worker para el navegador; los tests usan msw/node y
   # no lo necesitan. Se declara explícitamente para que pnpm no falle.
   msw: false
+
+# Versiones forzadas en todo el árbol (pnpm 11 ya no lee "pnpm.overrides"
+# de package.json, por eso se movieron aquí).
+# - dompurify: llega por jspdf; las versiones <3.4.17 tienen
+#   vulnerabilidades conocidas (GHSA-cg2g-xh64-v4q7, crítica).
+overrides:
+  vite: 6.3.5
+  dompurify: ">=3.4.17"

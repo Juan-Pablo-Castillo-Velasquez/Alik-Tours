@@ -35,7 +35,7 @@ interface OpcionesImagen {
 }
 
 function construirUrl(id: string, { width = 1200, quality = 80 }: OpcionesImagen = {}): string {
-  return `https://images.unsplash.com/photo-${id}?w=${width}&q=${quality}`;
+  return `https://images.unsplash.com/photo-${id}?w=${width}&q=${quality}&auto=format`;
 }
 
 export function getCityImage(ciudad?: string | null, opts?: OpcionesImagen): string {

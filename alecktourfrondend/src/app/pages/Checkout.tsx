@@ -5,7 +5,8 @@ import { BRAND } from "../config/brand";
 import { IconoWhatsApp } from "../components/BotonWhatsApp";
 import { Bed, Calendar, CheckCircle2, CreditCard, Eye, EyeOff, IdCard, Lock, Mail, MapPin, Phone, Shield, ShieldCheck, Smartphone, Sparkles, User, Users, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { nuevoClientMsgId } from "../services/mensajeChat.service";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast, Toaster } from "sonner";
 import HalloweenAccentDiscreto from "../components/HalloweenAccentDiscreto";
@@ -141,6 +142,10 @@ export default function Checkout() {
   //    processing/approved/rejected una vez enviado (ver PaymentStatus) ──
   const [paymentStatus, setPaymentStatus] = useState<PaymentOutcome>('idle');
   const [reservaActual, setReservaActual] = useState<any>(null);
+  // Clave de idempotencia de ESTE intento de reserva: si la petición se
+  // envía dos veces (doble clic, reintento tras un corte de red) el backend
+  // devuelve la misma reserva en vez de crear otra.
+  const claveIntentoRef = useRef(nuevoClientMsgId());
 
   // Precio real de la habitación elegida (viene de la BD, no inventado)
   const precioPorNoche = habitacion?.precio_noche ?? 0;
@@ -509,6 +514,7 @@ export default function Checkout() {
           fecha_fin: fechaFin,
           numero_personas: people,
           terminos_version: TERMINOS_VERSION,
+          clave_idempotencia: claveIntentoRef.current,
           habitaciones: [
             {
               id_habitacion: habitacion.id_habitacion,
@@ -1185,6 +1191,23 @@ export default function Checkout() {
                             'Por ahora aceptamos pagos con Nequi o PayPal.'
                           )}
                         </p>
+                        {/* Los pagos en línea son SIMULADOS (payment_service.py: ninguna
+                            pasarela real conectada). Se dice claramente para no
+                            presentar una transacción simulada como un cobro real. */}
+                        <div role="note" className="mb-4 rounded-xl border border-warning/40 bg-warning/10 p-3.5 text-xs text-foreground">
+                          <b className="block mb-0.5">Pagos en línea en modo de prueba</b>
+                          Este sitio todavía no está conectado a una pasarela bancaria: al confirmar no se realiza
+                          ningún cobro. Tu reserva queda registrada y un asesor te contacta para indicarte cómo pagar.
+                          {" "}
+                          <a
+                            href={enlaceWhatsAppAgencia(`Hola ${BRAND.name}, quiero pagar mi reserva.`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold underline"
+                          >
+                            Escríbenos por WhatsApp
+                          </a>
+                        </div>
                         <PaymentSelector metodos={metodosPermitidos} selectedId={metodoPago} onSelect={setMetodoPago} />
                       </>
                     )}
@@ -1320,7 +1343,7 @@ export default function Checkout() {
                   {/* Badge SSL */}
                   <div className="flex items-center gap-3 p-4 bg-green-500/5 rounded-xl border border-green-500/10 transition-colors">
                     <Shield className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <span className="text-xs text-muted-foreground font-medium">Transacción protegida mediante encriptación SSL de 256 bits</span>
+                    <span className="text-xs text-muted-foreground font-medium">Conexión cifrada (HTTPS): tus datos viajan protegidos</span>
                   </div>
 
                   {/* Qué pasa después de pagar -- antes el cliente llegaba a

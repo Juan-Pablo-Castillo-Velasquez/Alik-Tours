@@ -1,4 +1,16 @@
-from sqlalchemy import TIMESTAMP, Boolean, CheckConstraint, Column, Date, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    CheckConstraint,
+    Column,
+    Date,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -99,6 +111,9 @@ class ImagenPaquete(Base):
 
 class Reserva(Base):
     __tablename__ = "reservas"
+    __table_args__ = (
+        UniqueConstraint("id_cliente", "clave_idempotencia", name="uq_reserva_cliente_clave_idempotencia"),
+    )
 
     id_reserva = Column(Integer, primary_key=True, index=True)
     id_cliente = Column(Integer, ForeignKey("clientes.id_cliente"), nullable=False)
@@ -117,6 +132,11 @@ class Reserva(Base):
     # por un asesor.
     terminos_version = Column(String(40), nullable=True)
     terminos_aceptados_en = Column(TIMESTAMP, nullable=True)
+    # Clave de idempotencia que manda quien crea la reserva (checkout o
+    # panel), una por intento: si el mismo intento llega dos veces (doble
+    # clic, reintento tras un corte de red) se devuelve la reserva ya
+    # creada en vez de crear otra. Única por cliente.
+    clave_idempotencia = Column(String(64), nullable=True)
 
     cliente = relationship("Cliente", back_populates="reservas")
     empleado = relationship("Empleado", back_populates="reservas")

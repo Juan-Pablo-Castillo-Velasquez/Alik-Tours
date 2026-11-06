@@ -10,6 +10,7 @@ import {
     WalletCards,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { enlaceWhatsAppAgencia } from "../utils/whatsapp";
 
 const sellingPoints = [
     {
@@ -201,10 +202,16 @@ export default function WhyChooseUs() {
 
                             </div>
 
-                            <button className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm px-5 py-3 rounded-xl transition-all duration-300 hover:-translate-y-0.5 shadow-md">
+                            {/* Antes era un botón sin acción: ahora abre el WhatsApp de la agencia. */}
+                            <a
+                                href={enlaceWhatsAppAgencia()}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm px-5 py-3 rounded-xl transition-all duration-300 hover:-translate-y-0.5 shadow-md"
+                            >
                                 <Headset className="w-4 h-4" />
                                 Habla con un asesor
-                            </button>
+                            </a>
 
                         </div>
 

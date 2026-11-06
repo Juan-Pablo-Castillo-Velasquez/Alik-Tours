@@ -6,8 +6,9 @@ import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
 
+import jwt  # PyJWT (antes python-jose, sin mantenimiento y con avisos de seguridad)
 from fastapi import Header, HTTPException
-from jose import JWTError, jwt
+from jwt import PyJWTError as JWTError
 from passlib.context import CryptContext
 
 from app.core.config import settings

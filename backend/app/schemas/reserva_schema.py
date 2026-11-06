@@ -207,6 +207,8 @@ class ReservaCreate(BaseModel):
     # Versión de los términos aceptada en el checkout (evidencia de
     # consentimiento); la fecha la pone el servidor.
     terminos_version: str | None = Field(None, max_length=40)
+    # Una por intento de reserva (ver Reserva.clave_idempotencia).
+    clave_idempotencia: str | None = Field(None, min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
     # NUEVO: habitaciones reales que se están reservando (precio se calcula en backend, no se confía en el frontend)
     habitaciones: list[HabitacionReservaCreate] | None = None
 
