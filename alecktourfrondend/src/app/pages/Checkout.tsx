@@ -1337,7 +1337,7 @@ export default function Checkout() {
                   {/* Badge SSL */}
                   <div className="flex items-center gap-3 p-4 bg-green-500/5 rounded-xl border border-green-500/10 transition-colors">
                     <Shield className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <span className="text-xs text-muted-foreground font-medium">Transacción protegida mediante encriptación SSL de 256 bits</span>
+                    <span className="text-xs text-muted-foreground font-medium">Conexión cifrada (HTTPS): tus datos viajan protegidos</span>
                   </div>
 
                   {/* Qué pasa después de pagar -- antes el cliente llegaba a

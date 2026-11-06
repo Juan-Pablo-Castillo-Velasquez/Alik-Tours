@@ -133,7 +133,7 @@ export default function TravelInfo() {
         {
           icon: Shield,
           title: "Seguridad de pago",
-          description: "Transacciones encriptadas con tecnología SSL. Tus datos están 100% protegidos.",
+          description: "La conexión con el sitio es cifrada (HTTPS) y tus datos se tratan según la Ley 1581 de 2012.",
         },
       ],
     },
