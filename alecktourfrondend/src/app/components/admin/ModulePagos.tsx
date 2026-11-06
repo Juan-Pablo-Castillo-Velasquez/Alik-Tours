@@ -17,6 +17,7 @@ import { usePagination } from "../../hooks/usePagination";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../ui/select";
+import BotonExportarCsv from "./ui/BotonExportarCsv";
 
 // Forma real de GET /metodos-pago (MetodoPagoResponse en reserva_schema.py)
 // — opcional: si Admindashboard no la pasa, el filtro de método se arma
@@ -282,6 +283,29 @@ export default function ModulePagos({
               focus:ring-2 focus:ring-primary/40 focus:border-transparent"
           />
         </div>
+
+        <BotonExportarCsv
+          nombre="pagos"
+          filas={filtered}
+          columnas={[
+            { titulo: "ID pago", valor: (p) => p.id_pago },
+            { titulo: "Reserva", valor: (p) => p.id_reserva },
+            {
+              titulo: "Cliente",
+              valor: (p) => {
+                const r = reservas.find((x) => x.id_reserva === p.id_reserva);
+                const c = r ? clientes.find((x) => x.id_cliente === r.id_cliente) : undefined;
+                return c ? `${c.nombre} ${c.apellido}` : "";
+              },
+            },
+            { titulo: "Monto", valor: (p) => p.monto },
+            { titulo: "Estado", valor: (p) => p.estado },
+            { titulo: "Método", valor: (p) => p.metodo_pago?.nombre_metodo },
+            { titulo: "Referencia", valor: (p) => p.referencia },
+            { titulo: "N.º comprobante", valor: (p) => p.numero_factura },
+            { titulo: "Fecha", valor: (p) => p.fecha_pago?.slice(0, 10) },
+          ]}
+        />
 
         <Select value={estadoFilter} onValueChange={(v) => setEstadoFilter(v as EstadoFilter)}>
           <SelectTrigger className={selectTriggerCls}>

@@ -20,6 +20,7 @@ import Timeline, { type TimelineItem } from "./ui/Timeline";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../ui/select";
+import BotonExportarCsv from "./ui/BotonExportarCsv";
 
 const EMPTY_FORM = {
   nombre: "", apellido: "", cedula: "", correo: "",
@@ -225,6 +226,21 @@ export default function ModuleClientes({
               focus:ring-2 focus:ring-primary/40 focus:border-transparent"
           />
         </div>
+        <BotonExportarCsv
+          nombre="clientes"
+          filas={filtered}
+          columnas={[
+            { titulo: "ID", valor: (c) => c.id_cliente },
+            { titulo: "Nombre", valor: (c) => c.nombre },
+            { titulo: "Apellido", valor: (c) => c.apellido },
+            { titulo: "Cédula", valor: (c) => c.cedula },
+            { titulo: "Correo", valor: (c) => c.correo },
+            { titulo: "Celular", valor: (c) => c.celular },
+            { titulo: "Ciudad", valor: (c) => c.ciudad },
+            { titulo: "País", valor: (c) => c.pais },
+            { titulo: "Registro", valor: (c) => c.fecha_registro?.slice(0, 10) },
+          ]}
+        />
         <Select value={ciudadFilter} onValueChange={setCiudadFilter}>
           <SelectTrigger className="w-auto min-w-[140px] h-auto py-2 bg-card border-border text-xs">
             <SelectValue placeholder="Ciudad" />

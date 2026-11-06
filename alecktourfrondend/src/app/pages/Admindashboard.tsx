@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch } from "../api/v1/api";
+import { cargarTodo } from "../utils/cargarTodo";
 import { Reserva, HotelData, Paquete, Cliente, Empleado, Pago, Usuario, Rol, Module } from "../components/admin/types";
 import ModuleDashboard from "../components/admin/ModuleDashboard";
 import ModuleReservas from "../components/admin/ModuleReservas";
@@ -206,7 +207,9 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, isEmpleado]);
 
-  const fetchReservas  = async () => { try { setReservas(await apiFetch<Reserva[]>("/reservas?limit=100"));      } catch { /* no crítico */ } };
+  // cargarTodo: antes se pedía UNA sola página (limit=100/300) y con más
+  // registros el resto desaparecía del panel sin aviso (ver cargarTodo.ts).
+  const fetchReservas  = async () => { try { setReservas(await cargarTodo<Reserva>("/reservas", 100));      } catch { /* no crítico */ } };
   // TTL de 120s: mismo valor que usa el backend para cachear estas listas en
   // Redis (GET /hoteles, /clientes) — no tiene sentido que el navegador
   // guarde una copia "más fresca" que la que el propio backend serviría.
@@ -236,13 +239,13 @@ export default function AdminDashboard() {
     const cached = getLocalCache<Cliente[]>("admin_cache_clientes");
     if (cached) setClientes(cached);
     try {
-      const fresh = await apiFetch<Cliente[]>("/clientes?limit=300");
+      const fresh = await cargarTodo<Cliente>("/clientes", 300);
       setClientes(fresh);
       setLocalCache("admin_cache_clientes", fresh, ADMIN_CACHE_TTL);
     } catch { /* no crítico */ }
   };
   const fetchEmpleados = async () => { try { setEmpleados(await apiFetch<Empleado[]>("/empleados?limit=100"));   } catch { /* no crítico */ } };
-  const fetchPagos     = async () => { try { setPagos(await apiFetch<Pago[]>("/pagos?limit=300"));               } catch { /* no crítico */ } };
+  const fetchPagos     = async () => { try { setPagos(await cargarTodo<Pago>("/pagos", 300));               } catch { /* no crítico */ } };
   const fetchMetodosPago = async () => { try { setMetodosPago(await apiFetch<MetodoPago[]>("/metodos-pago"));    } catch { /* no crítico */ } };
   const fetchUsuarios  = async () => {
     try {
