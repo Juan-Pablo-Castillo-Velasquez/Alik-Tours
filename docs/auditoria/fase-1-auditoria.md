@@ -42,7 +42,7 @@ Rutas públicas del frontend: `/`, `/packages`, `/package/:id`, `/hotel/:id`, `/
 | 5 | "¡Muy solicitado! Este hotel se reserva frecuentemente" aparecía fijo en todos los hoteles | Hoteles | Alto | Texto de urgencia sin datos (FOMO) | Quitado | Publicidad engañosa | **Completado** (rama) |
 | 6 | "Reglas del alojamiento" fijas (check-in 15:00, check-out 12:00) iguales para todos los hoteles | Hoteles | Medio | Bloque estático "Políticas simuladas" | Quitado; ya se muestran las `politicas` reales de cada hotel | Información falsa al cliente | **Completado** (rama) |
 | 7 | 17 vulnerabilidades en el frontend: 1 crítica en DOMPurify (vía jspdf) y 7 altas en react-router | Seguridad | Alto | Versiones viejas; `pnpm.overrides` ignorado por pnpm 11 | react-router 7.18.2, `dompurify>=3.4.17` y overrides movidos a `pnpm-workspace.yaml` | Bajo: mismo major | **Completado**: `pnpm audit` da 0 |
-| 8 | 26 avisos de pip-audit en el backend: starlette 0.38.6, python-jose, ecdsa, aiosmtplib, pyasn1 y pytest | Seguridad | Alto | FastAPI 0.115 fija starlette viejo; python-jose está sin mantenimiento | pyasn1 0.6.5 ya está. Falta: subir FastAPI/starlette, cambiar python-jose por PyJWT, y subir fastapi-mail/aiosmtplib | Cambios de versión mayor: hay que probarlos | Parcial |
+| 8 | 26 avisos de pip-audit en el backend: starlette 0.38.6, python-jose, ecdsa, aiosmtplib, pyasn1 y pytest | Seguridad | Alto | FastAPI 0.115 fija starlette viejo; python-jose está sin mantenimiento | Fase 5: PyJWT 2.15 en lugar de python-jose (se van también pyasn1 y ecdsa), FastAPI 0.162 con starlette 1.10, fastapi-mail 1.6.8 con aiosmtplib 5.1.3 y pytest 9.1.1 | Medio: versiones mayores. Las 382 pruebas unitarias pasan con las versiones nuevas y la app arranca con Sentry activo | **Completado** (rama fase 3-5) |
 | 9 | `[Pendiente: razón social]`, `[Pendiente: NIT]` y `[Pendiente: dirección]` visibles en los Términos | Legal | Alto | Faltan los datos reales de la agencia | El propietario debe dar los datos; no se inventan | Falta de identificación del prestador (Ley 1480, comercio electrónico) | **Bloqueado**: faltan datos reales |
 | 10 | Los Términos no mencionan la **reversión del pago** (Ley 1480, art. 51). Hay que revisar si el **retracto** aplica a servicios turísticos con fecha determinada | Legal | Medio | Redacción incompleta | Texto propuesto para revisión de un abogado; no se publica sin revisión | Derechos del consumidor | Pendiente (revisión jurídica) |
 | 11 | Los enlaces de WhatsApp a clientes en el panel abrían chats inexistentes (sin el indicativo 57) | Panel | Medio | `wa.me/3001234567` | `utils/whatsapp.ts` normaliza el número; tiene pruebas | — | **Completado** (en `main`) |
@@ -50,6 +50,19 @@ Rutas públicas del frontend: `/`, `/packages`, `/package/:id`, `/hotel/:id`, `/
 | 13 | Permisos | Seguridad | — | Revisados los 24 routers. Las rutas públicas sin sesión son solo de catálogo (hoteles, paquetes, reseñas, temas). Reservas y pagos verifican `exigir_propietario_o_admin` | No requiere cambio | — | Verificado sin hallazgo |
 | 14 | Las alertas de Dependabot están desactivadas en el repositorio | Infra | Bajo | Configuración de GitHub | Nuevo workflow `auditoria-dependencias` (semanal, solo informa) | — | **Completado** (rama) |
 | 15 | `/faq`, `/terms` y `/privacy` no llegan a "red inactiva" en 45 s | Rendimiento | Bajo | Peticiones que siguen activas (por investigar: video o polling) | Medir en la fase 6 | — | Pendiente |
+
+## 3b. Avance de las fases 3 y 5 (rama `mejora/fase-3-5-operacion-seguridad`)
+
+| Requisito | Estado | Evidencia | Prueba |
+|---|---|---|---|
+| Evitar reservas dobles de la misma habitación (condición de carrera) | Completado | `SELECT ... FOR UPDATE` sobre la habitación en `ReservaRepository._verificar_disponibilidad` | 406 pruebas, incluida la integración en PostgreSQL 16 |
+| La misma habitación repetida en una reserva | Completado | Responde 409 | `test_la_misma_habitacion_dos_veces_con_fechas_cruzadas_da_409` |
+| Validación de capacidad en el backend | Completado | Responde 422 con un mensaje claro (`CapacidadInsuficienteError`) | `test_no_se_reservan_mas_huespedes_de_los_que_caben` |
+| Afirmaciones de seguridad sin respaldo ("SSL 256 bits", "100% protegidos") | Completado | Textos corregidos | — |
+| JWT con PyJWT | Completado | `app/core/security.py` | Pruebas de autenticación (token con otra clave → 401, etc.) |
+| FastAPI, starlette y fastapi-mail al día | Completado | `requirements.txt` | 382 pruebas unitarias con las versiones nuevas en CI y arranque con Sentry |
+| Comprobantes que no dicen ser factura DIAN | Ya cumplía | `generarFacturaPdf.ts`, `ComprobantePDF.tsx` y Términos | — |
+| Idempotencia de `POST /reservas` | Parcial | Un doble envío de la misma habitación ya responde 409 por disponibilidad. Las reservas sin habitación (solo paquete) pueden duplicarse | Pendiente: clave de idempotencia (requiere migración) |
 
 ## 4. Plan priorizado (fases siguientes)
 
