@@ -5,7 +5,6 @@ import {
   Globe, UserCheck, PhoneCall, ChevronRight, AlertCircle,
   CheckCircle, Clock, XCircle, FileText, Save, MoreHorizontal,
   MessageCircle, Send, BedDouble, Sparkles, Receipt, Paperclip,
-  ArrowUp, ArrowDown, ArrowUpDown,
 } from "lucide-react";
 import { Reserva, Cliente, Paquete, ESTADO_COLOR, inputCls, resolveFotoUrl } from "./types";
 import { reservaDetailService, reservaService, type PagoResponse } from "../../services/reserva.service";
@@ -34,6 +33,7 @@ import {
 } from "../ui/select";
 import { enlaceWhatsApp } from "../../utils/whatsapp";
 import BotonExportarCsv from "./ui/BotonExportarCsv";
+import { EncabezadoOrdenable, useOrden } from "./ui/useOrden";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
 
@@ -912,7 +912,6 @@ export default function ModuleReservas({
   clienteIdFiltro = null, onVerPagos,
 }: Props) {
   const [search,       setSearch]       = useState("");
-  const [orden, setOrden] = useState<{ campo: CampoOrden; dir: "asc" | "desc" }>({ campo: "id", dir: "desc" });
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>("todos");
   const [pagoFilter,   setPagoFilter]   = useState<PagoFilter>("todos");
   const [canalFilter,  setCanalFilter]  = useState<CanalFilter>("todos");
@@ -1017,29 +1016,17 @@ export default function ModuleReservas({
 
   // Orden por columna (clic en el encabezado; segundo clic invierte). Por
   // defecto, lo más reciente primero (id descendente).
-  const valorOrden = (r: Reserva): number | string => {
-    switch (orden.campo) {
-      case "fechas": return r.fecha_inicio ?? "";
-      case "total": return r.precio_total ?? 0;
-      case "actualizado": return r.fecha_ultima_actualizacion ?? "";
-      default: return r.id_reserva;
-    }
-  };
-  const ordenadas = [...filtered].sort((a, b) => {
-    const va = valorOrden(a), vb = valorOrden(b);
-    const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb));
-    return orden.dir === "asc" ? cmp : -cmp;
-  });
-  const ordenarPor = (campo: CampoOrden) =>
-    setOrden((o) => ({ campo, dir: o.campo === campo && o.dir === "desc" ? "asc" : "desc" }));
+  const { ordenadas, orden, ordenarPor } = useOrden<Reserva, CampoOrden>(
+    filtered,
+    (r, campo) =>
+      campo === "fechas" ? r.fecha_inicio
+      : campo === "total" ? r.precio_total
+      : campo === "actualizado" ? r.fecha_ultima_actualizacion
+      : r.id_reserva,
+    { campo: "id", dir: "desc" },
+  );
   const thOrdenable = (campo: CampoOrden, texto: string) => (
-    <th className={thCls} aria-sort={orden.campo === campo ? (orden.dir === "asc" ? "ascending" : "descending") : "none"}>
-      <button type="button" onClick={() => ordenarPor(campo)} className="inline-flex items-center gap-1 uppercase hover:text-foreground">
-        {texto}
-        {orden.campo !== campo ? <ArrowUpDown className="w-3 h-3 opacity-50" />
-          : orden.dir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-      </button>
-    </th>
+    <EncabezadoOrdenable campo={campo} texto={texto} orden={orden} onOrdenar={ordenarPor} className={thCls} />
   );
 
   const { page, pageCount, slice, setPage } = usePagination(ordenadas, 10);

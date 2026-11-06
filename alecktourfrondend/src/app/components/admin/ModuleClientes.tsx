@@ -21,6 +21,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../ui/select";
 import BotonExportarCsv from "./ui/BotonExportarCsv";
+import { EncabezadoOrdenable, useOrden } from "./ui/useOrden";
 
 const EMPTY_FORM = {
   nombre: "", apellido: "", cedula: "", correo: "",
@@ -104,7 +105,18 @@ export default function ModuleClientes({
     return matchSearch && matchCiudad && matchPais && matchReservas;
   });
 
-  const { page, pageCount, slice, setPage } = usePagination(filtered, 8);
+  // Orden por columna; por defecto, el cliente más nuevo primero (antes
+  // salían del más antiguo al más nuevo, como los devuelve el backend).
+  const { ordenadas, orden, ordenarPor } = useOrden<Cliente, "nombre" | "cedula" | "ubicacion" | "registro">(
+    filtered,
+    (c, campo) =>
+      campo === "nombre" ? `${c.nombre} ${c.apellido}`
+      : campo === "cedula" ? c.cedula
+      : campo === "ubicacion" ? c.ciudad
+      : c.fecha_registro ?? String(c.id_cliente).padStart(10, "0"),
+    { campo: "registro", dir: "desc" },
+  );
+  const { page, pageCount, slice, setPage } = usePagination(ordenadas, 8);
 
   const hasActiveFilters = search.trim() !== "" || ciudadFilter !== "todos" || paisFilter !== "todos" || conReservasFilter !== "todos";
   function clearFilters() { setSearch(""); setCiudadFilter("todos"); setPaisFilter("todos"); setConReservasFilter("todos"); }
@@ -282,9 +294,9 @@ export default function ModuleClientes({
           <table className="w-full text-sm">
             <thead className="bg-muted/40 border-b border-border">
               <tr>
-                <th className={thCls}>Cliente</th>
-                <th className={thCls}>Cédula</th>
-                <th className={thCls}>Ubicación</th>
+                <EncabezadoOrdenable campo="nombre" texto="Cliente" orden={orden} onOrdenar={ordenarPor} className={thCls} />
+                <EncabezadoOrdenable campo="cedula" texto="Cédula" orden={orden} onOrdenar={ordenarPor} className={thCls} />
+                <EncabezadoOrdenable campo="ubicacion" texto="Ubicación" orden={orden} onOrdenar={ordenarPor} className={thCls} />
                 <th className={thCls}>Contacto</th>
                 <th className={thCls}></th>
               </tr>

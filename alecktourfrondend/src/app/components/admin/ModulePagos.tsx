@@ -18,6 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "../ui/select";
 import BotonExportarCsv from "./ui/BotonExportarCsv";
+import { EncabezadoOrdenable, useOrden } from "./ui/useOrden";
 
 // Forma real de GET /metodos-pago (MetodoPagoResponse en reserva_schema.py)
 // — opcional: si Admindashboard no la pasa, el filtro de método se arma
@@ -177,7 +178,17 @@ export default function ModulePagos({
     return matchEstado && matchMetodo && matchCliente && matchReserva && matchSearch && matchFecha;
   });
 
-  const { page, pageCount, slice, setPage } = usePagination(filtered, 8);
+  // Orden por columna; por defecto, el pago más reciente primero.
+  const { ordenadas, orden, ordenarPor } = useOrden<Pago, "id" | "monto" | "estado" | "fecha">(
+    filtered,
+    (p, campo) =>
+      campo === "monto" ? Number(p.monto)
+      : campo === "estado" ? p.estado
+      : campo === "fecha" ? p.fecha_pago
+      : p.id_pago,
+    { campo: "id", dir: "desc" },
+  );
+  const { page, pageCount, slice, setPage } = usePagination(ordenadas, 8);
 
   const hasActiveFilters = estadoFilter !== "todos" || metodoFilter !== "todos" || search.trim() !== ""
     || clienteFiltroActivo != null || reservaFiltroActivo != null || rangoFecha.desde !== "" || rangoFecha.hasta !== "";
@@ -379,12 +390,12 @@ export default function ModulePagos({
           <table className="w-full text-sm">
             <thead className="bg-muted/40 border-b border-border">
               <tr>
-                <th className={thCls}>Pago</th>
+                <EncabezadoOrdenable campo="id" texto="Pago" orden={orden} onOrdenar={ordenarPor} className={thCls} />
                 <th className={thCls}>Reserva</th>
                 <th className={thCls}>Método</th>
-                <th className={thCls}>Monto</th>
-                <th className={thCls}>Estado</th>
-                <th className={thCls}>Fecha</th>
+                <EncabezadoOrdenable campo="monto" texto="Monto" orden={orden} onOrdenar={ordenarPor} className={thCls} />
+                <EncabezadoOrdenable campo="estado" texto="Estado" orden={orden} onOrdenar={ordenarPor} className={thCls} />
+                <EncabezadoOrdenable campo="fecha" texto="Fecha" orden={orden} onOrdenar={ordenarPor} className={thCls} />
                 <th className={thCls}></th>
               </tr>
             </thead>
