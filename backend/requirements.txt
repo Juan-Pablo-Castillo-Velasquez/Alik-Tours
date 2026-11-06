@@ -14,14 +14,11 @@ python-dotenv==1.2.2
 passlib[bcrypt]==1.7.4
 bcrypt==4.2.0
 
-# 3.5.0 (no 3.4.0): 3.4.0 fuerza pyasn1<0.5.0, que quedó con CVEs conocidos
-# sin parchear (PYSEC-2026-2263/3455/3456/3457) y sin forma de resolverlos
-# manteniendo esa versión. 3.5.0 solo relaja esa cota (pyasn1>=0.5.0) sin
-# cambiar la API que usa este proyecto (jwt.encode/jwt.decode/JWTError, ver
-# app/core/security.py) — verificado con pytest tras el bump.
-python-jose[cryptography]==3.5.0
-# pyasn1 llega por python-jose; <0.6.5 tiene CVE-2026-119194..119197 (pip-audit).
-pyasn1==0.6.5
+# JWT con PyJWT (antes python-jose 3.5.0: sin mantenimiento, con
+# avisos de pip-audit propios y por sus dependencias pyasn1 y ecdsa). La
+# API usada es la misma (jwt.encode/jwt.decode, HS256); los tokens ya
+# emitidos siguen siendo válidos. Ver app/core/security.py.
+PyJWT==2.15.0
 
 fastapi-mail==1.4.1
 email-validator==2.2.0
