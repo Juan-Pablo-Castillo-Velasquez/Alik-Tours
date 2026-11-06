@@ -1,0 +1,40 @@
+# Auditoría de dependencias con vulnerabilidades conocidas (pip-audit para
+# el backend, pnpm audit para el frontend). Solo informa: no bloquea el
+# despliegue ni cambia nada. Corre a mano o una vez por semana.
+name: auditoria-dependencias
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 13 * * 1"
+  push:
+    branches: [mejora/**]
+    paths: [backend/requirements*.txt, alecktourfrondend/package.json, alecktourfrondend/pnpm-lock.yaml, .github/workflows/auditoria-dependencias.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - name: pip-audit
+        run: pip-audit -r backend/requirements.txt -r backend/requirements-dev.txt --progress-spinner off || true
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: alecktourfrondend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: pnpm audit
+        working-directory: alecktourfrondend
+        run: pnpm audit --prod || true
