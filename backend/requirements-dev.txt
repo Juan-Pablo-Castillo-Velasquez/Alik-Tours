@@ -4,9 +4,9 @@
 -r requirements.txt
 
 ruff==0.16.5
-pytest==8.3.3
+pytest==9.1.1
 # Cobertura (bootcamp, semana 1): se activa sola en cada "pytest" vía
 # addopts de pyproject.toml.
 pytest-cov==6.0.0
 # Cliente HTTP que usa fastapi.testclient.TestClient en las pruebas de API.
-httpx==0.27.2
+httpx==0.28.1

@@ -33,7 +33,19 @@ jobs:
           python-version: "3.12"
       - run: cp .env.example .env
       - run: pip install -r requirements-dev.txt
-      - run: pip install -U fastapi fastapi-mail pip-audit
-      - run: pip show fastapi starlette fastapi-mail aiosmtplib pydantic uvicorn | grep -E "^(Name|Version|Requires):"
+      - run: pip install pip-audit
+      - run: pip show fastapi starlette fastapi-mail aiosmtplib pydantic uvicorn sentry-sdk | grep -E "^(Name|Version):"
       - run: python -m pytest -q -p no:cacheprovider --no-cov tests --ignore=tests/integration 2>&1 | tail -25
+      - name: Arranque con Sentry activado (como producción)
+        env:
+          SENTRY_DSN: https://abc123@o0.ingest.sentry.io/0
+        run: |
+          python - <<'PY'
+          from fastapi.testclient import TestClient
+          from app.main import app
+          c = TestClient(app)
+          print("health", c.get("/health").status_code)
+          print("hoteles", c.get("/api/temas/activo").status_code)
+          PY
       - run: pip freeze > congelado.txt && pip-audit -r congelado.txt --progress-spinner off || true
+# corrida 2: versiones fijadas en requirements
