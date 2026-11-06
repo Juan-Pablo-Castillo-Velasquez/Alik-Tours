@@ -337,9 +337,7 @@ class ReservaRepository:
         # hiciera commit -> reserva doble. Con el lock la segunda espera a
         # que la primera termine y entonces sí ve el cruce. (En SQLite, que
         # usan las pruebas unitarias, el lock no aplica y se ignora.)
-        habitacion = (
-            db.query(Habitacion).filter(Habitacion.id_habitacion == id_habitacion).with_for_update().first()
-        )
+        habitacion = db.query(Habitacion).filter(Habitacion.id_habitacion == id_habitacion).with_for_update().first()
         if not habitacion:
             raise HabitacionNoEncontradaError(id_habitacion)
 
