@@ -49,7 +49,7 @@ Rutas públicas del frontend: `/`, `/packages`, `/package/:id`, `/hotel/:id`, `/
 | 12 | Chat: posibles mensajes duplicados | Chat | — | Revisado: `fusionarMensajes` deduplica por id y el envío usa `client_msg_id` idempotente y un candado contra doble clic | No requiere cambio | — | Verificado sin hallazgo |
 | 13 | Permisos | Seguridad | — | Revisados los 24 routers. Las rutas públicas sin sesión son solo de catálogo (hoteles, paquetes, reseñas, temas). Reservas y pagos verifican `exigir_propietario_o_admin` | No requiere cambio | — | Verificado sin hallazgo |
 | 14 | Las alertas de Dependabot están desactivadas en el repositorio | Infra | Bajo | Configuración de GitHub | Nuevo workflow `auditoria-dependencias` (semanal, solo informa) | — | **Completado** (rama) |
-| 15 | `/faq`, `/terms` y `/privacy` no llegan a "red inactiva" en 45 s | Rendimiento | Bajo | Peticiones que siguen activas (por investigar: video o polling) | Medir en la fase 6 | — | Pendiente |
+| 15 | `/faq`, `/terms` y `/privacy` no llegan a "red inactiva" en 45 s | Rendimiento | Bajo | Peticiones que siguen activas (por investigar: video o polling) | Medir en la fase 6 | — | **Resuelto (verificado)**: con el backend sano cargan en 0,8 a 2,8 s sin peticiones colgadas; era efecto de los fallos del backend |
 
 ## 3b. Avance de las fases 3 y 5 (rama `mejora/fase-3-5-operacion-seguridad`)
 
@@ -108,7 +108,7 @@ Rutas públicas del frontend: `/`, `/packages`, `/package/:id`, `/hotel/:id`, `/
 | Rendimiento: code splitting e imágenes | Completado | `lazy()` ya existía; Unsplash con `auto=format` | `cityImages.test.ts` |
 | Producción: errores 500 en Render | Completado (verificado) | Fueron transitorios durante el redespliegue: hoy `/health` está ok y reseñas, promociones y destinos responden 200 | Diagnóstico de solo lectura con navegador real desde GitHub Actions |
 | Textos legales (datos del prestador, reversión del pago) | Bloqueado / pendiente de revisión jurídica | `docs/legal/propuestas-para-revision-juridica.md` | — |
-| `/faq`, `/terms` y `/privacy` lentas en cargar | Pendiente | Hay que medirlo con el backend sano; hoy los fallos del backend lo enmascaran | — |
+| `/faq`, `/terms` y `/privacy` lentas en cargar | Completado (verificado) | 0,8 a 2,8 s hasta red inactiva, sin peticiones colgadas ni repetidas | Medición con navegador real desde GitHub Actions |
 
 ### Orden de despliegue
 
