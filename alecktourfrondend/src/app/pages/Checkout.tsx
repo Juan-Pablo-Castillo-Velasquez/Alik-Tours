@@ -5,7 +5,8 @@ import { BRAND } from "../config/brand";
 import { IconoWhatsApp } from "../components/BotonWhatsApp";
 import { Bed, Calendar, CheckCircle2, CreditCard, Eye, EyeOff, IdCard, Lock, Mail, MapPin, Phone, Shield, ShieldCheck, Smartphone, Sparkles, User, Users, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { nuevoClientMsgId } from "../services/mensajeChat.service";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast, Toaster } from "sonner";
 import HalloweenAccentDiscreto from "../components/HalloweenAccentDiscreto";
@@ -141,6 +142,10 @@ export default function Checkout() {
   //    processing/approved/rejected una vez enviado (ver PaymentStatus) ──
   const [paymentStatus, setPaymentStatus] = useState<PaymentOutcome>('idle');
   const [reservaActual, setReservaActual] = useState<any>(null);
+  // Clave de idempotencia de ESTE intento de reserva: si la petición se
+  // envía dos veces (doble clic, reintento tras un corte de red) el backend
+  // devuelve la misma reserva en vez de crear otra.
+  const claveIntentoRef = useRef(nuevoClientMsgId());
 
   // Precio real de la habitación elegida (viene de la BD, no inventado)
   const precioPorNoche = habitacion?.precio_noche ?? 0;
@@ -509,6 +514,7 @@ export default function Checkout() {
           fecha_fin: fechaFin,
           numero_personas: people,
           terminos_version: TERMINOS_VERSION,
+          clave_idempotencia: claveIntentoRef.current,
           habitaciones: [
             {
               id_habitacion: habitacion.id_habitacion,

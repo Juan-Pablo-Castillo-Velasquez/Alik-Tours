@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import and_, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.exceptions import (
@@ -371,6 +372,14 @@ class ReservaRepository:
         """
         habitaciones_solicitadas = reserva_data.pop("habitaciones", None) or []
 
+        # Idempotencia: el mismo intento (misma clave del mismo cliente) que
+        # llega dos veces devuelve la reserva ya creada, sin crear otra.
+        clave = reserva_data.get("clave_idempotencia")
+        if clave:
+            existente = ReservaRepository._por_clave(db, reserva_data["id_cliente"], clave)
+            if existente:
+                return existente
+
         # Si mandan id_paquete, verificar que exista de verdad
         id_paquete = reserva_data.get("id_paquete")
         if id_paquete is not None:
@@ -438,9 +447,23 @@ class ReservaRepository:
             )
             db.add(reserva_habitacion)
 
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            # Dos envíos del mismo intento al mismo tiempo: el segundo choca
+            # con la restricción única y devuelve la reserva del primero.
+            db.rollback()
+            if clave:
+                existente = ReservaRepository._por_clave(db, reserva_data["id_cliente"], clave)
+                if existente:
+                    return existente
+            raise
         db.refresh(reserva)
         return reserva
+
+    @staticmethod
+    def _por_clave(db: Session, id_cliente: int, clave: str):
+        return db.query(Reserva).filter(Reserva.id_cliente == id_cliente, Reserva.clave_idempotencia == clave).first()
 
     @staticmethod
     def update(db: Session, reserva_id: int, reserva_data: dict):

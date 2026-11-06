@@ -127,6 +127,46 @@ class TestReservas:
             headers=headers,
         )
 
+    def test_el_mismo_intento_enviado_dos_veces_crea_una_sola_reserva(self, client, crear_usuario, habitacion, db):
+        usuario, h = crear_usuario()
+        inicio, fin = HOY + timedelta(days=20), HOY + timedelta(days=22)
+        cuerpo = {
+            "id_cliente": usuario.id_cliente,
+            "fecha_inicio": inicio.isoformat(),
+            "fecha_fin": fin.isoformat(),
+            "numero_personas": 2,
+            "clave_idempotencia": "intento-abc12345",
+            "habitaciones": [
+                {
+                    "id_habitacion": habitacion.id_habitacion,
+                    "fecha_checkin": inicio.isoformat(),
+                    "fecha_checkout": fin.isoformat(),
+                }
+            ],
+        }
+
+        primera = client.post("/api/reservas", json=cuerpo, headers=h)
+        segunda = client.post("/api/reservas", json=cuerpo, headers=h)  # doble clic / reintento
+
+        assert primera.status_code == segunda.status_code == 201
+        assert primera.json()["id_reserva"] == segunda.json()["id_reserva"]
+        assert db.query(Reserva).filter(Reserva.id_cliente == usuario.id_cliente).count() == 1
+
+    def test_otro_intento_con_otra_clave_si_crea_otra_reserva(self, client, crear_usuario, db):
+        usuario, h = crear_usuario()
+        inicio, fin = HOY + timedelta(days=20), HOY + timedelta(days=22)
+        base = {
+            "id_cliente": usuario.id_cliente,
+            "fecha_inicio": inicio.isoformat(),
+            "fecha_fin": fin.isoformat(),
+            "numero_personas": 2,
+        }
+
+        a = client.post("/api/reservas", json={**base, "clave_idempotencia": "intento-1aaaaaaa"}, headers=h)
+        b = client.post("/api/reservas", json={**base, "clave_idempotencia": "intento-2bbbbbbb"}, headers=h)
+
+        assert a.json()["id_reserva"] != b.json()["id_reserva"]
+
     def test_no_se_reservan_mas_huespedes_de_los_que_caben(self, client, crear_usuario, habitacion):
         usuario, h = crear_usuario()
         inicio, fin = HOY + timedelta(days=10), HOY + timedelta(days=12)

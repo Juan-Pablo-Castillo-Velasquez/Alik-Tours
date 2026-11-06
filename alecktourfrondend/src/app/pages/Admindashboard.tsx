@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { nuevoClientMsgId } from "../services/mensajeChat.service";
 import { useNavigate } from "react-router";
 import {
   PlusCircle, Hotel, Package, Users,
@@ -61,6 +62,8 @@ export default function AdminDashboard() {
   const { usuario, logout, isAdmin, isEmpleado, updateUsuario } = useAuth();
   const { refrescarTemaActivo } = useTema();
   const navigate = useNavigate();
+  // Clave de idempotencia del formulario "Crear reserva" (ver submitReserva).
+  const claveReservaRef = useRef(nuevoClientMsgId());
   const [activeModule, setActiveModule] = useState<Module>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -650,8 +653,12 @@ export default function AdminDashboard() {
       // importar quien la creara, y ni el KPI "reservas gestionadas" del
       // dashboard de empleado ni su filtro de "mis reservas" tenian de
       // donde sacar el dato.
-      const payload = usuario?.id_empleado != null ? { ...data, id_empleado: usuario.id_empleado } : data;
+      const base = usuario?.id_empleado != null ? { ...data, id_empleado: usuario.id_empleado } : data;
+      // Misma clave mientras sea el mismo formulario: un doble envío no
+      // crea dos reservas. Se renueva al crear una con éxito.
+      const payload = { ...base, clave_idempotencia: claveReservaRef.current };
       await apiFetch("/reservas", { method: "POST", body: payload });
+      claveReservaRef.current = nuevoClientMsgId();
       await fetchReservas();
       toast.success("Reserva creada correctamente");
       // Tras crear, llevar al admin al listado para que la vea de una vez
