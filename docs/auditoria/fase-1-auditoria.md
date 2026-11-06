@@ -62,7 +62,7 @@ Rutas públicas del frontend: `/`, `/packages`, `/package/:id`, `/hotel/:id`, `/
 | JWT con PyJWT | Completado | `app/core/security.py` | Pruebas de autenticación (token con otra clave → 401, etc.) |
 | FastAPI, starlette y fastapi-mail al día | Completado | `requirements.txt` | 382 pruebas unitarias con las versiones nuevas en CI y arranque con Sentry |
 | Comprobantes que no dicen ser factura DIAN | Ya cumplía | `generarFacturaPdf.ts`, `ComprobantePDF.tsx` y Términos | — |
-| Idempotencia de `POST /reservas` | Parcial | Un doble envío de la misma habitación ya responde 409 por disponibilidad. Las reservas sin habitación (solo paquete) pueden duplicarse | Pendiente: clave de idempotencia (requiere migración) |
+| Idempotencia de `POST /reservas` | Completado (rama fase 7) | `clave_idempotencia` por intento en el checkout y en el panel, con restricción única por cliente. Migración `b8d4f2a6c9e1` | `test_el_mismo_intento_enviado_dos_veces_crea_una_sola_reserva`; migración probada subir/bajar/subir en PostgreSQL 16 |
 
 ## 4. Plan priorizado (fases siguientes)
 
@@ -88,3 +88,35 @@ Rutas públicas del frontend: `/`, `/packages`, `/package/:id`, `/hotel/:id`, `/
 
 - **Despliegue:** se revisa el PR de `mejora/fase-1-auditoria`, y cuando el CI esté verde se hace merge a `main`. Vercel publica solo y Render redeploya (corre las migraciones).
 - **Rollback:** se revierte el merge en GitHub (`Revert`). Esta fase no tiene cambios de base de datos.
+
+## 7. Matriz final de requisitos (fases 1 a 7)
+
+| Requisito | Estado | Evidencia | Prueba |
+|---|---|---|---|
+| Auditoría integral con matriz de hallazgos | Completado | Este documento | — |
+| Sin datos inventados (calificaciones, urgencia, reglas, ubicación, fotos) | Completado | PR #28 y #31 | Revisión de código y CI |
+| Pagos simulados presentados como tales | Completado | Aviso en el checkout y "Pago de prueba" | `MetodosAlternos.test.tsx` |
+| Pasarela de pagos real | Bloqueado | Decisión del propietario (Wompi, PayU, Mercado Pago o pago asistido) | — |
+| Reservas: carrera, duplicado, capacidad e idempotencia | Completado | PR #29 y fase 7 | 408 pruebas backend (incluida PostgreSQL) |
+| Comprobantes que no dicen ser factura DIAN | Completado (ya cumplía) | `generarFacturaPdf.ts` | — |
+| Permisos verificados en el backend | Completado (verificado) | Revisión de los 24 routers | Pruebas de autorización existentes |
+| Dependencias sin vulnerabilidades conocidas | Completado | `pnpm audit` 0; backend actualizado (PyJWT, FastAPI 0.162, fastapi-mail 1.6.8) | CI y auditoría semanal |
+| Panel: todos los registros y CSV | Completado | PR #30 | `cargarTodo.test.ts`, `exportarCsv.test.ts` |
+| Búsqueda: filtros persistentes | Completado | PR #31 | e2e de búsqueda |
+| Botones sin acción | Completado | "Habla con un asesor", "Ver mapa" y dirección | — |
+| WhatsApp de la agencia | Completado (en `main`) | +57 322 817 4200 | `whatsapp.test.ts` |
+| Rendimiento: code splitting e imágenes | Completado | `lazy()` ya existía; Unsplash con `auto=format` | `cityImages.test.ts` |
+| Producción: errores 500 en Render | Bloqueado | Se necesitan los logs de Render | — |
+| Textos legales (datos del prestador, reversión del pago) | Bloqueado / pendiente de revisión jurídica | `docs/legal/propuestas-para-revision-juridica.md` | — |
+| `/faq`, `/terms` y `/privacy` lentas en cargar | Pendiente | Hay que medirlo con el backend sano; hoy los fallos del backend lo enmascaran | — |
+
+### Orden de despliegue
+
+1. Merge de #28 → #29 → #30 → #31 → #32, en orden.
+2. Render redeploya y `entrypoint.sh` corre `alembic upgrade head`. Eso aplica `a7c3e9f1b4d2` (si faltaba) y `b8d4f2a6c9e1`.
+3. Comprobar que `/health`, `/api/resenas`, `/api/promociones/seleccion-casa` y una reserva de prueba funcionan.
+
+### Rollback
+
+- **Frontend:** "Revert" del merge en GitHub, y Vercel vuelve a publicar.
+- **Backend:** el mismo revert. Para deshacer la columna de idempotencia se corre `alembic downgrade a7c3e9f1b4d2`. La columna es nullable, así que el código anterior funciona aunque siga existiendo.
