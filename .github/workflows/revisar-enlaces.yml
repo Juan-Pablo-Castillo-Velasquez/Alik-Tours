@@ -1,0 +1,16 @@
+name: revisar-enlaces
+on:
+  push:
+    branches: [chore/revisar-enlaces]
+permissions:
+  contents: read
+jobs:
+  enlaces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm i --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - run: node .github/scripts/revisar-enlaces.mjs
