@@ -1,0 +1,31 @@
+# TEMPORAL: regenera alecktourfrondend/pnpm-lock.yaml (Node 22 + pnpm 11) y
+# lo imprime en el log para poder copiarlo. Se borra en el commit siguiente.
+name: regenerar-lockfile
+on:
+  push:
+    branches: [mejora/**]
+    paths: [.github/workflows/regenerar-lockfile.yml]
+permissions:
+  contents: read
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: alecktourfrondend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Regenerar y auditar
+        working-directory: alecktourfrondend
+        run: |
+          pnpm install --lockfile-only --no-frozen-lockfile
+          pnpm install --frozen-lockfile
+          pnpm audit --prod || true
+          sha256sum pnpm-lock.yaml
+          echo "=====INICIO-LOCK====="
+          gzip -9c pnpm-lock.yaml | base64 -w 0
+          echo
+          echo "=====FIN-LOCK====="
