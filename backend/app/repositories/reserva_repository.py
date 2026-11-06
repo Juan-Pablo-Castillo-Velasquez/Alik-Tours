@@ -459,6 +459,9 @@ class ReservaRepository:
                     return existente
             raise
         db.refresh(reserva)
+        # Marca para quien llama: esta reserva se creó AHORA (no es el
+        # reenvío de un intento ya guardado), así los avisos salen una vez.
+        reserva._recien_creada = True
         return reserva
 
     @staticmethod

@@ -103,6 +103,11 @@ export default function NotificacionesBell({ idCliente }: Props) {
       navigate("/comunidad");
       return;
     }
+    // En los avisos de reseña la referencia es la reseña, no una reserva.
+    if (tipo === "resena") {
+      navigate("/testimonios");
+      return;
+    }
     navigate("/profile", { state: { tab: "reservas", reservaId: idReferencia } });
   };
 

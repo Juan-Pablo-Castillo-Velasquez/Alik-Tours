@@ -28,7 +28,7 @@ from app.core.mail import send_reservation_confirmation
 from app.core.security import require_admin, require_empleado
 from app.models.hotel_model import Hotel, HotelCaracteristica
 from app.models.metodo_pago_guardado_model import MetodoPagoGuardado
-from app.models.reserva_model import MetodoPago, Pago, Paquete, PaqueteHotel, PaqueteServicio
+from app.models.reserva_model import MetodoPago, Pago, Paquete, PaqueteHotel, PaqueteServicio, Reserva
 from app.models.servicio_model import Servicio
 from app.models.user_model import Usuario
 from app.repositories.reserva_repository import (
@@ -65,6 +65,7 @@ from app.schemas.reserva_schema import (
     ReservaUpdate,
 )
 from app.services import payment_service
+from app.services.notificacion_service import crear_notificacion
 from app.services.pago_estado_service import TransicionPagoInvalida, cambiar_estado_pago, total_pagado
 from app.services.reserva_detail_service import ReservaDetailService
 
@@ -584,6 +585,47 @@ def get_reserva(
     return reserva
 
 
+def _avisar_reserva_creada(db: Session, reserva: Reserva) -> None:
+    """Un aviso al cliente y uno interno al equipo por reserva nueva (antes
+    no había ninguno: el equipo se enteraba solo mirando el panel). Si el
+    aviso falla, la reserva ya está guardada y no se deshace."""
+    try:
+        crear_notificacion(
+            db,
+            tipo="reserva",
+            titulo="Nueva reserva por gestionar",
+            mensaje=f"Reserva #{reserva.id_reserva} para {reserva.numero_personas} persona(s), del {reserva.fecha_inicio} al {reserva.fecha_fin}.",
+            id_referencia=reserva.id_reserva,
+            commit=False,
+        )
+        crear_notificacion(
+            db,
+            tipo="reserva",
+            titulo="Recibimos tu reserva",
+            mensaje=(
+                f"Tu reserva #{reserva.id_reserva} quedó registrada. "
+                "Un asesor te contactará para confirmar y explicarte cómo pagar."
+            ),
+            id_referencia=reserva.id_reserva,
+            id_cliente=reserva.id_cliente,
+            commit=False,
+        )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error(f"No se pudo crear el aviso de la reserva {reserva.id_reserva}: {e}", exc_info=True)
+
+
+_AVISO_ESTADO_RESERVA = {
+    "confirmada": ("Tu reserva está confirmada", "La reserva #{id} quedó confirmada. ¡Prepárate para viajar!"),
+    "cancelada": ("Tu reserva fue cancelada", "La reserva #{id} fue cancelada. Si tienes dudas, escríbenos."),
+    "finalizada": (
+        "Gracias por viajar con nosotros",
+        "La reserva #{id} finalizó. Cuéntanos cómo te fue dejando una reseña.",
+    ),
+}
+
+
 @router.post("/reservas", response_model=ReservaResponse, status_code=201)
 def create_reserva(
     reserva: ReservaCreate,
@@ -609,6 +651,8 @@ def create_reserva(
         raise HTTPException(status_code=403, detail="No puedes crear una reserva a nombre de otro cliente")
     try:
         nueva = ReservaRepository.create(db, reserva.dict())
+        if getattr(nueva, "_recien_creada", False):
+            _avisar_reserva_creada(db, nueva)
         delete_pattern(RESERVAS_CACHE_PATTERN)
         # KPIs del dashboard dependen de reservas/pagos — invalida también su
         # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
@@ -863,7 +907,19 @@ def update_reserva(
     db_reserva = ReservaRepository.get_by_id(db, reserva_id)
     if not db_reserva:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    estado_anterior = db_reserva.estado
     actualizada = ReservaRepository.update(db, reserva_id, reserva.dict(exclude_unset=True))
+    # Aviso al cliente solo si el estado de verdad cambió en ESTA llamada.
+    if actualizada and actualizada.estado != estado_anterior and actualizada.estado in _AVISO_ESTADO_RESERVA:
+        titulo, mensaje = _AVISO_ESTADO_RESERVA[actualizada.estado]
+        crear_notificacion(
+            db,
+            tipo="reserva",
+            titulo=titulo,
+            mensaje=mensaje.format(id=actualizada.id_reserva),
+            id_referencia=actualizada.id_reserva,
+            id_cliente=actualizada.id_cliente,
+        )
     delete_pattern(RESERVAS_CACHE_PATTERN)
     # KPIs del dashboard dependen de reservas/pagos — invalida también su
     # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.

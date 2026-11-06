@@ -82,7 +82,7 @@ class TestCambiarEstadoPago:
         assert al_cliente["titulo"] == "¡Pago aprobado!"
         assert al_admin["commit"] is False and al_cliente["commit"] is False
 
-    def test_rechazar_deja_historial_pero_no_numera_ni_notifica(self, notificaciones):
+    def test_rechazar_deja_historial_y_avisa_al_cliente_pero_no_numera(self, notificaciones):
         pago, reserva = _pago(estado="procesando"), _reserva()
         db = MagicMock(name="sesion")
 
@@ -92,7 +92,9 @@ class TestCambiarEstadoPago:
         assert pago.numero_factura is None
         assert reserva.estado == "pendiente"
         db.add.assert_called_once()
-        notificaciones.assert_not_called()
+        notificaciones.assert_called_once()
+        assert notificaciones.call_args.kwargs["titulo"] == "Tu pago no fue aprobado"
+        assert notificaciones.call_args.kwargs["id_cliente"] == reserva.id_cliente
 
     def test_un_comprobante_ya_numerado_no_se_renumera(self, notificaciones):
         pago = _pago()

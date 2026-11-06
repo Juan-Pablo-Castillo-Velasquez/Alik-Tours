@@ -114,3 +114,21 @@ def cambiar_estado_pago(
             id_cliente=reserva.id_cliente,
             commit=False,
         )
+
+    if nuevo_estado == "rechazado":
+        # Antes un pago rechazado no avisaba nada: el cliente solo lo veía si
+        # seguía en la pantalla del checkout. Una sola vez: 'rechazado' es
+        # final, la transición solo ocurre una vez por pago.
+        monto = f"${float(pago.monto):,.0f}".replace(",", ".")
+        crear_notificacion(
+            db,
+            tipo="pago",
+            titulo="Tu pago no fue aprobado",
+            mensaje=(
+                f"El pago de {monto} para la reserva #{reserva.id_reserva} fue rechazado. "
+                "Tu reserva sigue registrada: puedes intentar de nuevo con otro medio o escribirnos por WhatsApp."
+            ),
+            id_referencia=reserva.id_reserva,
+            id_cliente=reserva.id_cliente,
+            commit=False,
+        )

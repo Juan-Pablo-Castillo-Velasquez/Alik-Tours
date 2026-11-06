@@ -255,6 +255,26 @@ def admin_resolver_solicitud(
                 )
             )
 
+    # Aviso al cliente con la decisión (una vez: una solicitud solo se
+    # resuelve una vez, ver el 409 de arriba). Antes solo había correo, y
+    # solo cuando se aprobaba.
+    reserva_de_solicitud = db.query(Reserva).filter(Reserva.id_reserva == solicitud.id_reserva).first()
+    if reserva_de_solicitud is not None:
+        aprobada = data.estado == "aprobada"
+        crear_notificacion(
+            db,
+            tipo="cancelacion",
+            titulo="Cancelación aprobada" if aprobada else "Solicitud de cancelación no aprobada",
+            mensaje=(
+                f"Tu solicitud de cancelación de la reserva #{solicitud.id_reserva} fue "
+                f"{'aprobada' if aprobada else 'rechazada'}."
+                + (f" Nota del equipo: {data.comentario_resolucion}" if data.comentario_resolucion else "")
+            ),
+            id_referencia=solicitud.id_reserva,
+            id_cliente=reserva_de_solicitud.id_cliente,
+            commit=False,
+        )
+
     db.commit()
     db.refresh(solicitud)
     if data.estado == "aprobada":

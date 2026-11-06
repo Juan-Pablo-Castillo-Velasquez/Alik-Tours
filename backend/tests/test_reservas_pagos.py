@@ -632,7 +632,9 @@ class TestTransicionesDePago:
             reserva_route.delete_pago(resultado.pago.id_pago, db=db, admin_id=1)
         assert exc.value.status_code == 409
 
-    def test_pago_rechazado_no_notifica_al_cliente(self, db):
+    def test_pago_rechazado_avisa_una_vez_al_cliente(self, db):
+        # Antes no avisaba: el cliente solo se enteraba si seguía en la
+        # pantalla del checkout. El plan de mejora pide avisar el rechazo.
         from app.models.notificacion_model import Notificacion
 
         cliente, reserva, metodo, usuario = self._preparar_reserva_y_metodo(db, "tarjeta_credito", "Tarjeta")
@@ -643,7 +645,8 @@ class TestTransicionesDePago:
             current_user=usuario,
             authorization=None,
         )
-        assert db.query(Notificacion).filter_by(id_cliente=cliente.id_cliente).count() == 0
+        avisos = db.query(Notificacion).filter_by(id_cliente=cliente.id_cliente).all()
+        assert [a.titulo for a in avisos] == ["Tu pago no fue aprobado"]
 
 
 class TestValidacionesDeEntrada:
