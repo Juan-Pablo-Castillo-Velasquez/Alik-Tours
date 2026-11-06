@@ -6,7 +6,15 @@ from app.models.comunidad_model import ComentarioComunidad, ImagenPublicacion, P
 from app.models.configuracion_model import ConfiguracionSistema
 from app.models.empresa_model import SolicitudCorporativa
 from app.models.favorito_model import Favorito
-from app.models.hotel_model import Caracteristica, Habitacion, Hotel, HotelCaracteristica, ImagenHotel, TipoHabitacion
+from app.models.hotel_model import (
+    Caracteristica,
+    Habitacion,
+    Hotel,
+    HotelCaracteristica,
+    ImagenHabitacion,
+    ImagenHotel,
+    TipoHabitacion,
+)
 from app.models.mensaje_chat_model import MensajeChat
 from app.models.metodo_pago_guardado_model import MetodoPagoGuardado
 from app.models.notificacion_model import Notificacion
@@ -72,6 +80,7 @@ __all__ = [
     "Favorito",
     "MensajeChat",
     "ImagenHotel",
+    "ImagenHabitacion",
     "ImagenPaquete",
     "PublicacionComunidad",
     "ImagenPublicacion",

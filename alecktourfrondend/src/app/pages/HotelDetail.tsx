@@ -1,7 +1,6 @@
 import {
   ArrowLeft,
   Baby,
-  Bed,
   CalendarDays,
   Car,
   CheckCircle,
@@ -19,7 +18,6 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  Users,
   UtensilsCrossed,
   Waves,
   Wine,
@@ -29,6 +27,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import CalendarioOcupacion from "../components/hotel/CalendarioOcupacion";
+import DetalleHabitacion, { DatosHabitacion } from "../components/hotel/DetalleHabitacion";
 import Footer from "../components/Footer";
 import HalloweenAccentDiscreto from "../components/HalloweenAccentDiscreto";
 import Navbar from "../components/Navbar";
@@ -134,8 +133,9 @@ function getGalleryImages(hotel: HotelDetailResponse): string[] {
   return [...propias, ...relleno];
 }
 
-// La API no guarda foto por habitación individual, así que usamos un pool
-// determinístico de fotos de habitación reales (mismo id -> misma foto siempre).
+// Imágenes de REFERENCIA para habitaciones sin fotos propias (el admin las
+// sube en el panel: POST /hoteles/habitaciones/{id}/imagenes). Mismo id ->
+// misma foto, y la ficha avisa que es de referencia.
 const ROOM_IMAGES = [
   "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80&auto=format",
   "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80&auto=format",
@@ -188,6 +188,8 @@ export default function HotelDetail() {
   const { isFavorito, toggleFavorito, loadingIds } = useFavoritos();
   const [hotel, setHotel] = useState<HotelDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  // Habitación abierta en "Ver detalles" (fotos propias e información).
+  const [habitacionDetalle, setHabitacionDetalle] = useState<HabitacionResponse | null>(null);
   const [selectedHabitacion, setSelectedHabitacion] =
     useState<HabitacionResponse | null>(null);
   // Fechas ya reservadas por habitación (reservas activas, GET
@@ -610,13 +612,32 @@ export default function HotelDetail() {
                                 : "border-border hover:border-primary/40 hover:shadow-md cursor-pointer"
                           }`}
                         >
-                          {/* Foto de la habitación */}
+                          {/* Foto de la habitación: la suya si la tiene;
+                              si no, una de referencia marcada como tal. */}
                           <div className="relative h-40 md:h-auto md:w-48 shrink-0 overflow-hidden bg-muted">
                             <img
-                              src={getRoomImage(hab.id_habitacion)}
-                              alt={hab.tipo_habitacion?.nombre_tipo ?? "Habitación"}
+                              src={
+                                hab.imagenes && hab.imagenes.length > 0
+                                  ? resolveFotoUrl(hab.imagenes[0].url)
+                                  : getRoomImage(hab.id_habitacion)
+                              }
+                              alt={
+                                hab.imagenes && hab.imagenes.length > 0
+                                  ? `Foto de la habitación ${hab.tipo_habitacion?.nombre_tipo ?? ""}`
+                                  : "Imagen de referencia"
+                              }
                               className={`h-full w-full object-cover ${!disponible ? "grayscale" : ""}`}
                             />
+                            {hab.imagenes && hab.imagenes.length > 1 && (
+                              <span className="absolute bottom-2 right-2 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                                {hab.imagenes.length} fotos
+                              </span>
+                            )}
+                            {!(hab.imagenes && hab.imagenes.length > 0) && (
+                              <span className="absolute bottom-2 left-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
+                                Referencia
+                              </span>
+                            )}
                           </div>
 
                           {/* Info de la Habitación */}
@@ -633,22 +654,26 @@ export default function HotelDetail() {
                               </span>
                             </div>
 
-                            {hab.tipo_habitacion?.descripcion && (
-                              <p className="text-sm text-muted-foreground mb-4 max-w-lg">
-                                {hab.tipo_habitacion.descripcion}
+                            {(hab.descripcion || hab.tipo_habitacion?.descripcion) && (
+                              <p className="text-sm text-muted-foreground mb-4 max-w-lg line-clamp-2">
+                                {hab.descripcion || hab.tipo_habitacion?.descripcion}
                               </p>
                             )}
 
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground font-medium">
-                              <span className="flex items-center gap-1.5">
-                                <Bed className="w-4 h-4 text-primary" /> Cama
-                                doble
-                              </span>
-                              <span className="flex items-center gap-1.5">
-                                <Users className="w-4 h-4 text-primary" /> Máx.{" "}
-                                {hab.tipo_habitacion?.capacidad_personas} pers.
-                              </span>
-                            </div>
+                            {/* Antes decía "Cama doble" en TODAS las
+                                habitaciones; ahora solo lo que está cargado. */}
+                            <DatosHabitacion hab={hab} />
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setHabitacionDetalle(hab);
+                              }}
+                              className="mt-3 text-sm font-semibold text-primary hover:underline"
+                            >
+                              Ver detalles y fotos
+                            </button>
 
                             {/* Fechas ya ocupadas — dato real (reservas
                                 activas), nunca un calendario inventado. Solo
@@ -933,6 +958,15 @@ export default function HotelDetail() {
         alt={hotel.nombre_hotel}
       />
 
+      <DetalleHabitacion
+        hab={habitacionDetalle}
+        fotoReferencia={habitacionDetalle ? getRoomImage(habitacionDetalle.id_habitacion) : ""}
+        onClose={() => setHabitacionDetalle(null)}
+        onElegir={(h) => {
+          setSelectedHabitacion(h);
+          setHabitacionDetalle(null);
+        }}
+      />
       <Footer />
     </>
   );

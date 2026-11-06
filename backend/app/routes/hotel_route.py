@@ -48,6 +48,9 @@ HOTEL_IMAGEN_PUBLIC_PREFIX = "/uploads/hoteles"
 # Galería de fotos (distinta de la portada) -- misma validación, carpeta
 # propia para no mezclar portadas con fotos de galería en Cloudinary/disco.
 HOTEL_GALERIA_PUBLIC_PREFIX = "/uploads/hoteles-galeria"
+HABITACION_GALERIA_PUBLIC_PREFIX = "/uploads/habitaciones-galeria"
+# Tope por habitación: una galería de habitación no necesita más.
+MAX_FOTOS_HABITACION = 12
 
 
 # ===================== HOTELES CRUD =====================
@@ -414,6 +417,51 @@ def update_habitacion(
     actualizada = HabitacionRepository.update(db, habitacion_id, habitacion.model_dump(exclude_unset=True))
     delete_pattern(HOTELES_CACHE_PATTERN)
     return actualizada
+
+
+@router.post("/habitaciones/{habitacion_id}/imagenes", response_model=ImagenGaleriaResponse, status_code=201)
+async def subir_foto_habitacion(
+    habitacion_id: int,
+    imagen: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    admin_id: int = Depends(require_admin),
+):
+    """Agrega una foto propia a la habitación (se ve en "Ver detalles" de
+    la ficha del hotel)."""
+    habitacion = HabitacionRepository.get_by_id(db, habitacion_id)
+    if not habitacion:
+        raise HTTPException(status_code=404, detail="Habitación no encontrada")
+    if len(habitacion.imagenes) >= MAX_FOTOS_HABITACION:
+        raise HTTPException(status_code=409, detail=f"Una habitación puede tener hasta {MAX_FOTOS_HABITACION} fotos")
+    contenido, extension = await validar_y_leer_archivo(
+        imagen,
+        tipos_permitidos=HOTEL_IMAGEN_TIPOS_PERMITIDOS,
+        mensaje_tipo="Formato de imagen no soportado. Usa JPG, PNG o WEBP.",
+        tamano_maximo_bytes=HOTEL_IMAGEN_TAMANO_MAXIMO_BYTES,
+    )
+    url = guardar_imagen(
+        contenido, extension, carpeta="habitaciones-galeria", public_path_prefix=HABITACION_GALERIA_PUBLIC_PREFIX
+    )
+    nueva = HotelRepository.add_imagen_habitacion(db, habitacion_id, url)
+    delete_pattern(HOTELES_CACHE_PATTERN)
+    return nueva
+
+
+@router.delete("/habitaciones/{habitacion_id}/imagenes/{id_imagen}")
+def borrar_foto_habitacion(
+    habitacion_id: int,
+    id_imagen: int,
+    db: Session = Depends(get_db),
+    admin_id: int = Depends(require_admin),
+):
+    imagen = HotelRepository.get_imagen_habitacion(db, habitacion_id, id_imagen)
+    if not imagen:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+    borrar_imagen(imagen.url, carpeta="habitaciones-galeria", public_path_prefix=HABITACION_GALERIA_PUBLIC_PREFIX)
+    db.delete(imagen)
+    db.commit()
+    delete_pattern(HOTELES_CACHE_PATTERN)
+    return {"message": "Foto de la habitación eliminada"}
 
 
 @router.delete("/habitaciones/{habitacion_id}")

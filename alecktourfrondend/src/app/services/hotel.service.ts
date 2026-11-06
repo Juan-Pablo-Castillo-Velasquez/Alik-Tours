@@ -27,6 +27,23 @@ export interface HabitacionResponse {
   precio_noche: number;
   estado: string;
   tipo_habitacion?: TipoHabitacionResponse;
+  // Información propia de la habitación (todo opcional).
+  descripcion?: string | null;
+  tamano_m2?: number | null;
+  tipo_cama?: string | null;
+  vista?: string | null;
+  /** Una comodidad por línea. */
+  comodidades?: string | null;
+  /** Fotos propias de la habitación (ver POST /hoteles/habitaciones/{id}/imagenes). */
+  imagenes?: ImagenGaleriaResponse[];
+}
+
+export interface DetallesHabitacion {
+  descripcion?: string | null;
+  tamano_m2?: number | null;
+  tipo_cama?: string | null;
+  vista?: string | null;
+  comodidades?: string | null;
 }
 
 // Una foto de la galería del hotel (distinta de imagen_url, la portada) --
@@ -148,10 +165,10 @@ export const hotelService = {
 
   // Habitaciones: el backend ya tenía el CRUD completo, solo faltaba el
   // wrapper del lado del frontend para usarlo desde el admin.
-  createHabitacion: (hotelId: number, data: { id_tipo_habitacion: number; numero_habitacion: string; precio_noche: number; estado?: string }) =>
+  createHabitacion: (hotelId: number, data: { id_tipo_habitacion: number; numero_habitacion: string; precio_noche: number; estado?: string } & DetallesHabitacion) =>
     apiFetch<HabitacionResponse>(`/hoteles/${hotelId}/habitaciones`, { method: 'POST', body: data }),
 
-  updateHabitacion: (habitacionId: number, data: Partial<{ numero_habitacion: string; precio_noche: number; estado: string }>) =>
+  updateHabitacion: (habitacionId: number, data: Partial<{ numero_habitacion: string; precio_noche: number; estado: string }> & DetallesHabitacion) =>
     apiFetch<HabitacionResponse>(`/hoteles/habitaciones/${habitacionId}`, { method: 'PUT', body: data }),
 
   deleteHabitacion: (habitacionId: number) =>
@@ -171,6 +188,13 @@ export const hotelService = {
     return apiFetch<ImagenGaleriaResponse>(`/hoteles/${id}/galeria`, { method: 'POST', body: fd });
   },
 
+  subirFotoHabitacion: (habitacionId: number, imagen: File) => {
+    const fd = new FormData();
+    fd.append('imagen', imagen);
+    return apiFetch<ImagenGaleriaResponse>(`/hoteles/habitaciones/${habitacionId}/imagenes`, { method: 'POST', body: fd });
+  },
+  borrarFotoHabitacion: (habitacionId: number, idImagen: number) =>
+    apiFetch<{ message: string }>(`/hoteles/habitaciones/${habitacionId}/imagenes/${idImagen}`, { method: 'DELETE' }),
   borrarFotoGaleria: (id: number, idImagen: number) =>
     apiFetch<{ message: string }>(`/hoteles/${id}/galeria/${idImagen}`, { method: 'DELETE' }),
 };

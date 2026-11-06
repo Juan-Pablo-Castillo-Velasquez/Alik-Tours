@@ -16,6 +16,8 @@ import { useTema } from "../context/TemaContext";
 import { clienteService } from "../services/cliente.service";
 import { HabitacionResponse, HotelDetailResponse, hotelService, RangoOcupado } from "../services/hotel.service";
 import CalendarioOcupacion from "../components/hotel/CalendarioOcupacion";
+import { listaComodidades } from "../components/hotel/DetalleHabitacion";
+import { resolveFotoUrl } from "../components/admin/types";
 import { MetodoPago, pagoService, reservaService } from "../services/reserva.service";
 import { MetodoPagoGuardado, metodoPagoGuardadoService } from "../services/metodoPagoGuardado.service";
 import CardPayment from "../components/payment/CardPayment";
@@ -914,17 +916,34 @@ export default function Checkout() {
                   {/* Info real de la habitación */}
                   <div className="mt-6 p-4 bg-input-background border border-border/60 rounded-xl">
                     <div className="flex items-start gap-3">
-                      <Bed className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      {habitacion.imagenes && habitacion.imagenes.length > 0 ? (
+                        <img
+                          src={resolveFotoUrl(habitacion.imagenes[0].url)}
+                          alt="Foto de la habitación"
+                          className="w-16 h-16 rounded-lg object-cover shrink-0"
+                        />
+                      ) : (
+                        <Bed className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      )}
                       <div>
                         <p className="text-xs font-semibold text-foreground">
                           {habitacion.tipo_habitacion?.nombre_tipo ?? "Habitación"} · #{habitacion.numero_habitacion}
                         </p>
-                        {habitacion.tipo_habitacion?.descripcion && (
-                          <p className="text-[11px] text-muted-foreground mt-0.5">{habitacion.tipo_habitacion.descripcion}</p>
+                        {(habitacion.descripcion || habitacion.tipo_habitacion?.descripcion) && (
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{habitacion.descripcion || habitacion.tipo_habitacion?.descripcion}</p>
                         )}
                         <p className="text-[11px] text-muted-foreground mt-1">
-                          Capacidad: {habitacion.tipo_habitacion?.capacidad_personas ?? "?"} personas · ${precioPorNoche.toLocaleString('es-CO')} / noche
+                          Capacidad: {habitacion.tipo_habitacion?.capacidad_personas ?? "?"} personas
+                          {habitacion.tipo_cama ? ` · ${habitacion.tipo_cama}` : ""}
+                          {habitacion.tamano_m2 ? ` · ${habitacion.tamano_m2} m²` : ""}
+                          {habitacion.vista ? ` · Vista: ${habitacion.vista}` : ""}
+                          {` · $${precioPorNoche.toLocaleString('es-CO')} / noche`}
                         </p>
+                        {listaComodidades(habitacion.comodidades).length > 0 && (
+                          <p className="text-[11px] text-muted-foreground mt-1">
+                            Incluye: {listaComodidades(habitacion.comodidades).join(" · ")}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

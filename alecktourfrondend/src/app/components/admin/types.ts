@@ -97,6 +97,12 @@ export interface HabitacionAdmin {
   precio_noche: number;
   estado: "disponible" | "ocupada" | "mantenimiento";
   tipo_habitacion?: TipoHabitacionAdmin | null;
+  descripcion?: string | null;
+  tamano_m2?: number | null;
+  tipo_cama?: string | null;
+  vista?: string | null;
+  comodidades?: string | null;
+  imagenes?: { id_imagen: number; url: string; orden: number }[];
 }
 
 export interface HotelData {

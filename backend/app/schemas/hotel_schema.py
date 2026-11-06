@@ -40,6 +40,11 @@ class HabitacionCreate(BaseModel):
     numero_habitacion: str = Field(..., min_length=1, max_length=20)
     precio_noche: float = Field(..., ge=0)
     estado: str = Field(default="disponible")
+    descripcion: str | None = Field(None, max_length=2000)
+    tamano_m2: int | None = Field(None, gt=0, le=10000)
+    tipo_cama: str | None = Field(None, max_length=80)
+    vista: str | None = Field(None, max_length=80)
+    comodidades: str | None = Field(None, max_length=2000)
 
     @field_validator("estado")
     @classmethod
@@ -53,6 +58,11 @@ class HabitacionUpdate(BaseModel):
     numero_habitacion: str | None = Field(None, min_length=1, max_length=20)  # VARCHAR(20)
     precio_noche: float | None = Field(None, ge=0)
     estado: str | None = None
+    descripcion: str | None = Field(None, max_length=2000)
+    tamano_m2: int | None = Field(None, gt=0, le=10000)
+    tipo_cama: str | None = Field(None, max_length=80)
+    vista: str | None = Field(None, max_length=80)
+    comodidades: str | None = Field(None, max_length=2000)
 
     @field_validator("estado")
     @classmethod
@@ -70,6 +80,12 @@ class HabitacionResponse(BaseModel):
     precio_noche: float
     estado: str
     tipo_habitacion: TipoHabitacionResponse | None = None
+    descripcion: str | None = None
+    tamano_m2: int | None = None
+    tipo_cama: str | None = None
+    vista: str | None = None
+    comodidades: str | None = None
+    imagenes: list["ImagenGaleriaResponse"] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -217,3 +233,6 @@ class DestinoRealResponse(BaseModel):
     ciudad: str
     pais: str | None
     total_hoteles: int
+
+
+HabitacionResponse.model_rebuild()

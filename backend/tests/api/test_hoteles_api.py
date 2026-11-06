@@ -198,3 +198,108 @@ class TestHabitaciones:
 
         assert r.status_code == 404
         assert r.json() == {"detail": "Habitación no encontrada"}
+
+
+class TestFotosYDetallesDeHabitacion:
+    """Fotos propias de la habitación y su información (descripción,
+    tamaño, cama, vista, comodidades)."""
+
+    @pytest.fixture
+    def sin_archivos_reales(self, monkeypatch):
+        from app.routes import hotel_route
+
+        async def leer(*_a, **_k):
+            return b"img", "png"
+
+        guardadas = []
+        monkeypatch.setattr(hotel_route, "validar_y_leer_archivo", leer)
+        monkeypatch.setattr(
+            hotel_route,
+            "guardar_imagen",
+            lambda *_a, **_k: guardadas.append(1) or f"/uploads/habitaciones-galeria/f{len(guardadas)}.png",
+        )
+        monkeypatch.setattr(hotel_route, "borrar_imagen", lambda *_a, **_k: None)
+
+    def _habitacion(self, client, admin, tipo_doble, **extra):
+        id_hotel = client.post("/api/hoteles/", json=_hotel(), headers=admin).json()["id_hotel"]
+        return client.post(
+            f"/api/hoteles/{id_hotel}/habitaciones",
+            json={
+                "id_tipo_habitacion": tipo_doble.id_tipo_habitacion,
+                "numero_habitacion": "301",
+                "precio_noche": 350000,
+                **extra,
+            },
+            headers=admin,
+        ).json()
+
+    def test_la_habitacion_guarda_y_devuelve_sus_detalles(self, client, admin, tipo_doble):
+        h = self._habitacion(
+            client,
+            admin,
+            tipo_doble,
+            descripcion="Con balcón al mar",
+            tamano_m2=28,
+            tipo_cama="1 King",
+            vista="Mar",
+            comodidades="Aire acondicionado\nMinibar",
+        )
+
+        listado = client.get(f"/api/hoteles/{h['id_hotel']}/habitaciones").json()[0]
+
+        assert (listado["tamano_m2"], listado["tipo_cama"], listado["vista"]) == (28, "1 King", "Mar")
+        assert listado["comodidades"] == "Aire acondicionado\nMinibar"
+        assert listado["imagenes"] == []
+
+    def test_tamano_cero_o_negativo_responde_422(self, client, admin, tipo_doble):
+        id_hotel = client.post("/api/hoteles/", json=_hotel(), headers=admin).json()["id_hotel"]
+        r = client.post(
+            f"/api/hoteles/{id_hotel}/habitaciones",
+            json={
+                "id_tipo_habitacion": tipo_doble.id_tipo_habitacion,
+                "numero_habitacion": "1",
+                "precio_noche": 1,
+                "tamano_m2": 0,
+            },
+            headers=admin,
+        )
+        assert r.status_code == 422
+
+    def test_subir_fotos_y_borrar_una(self, client, admin, tipo_doble, sin_archivos_reales):
+        h = self._habitacion(client, admin, tipo_doble)
+        ruta = f"/api/hoteles/habitaciones/{h['id_habitacion']}/imagenes"
+
+        f1 = client.post(ruta, files={"imagen": ("a.png", b"img", "image/png")}, headers=admin)
+        f2 = client.post(ruta, files={"imagen": ("b.png", b"img", "image/png")}, headers=admin)
+        assert (f1.status_code, f2.status_code) == (201, 201)
+        assert (f1.json()["orden"], f2.json()["orden"]) == (1, 2)
+
+        assert client.delete(f"{ruta}/{f1.json()['id_imagen']}", headers=admin).status_code == 200
+
+        hotel = client.get(f"/api/hoteles/{h['id_hotel']}").json()
+        fotos = hotel["habitaciones"][0]["imagenes"]
+        assert [f["id_imagen"] for f in fotos] == [f2.json()["id_imagen"]]
+
+    def test_no_se_borra_la_foto_de_otra_habitacion(self, client, admin, tipo_doble, sin_archivos_reales):
+        h = self._habitacion(client, admin, tipo_doble)
+        foto = client.post(
+            f"/api/hoteles/habitaciones/{h['id_habitacion']}/imagenes",
+            files={"imagen": ("a.png", b"img", "image/png")},
+            headers=admin,
+        ).json()
+
+        r = client.delete(f"/api/hoteles/habitaciones/99999/imagenes/{foto['id_imagen']}", headers=admin)
+
+        assert r.status_code == 404
+
+    def test_un_cliente_no_puede_subir_fotos(self, client, admin, tipo_doble, crear_usuario):
+        h = self._habitacion(client, admin, tipo_doble)
+        _, cliente = crear_usuario()
+
+        r = client.post(
+            f"/api/hoteles/habitaciones/{h['id_habitacion']}/imagenes",
+            files={"imagen": ("a.png", b"img", "image/png")},
+            headers=cliente,
+        )
+
+        assert r.status_code == 403

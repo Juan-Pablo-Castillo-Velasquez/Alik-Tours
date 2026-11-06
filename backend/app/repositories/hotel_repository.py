@@ -5,7 +5,15 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.exceptions import HotelDependencyError, NotFoundError
-from app.models.hotel_model import Caracteristica, Habitacion, Hotel, HotelCaracteristica, ImagenHotel, TipoHabitacion
+from app.models.hotel_model import (
+    Caracteristica,
+    Habitacion,
+    Hotel,
+    HotelCaracteristica,
+    ImagenHabitacion,
+    ImagenHotel,
+    TipoHabitacion,
+)
 from app.models.reserva_model import PaqueteHotel, Reserva, ReservaHabitacion
 
 
@@ -32,6 +40,7 @@ class HotelRepository:
         # relaciones "uno" así que sí pueden ir con joinedload anidado.
         query = db.query(Hotel).options(
             selectinload(Hotel.habitaciones).joinedload(Habitacion.tipo_habitacion),
+            selectinload(Hotel.habitaciones).selectinload(Habitacion.imagenes),
             selectinload(Hotel.hotel_caracteristicas).joinedload(HotelCaracteristica.caracteristica),
             selectinload(Hotel.resenas),
             selectinload(Hotel.imagenes),
@@ -198,6 +207,8 @@ class HotelRepository:
             db.query(Hotel)
             .options(
                 selectinload(Hotel.habitaciones).joinedload(Habitacion.tipo_habitacion),
+                selectinload(Hotel.habitaciones).selectinload(Habitacion.imagenes),
+                selectinload(Hotel.habitaciones).selectinload(Habitacion.imagenes),
                 selectinload(Hotel.hotel_caracteristicas).joinedload(HotelCaracteristica.caracteristica),
                 selectinload(Hotel.resenas),
                 selectinload(Hotel.imagenes),
@@ -232,6 +243,29 @@ class HotelRepository:
         id_hotel de la URL que no corresponda al id_imagen real."""
         return (
             db.query(ImagenHotel).filter(ImagenHotel.id_imagen == id_imagen, ImagenHotel.id_hotel == hotel_id).first()
+        )
+
+    @staticmethod
+    def add_imagen_habitacion(db: Session, id_habitacion: int, url: str) -> ImagenHabitacion:
+        """Agrega una foto al final de la galería de la habitación (mismo
+        criterio de orden que add_imagen_galeria)."""
+        siguiente_orden = (
+            db.query(func.max(ImagenHabitacion.orden)).filter(ImagenHabitacion.id_habitacion == id_habitacion).scalar()
+            or 0
+        ) + 1
+        imagen = ImagenHabitacion(id_habitacion=id_habitacion, url=url, orden=siguiente_orden)
+        db.add(imagen)
+        db.commit()
+        db.refresh(imagen)
+        return imagen
+
+    @staticmethod
+    def get_imagen_habitacion(db: Session, id_habitacion: int, id_imagen: int):
+        """Por (id_imagen, id_habitacion) juntos: nunca borra la foto de otra habitación."""
+        return (
+            db.query(ImagenHabitacion)
+            .filter(ImagenHabitacion.id_imagen == id_imagen, ImagenHabitacion.id_habitacion == id_habitacion)
+            .first()
         )
 
     @staticmethod

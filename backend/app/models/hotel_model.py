@@ -140,9 +140,46 @@ class Habitacion(Base):
     numero_habitacion = Column(String(20), nullable=False)
     precio_noche = Column(Numeric(10, 2), CheckConstraint("precio_noche >= 0"), nullable=False)
     estado = Column(String(20), CheckConstraint("estado IN ('disponible', 'ocupada', 'mantenimiento')"), nullable=False)
+    # Información propia de la habitación (todo opcional; la ficha pública
+    # solo muestra lo que esté cargado, nunca datos genéricos inventados).
+    descripcion = Column(Text, nullable=True)
+    tamano_m2 = Column(
+        Integer,
+        CheckConstraint("tamano_m2 IS NULL OR tamano_m2 > 0", name="ck_habitacion_tamano_positivo"),
+        nullable=True,
+    )
+    tipo_cama = Column(String(80), nullable=True)
+    vista = Column(String(80), nullable=True)
+    # Comodidades de la habitación, una por línea (aire acondicionado,
+    # minibar, balcón...).
+    comodidades = Column(Text, nullable=True)
 
     hotel = relationship("Hotel", back_populates="habitaciones")
     tipo_habitacion = relationship("TipoHabitacion", back_populates="habitaciones")
     reserva_habitaciones = relationship("ReservaHabitacion", back_populates="habitacion")
+    imagenes = relationship(
+        "ImagenHabitacion",
+        back_populates="habitacion",
+        cascade="all, delete-orphan",
+        order_by="ImagenHabitacion.orden",
+    )
 
     __table_args__ = (UniqueConstraint("id_hotel", "numero_habitacion", name="uq_hotel_numero"),)
+
+
+class ImagenHabitacion(Base):
+    """Fotos propias de una habitación (las sube el admin desde el panel).
+    Sin fotos propias, la ficha muestra imágenes de referencia avisando
+    que lo son."""
+
+    __tablename__ = "imagenes_habitacion"
+
+    id_imagen = Column(Integer, primary_key=True, index=True)
+    id_habitacion = Column(
+        Integer, ForeignKey("habitaciones.id_habitacion", ondelete="CASCADE"), nullable=False, index=True
+    )
+    url = Column(String(500), nullable=False)
+    orden = Column(Integer, nullable=False, default=0)
+    fecha_creacion = Column(TIMESTAMP, server_default=func.now())
+
+    habitacion = relationship("Habitacion", back_populates="imagenes")
