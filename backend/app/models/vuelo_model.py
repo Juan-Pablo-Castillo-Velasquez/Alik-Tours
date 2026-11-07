@@ -18,6 +18,7 @@ from app.core.database import Base
 
 ESTADOS_OFERTA_VUELO = ("borrador", "publicada", "pausada", "agotada", "finalizada")
 TIPOS_TRAYECTO = ("solo_ida", "ida_regreso", "multiples")
+TIPOS_SERVICIO = ("regular", "charter", "bajo_costo", "otro")
 CLASES_VUELO = ("economica", "premium_economy", "ejecutiva", "primera")
 
 
@@ -32,6 +33,7 @@ class OfertaVuelo(Base):
         CheckConstraint(f"estado IN {ESTADOS_OFERTA_VUELO}", name="ck_oferta_vuelo_estado"),
         CheckConstraint(f"tipo_trayecto IN {TIPOS_TRAYECTO}", name="ck_oferta_vuelo_trayecto"),
         CheckConstraint(f"clase IS NULL OR clase IN {CLASES_VUELO}", name="ck_oferta_vuelo_clase"),
+        CheckConstraint(f"tipo_servicio IS NULL OR tipo_servicio IN {TIPOS_SERVICIO}", name="ck_oferta_vuelo_servicio"),
         CheckConstraint("precio_adulto >= 0", name="ck_oferta_vuelo_precio_adulto"),
         CheckConstraint("precio_nino IS NULL OR precio_nino >= 0", name="ck_oferta_vuelo_precio_nino"),
         CheckConstraint("precio_infante IS NULL OR precio_infante >= 0", name="ck_oferta_vuelo_precio_infante"),
@@ -49,6 +51,11 @@ class OfertaVuelo(Base):
     numero_vuelo = Column(String(20))
     codigo_referencia = Column(String(40))
     imagen_url = Column(String(255))
+    # regular | charter | bajo_costo | otro (None = sin especificar)
+    tipo_servicio = Column(String(15))
+    # Qué cédula/pasaporte exige el proveedor para emitir (texto para el
+    # cliente; no se inventan requisitos migratorios).
+    documentos_requeridos = Column(String(255))
     # Se puede vender sola (no solo dentro de un paquete).
     venta_independiente = Column(Boolean, nullable=False, default=False)
     # Origen y destino

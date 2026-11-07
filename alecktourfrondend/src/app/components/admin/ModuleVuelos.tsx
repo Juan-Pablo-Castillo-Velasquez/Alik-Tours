@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import {
   ETIQUETA_CLASE,
   ETIQUETA_ESTADO_OFERTA,
+  ETIQUETA_TIPO_SERVICIO,
   ETIQUETA_TRAYECTO,
   EstadoOferta,
   FiltrosOfertas,
@@ -49,6 +50,7 @@ type Form = Record<string, string | boolean>;
 
 const VACIO: Form = {
   titulo: "", descripcion: "", estado: "borrador", aerolinea: "", numero_vuelo: "", codigo_referencia: "",
+  tipo_servicio: "", documentos_requeridos: "",
   venta_independiente: false,
   origen_pais: "Colombia", origen_ciudad: "", origen_aeropuerto: "", origen_iata: "", origen_zona_horaria: "America/Bogota",
   destino_pais: "", destino_ciudad: "", destino_aeropuerto: "", destino_iata: "", destino_zona_horaria: "",
@@ -452,12 +454,21 @@ function FormOferta({ oferta, onCerrar, onGuardada }: { oferta: OfertaVueloAdmin
             <Campo label="Número de vuelo" ayuda="Solo si ya está confirmado">
               <input {...txt("numero_vuelo")} maxLength={20} className={inputCls} />
             </Campo>
+            <Campo label="Tipo de servicio">
+              <select {...txt("tipo_servicio")} className={inputCls}>
+                <option value="">Sin especificar</option>
+                {Object.entries(ETIQUETA_TIPO_SERVICIO).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </Campo>
+            <Campo label="Documentos que pide el proveedor" ayuda="Ej: cédula vigente; pasaporte para internacionales">
+              <input {...txt("documentos_requeridos")} maxLength={255} className={inputCls} />
+            </Campo>
             <Campo label="Descripción" className="sm:col-span-2">
               <textarea {...txt("descripcion")} rows={3} maxLength={5000} className={inputCls} />
             </Campo>
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
               <input type="checkbox" checked={!!f.venta_independiente} onChange={(e) => s("venta_independiente")(e.target.checked)} />
-              Se puede vender sola (no solo dentro de un paquete)
+              Se puede vender sola (aparece en la sección Vuelos del sitio para reservar)
             </label>
             <Campo label="Imagen promocional" className="sm:col-span-2">
               <div className="flex items-center gap-3">

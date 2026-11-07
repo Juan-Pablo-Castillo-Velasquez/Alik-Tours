@@ -342,6 +342,27 @@ export default function Navbar() {
                 />
               </Link>
 
+              {/* VUELOS — ofertas aéreas que vende la agencia */}
+              <Link
+                to="/vuelos"
+                className={`
+                  group
+                  relative
+                  flex items-center gap-1.5
+                  px-2.5 2xl:px-3 py-2.5
+                  rounded-xl
+                  shrink-0
+                  transition-all
+                  ${isActivePath("/vuelos") ? "text-primary bg-primary/[0.06]" : "text-foreground/75 hover:text-primary hover:bg-primary/[0.05]"}
+                `}
+              >
+                <Plane className="w-3.5 h-3.5 text-primary group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                Vuelos
+                <span
+                  className={`absolute bottom-1 left-3 right-3 h-[2px] bg-primary rounded-full transition-transform origin-left ${isActivePath("/vuelos") ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}
+                />
+              </Link>
+
               {/* COMUNIDAD — videos de la agencia y experiencias de viajeros */}
               <Link
                 to="/comunidad"
@@ -815,6 +836,23 @@ export default function Navbar() {
                   >
                     <Building2 className="w-4 h-4 text-primary" />
                     Hoteles
+                  </Link>
+
+                  <Link
+                    to="/vuelos"
+                    className="
+                      flex items-center gap-3
+                      px-4 py-3
+                      text-sm font-semibold
+                      text-foreground
+                      hover:bg-muted
+                      rounded-xl
+                      transition-all
+                    "
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Plane className="w-4 h-4 text-primary" />
+                    Vuelos
                   </Link>
 
                   <Link

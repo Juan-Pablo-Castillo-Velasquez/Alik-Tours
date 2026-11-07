@@ -8,6 +8,7 @@ from app.schemas.validadores import FechaValida
 EstadoOferta = Literal["borrador", "publicada", "pausada", "agotada", "finalizada"]
 TipoTrayecto = Literal["solo_ida", "ida_regreso", "multiples"]
 ClaseVuelo = Literal["economica", "premium_economy", "ejecutiva", "primera"]
+TipoServicio = Literal["regular", "charter", "bajo_costo", "otro"]
 
 
 def _iata(v: str | None) -> str | None:
@@ -26,6 +27,8 @@ class _CamposOferta(BaseModel):
     aerolinea: str | None = Field(None, max_length=100)
     numero_vuelo: str | None = Field(None, max_length=20)
     codigo_referencia: str | None = Field(None, max_length=40)
+    tipo_servicio: TipoServicio | None = None
+    documentos_requeridos: str | None = Field(None, max_length=255)
     venta_independiente: bool | None = None
     origen_pais: str | None = Field(None, max_length=100)
     origen_ciudad: str | None = Field(None, min_length=2, max_length=100)
@@ -123,6 +126,8 @@ class OfertaVueloResponse(BaseModel):
     numero_vuelo: str | None = None
     codigo_referencia: str | None = None
     imagen_url: str | None = None
+    tipo_servicio: str | None = None
+    documentos_requeridos: str | None = None
     venta_independiente: bool = False
     origen_pais: str | None = None
     origen_ciudad: str

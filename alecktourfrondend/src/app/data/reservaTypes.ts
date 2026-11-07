@@ -28,6 +28,7 @@ export interface ReservaResponse {
   // archivo) -- se borra por completo al compilar.
   pagos?: import('../services/reserva.service').PagoResponse[];
   tipo_producto?: TipoProducto | null;
+  vuelo_ruta?: string | null;
   adultos?: number | null;
   ninos?: number | null;
   infantes?: number | null;

@@ -28,6 +28,9 @@ const FAQ = lazy(() => import("./pages/faq"));
 const HotelDetail = lazy(() => import("./pages/HotelDetail"));
 const PackageDetail = lazy(() => import("./pages/PackageDetail"));
 const Packages = lazy(() => import("./pages/Packages"));
+const Vuelos = lazy(() => import("./pages/Vuelos"));
+const VueloDetalle = lazy(() => import("./pages/VueloDetalle"));
+const ReservarVuelo = lazy(() => import("./pages/ReservarVuelo"));
 const Personalization = lazy(() => import("./pages/Personalization"));
 const ReservarPaquete = lazy(() => import("./pages/ReservarPaquete"));
 const PagarReserva = lazy(() => import("./pages/PagarReserva"));
@@ -54,6 +57,8 @@ export const router = createBrowserRouter([
       { path: "/search", Component: SearchResults },
       { path: "/package/:id", Component: PackageDetail },
       { path: "/packages", Component: Packages },
+      { path: "/vuelos", Component: Vuelos },
+      { path: "/vuelos/:id", Component: VueloDetalle },
       { path: "/login", Component: LoginRedirect },
       { path: "/register", Component: RegisterRedirect },
       { path: "/checkout/:id", Component: Checkout },
@@ -86,6 +91,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <ReservarPaquete />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/vuelos/:id/reservar",
+        element: (
+          <ProtectedRoute>
+            <ReservarVuelo />
           </ProtectedRoute>
         ),
       },

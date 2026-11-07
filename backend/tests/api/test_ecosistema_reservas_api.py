@@ -661,3 +661,34 @@ class TestFichaCompletaDelHotel:
         client.put(f"/api/hoteles/habitaciones/{hab['id_habitacion']}", json={"publicada": True}, headers=admin)
         assert _reservar(client, hc, usuario.id_cliente, **{**sel, "adultos": 3}).status_code == 422
         assert _reservar(client, hc, usuario.id_cliente, **{**sel, "adultos": 2}).status_code == 201
+
+
+class TestReservaDeVueloIndependiente:
+    def test_el_cliente_reserva_un_vuelo_y_su_reserva_muestra_la_ruta(self, client, crear_usuario, admin):
+        oferta = _oferta(
+            client, admin, venta_independiente=True, tipo_servicio="regular", documentos_requeridos="Cédula vigente"
+        )
+        publicas = client.get("/api/vuelos", params={"solo_independientes": True}).json()
+        assert [o["id_oferta"] for o in publicas] == [oferta["id_oferta"]]
+        assert publicas[0]["tipo_servicio"] == "regular"
+
+        usuario, h = crear_usuario()
+        sel = {"tipo_producto": "vuelo", "id_oferta_vuelo": oferta["id_oferta"], "adultos": 1, "ninos": 1}
+        cot = client.post("/api/reservas/cotizar", json=sel).json()
+        assert cot["total"] == 450000 + 300000
+        r = _reservar(
+            client, h, usuario.id_cliente, **sel, viajeros=[_viajero(n=1, es_titular=True), _viajero("nino", n=2)]
+        )
+        assert r.status_code == 201, r.text
+        reserva = r.json()
+        assert reserva["vuelo_ruta"] == "Bogotá (BOG) ⇄ Cartagena (CTG)"
+        assert reserva["destino"] == "Cartagena"
+        assert reserva["fecha_inicio"] == str(SALIDA)
+
+    def test_infante_sin_tarifa_no_se_acepta(self, client, crear_usuario, admin):
+        oferta = _oferta(client, admin, venta_independiente=True)
+        r = client.post(
+            "/api/reservas/cotizar",
+            json={"tipo_producto": "vuelo", "id_oferta_vuelo": oferta["id_oferta"], "adultos": 1, "infantes": 1},
+        )
+        assert r.status_code == 422 and "infante" in r.json()["detail"]

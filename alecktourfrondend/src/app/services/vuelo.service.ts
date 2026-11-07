@@ -3,6 +3,14 @@ import { apiFetch } from '../api/v1/api';
 export type EstadoOferta = 'borrador' | 'publicada' | 'pausada' | 'agotada' | 'finalizada';
 export type TipoTrayecto = 'solo_ida' | 'ida_regreso' | 'multiples';
 export type ClaseVuelo = 'economica' | 'premium_economy' | 'ejecutiva' | 'primera';
+export type TipoServicio = 'regular' | 'charter' | 'bajo_costo' | 'otro';
+
+export const ETIQUETA_TIPO_SERVICIO: Record<TipoServicio, string> = {
+  regular: 'Vuelo regular',
+  charter: 'Vuelo chárter',
+  bajo_costo: 'Aerolínea de bajo costo',
+  otro: 'Otro',
+};
 
 /** Oferta aérea gestionada por la agencia (no es disponibilidad en tiempo real). */
 export interface OfertaVuelo {
@@ -14,6 +22,8 @@ export interface OfertaVuelo {
   numero_vuelo?: string | null;
   codigo_referencia?: string | null;
   imagen_url?: string | null;
+  tipo_servicio?: TipoServicio | null;
+  documentos_requeridos?: string | null;
   venta_independiente: boolean;
   origen_pais?: string | null;
   origen_ciudad: string;

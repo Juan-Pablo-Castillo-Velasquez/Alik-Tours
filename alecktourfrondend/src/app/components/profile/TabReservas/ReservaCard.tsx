@@ -78,6 +78,7 @@ const ReservaCard = forwardRef<HTMLDivElement, Props>(function ReservaCard(
             <div>
               <h3 className="text-sm font-bold text-foreground">
                 {reserva.nombre_paquete ||
+                  (reserva.tipo_producto === "vuelo" && reserva.vuelo_ruta ? `Vuelo ${reserva.vuelo_ruta}` : null) ||
                   (reserva.hotel_nombre
                     ? `Estadía en ${reserva.hotel_nombre}`
                     : reserva.id_paquete

@@ -366,11 +366,24 @@ class Reserva(Base):
         return None
 
     @property
+    def vuelo_ruta(self):
+        """ "Bogotá (BOG) → Cartagena (CTG)" del vuelo de la reserva, si tiene."""
+        o = self.oferta_vuelo
+        if not o:
+            return None
+        origen = f"{o.origen_ciudad}{f' ({o.origen_iata})' if o.origen_iata else ''}"
+        destino = f"{o.destino_ciudad}{f' ({o.destino_iata})' if o.destino_iata else ''}"
+        return f"{origen} {'⇄' if o.tipo_trayecto == 'ida_regreso' else '→'} {destino}"
+
+    @property
     def destino(self):
         """Ciudad/país del hotel de esta reserva (por paquete o directo),
         para dar contexto rápido en el historial de reservas."""
         hotel = self._primer_hotel
         if not hotel:
+            o = self.oferta_vuelo
+            if o:
+                return ", ".join(p for p in (o.destino_ciudad, o.destino_pais) if p)
             return None
         partes = [p for p in (hotel.ciudad, hotel.pais) if p]
         return ", ".join(partes) if partes else None

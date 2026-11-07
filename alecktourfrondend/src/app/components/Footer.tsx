@@ -12,6 +12,7 @@ export default function Footer() {
   const footerLinks = {
     empresa: [
       { name: "Inicio", href: "/" },
+      { name: "Vuelos", href: "/vuelos" },
       { name: "Viajes Corporativos", href: "/corporate" },
       { name: "Alik Tours Rewards", href: "/benefits" },
       { name: "Comunidad y videos", href: "/comunidad" },
