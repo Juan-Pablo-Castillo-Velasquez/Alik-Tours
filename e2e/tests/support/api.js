@@ -154,6 +154,13 @@ export async function crearClienteConPerfil(request) {
     { nombre: 'Viajera', apellido: 'Prueba', cedula: cedulaUnica(), correo: cuenta.correo, celular: '3001234567' },
     cuenta.sesion.access_token,
   );
+  // Igual que el registro real: el perfil queda vinculado a la cuenta (sin
+  // esto, GET /api/clientes/{id} y las reservas del cliente responden 403).
+  const r = await request.put(`${API_URL}/api/usuarios/${cuenta.sesion.user_id}/vincular-cliente`, {
+    data: { id_cliente: cliente.id_cliente },
+    headers: { Authorization: `Bearer ${cuenta.sesion.access_token}` },
+  });
+  expect(r.ok(), `vincular-cliente: ${r.status()} ${await r.text()}`).toBeTruthy();
   return { ...cuenta, cliente };
 }
 
