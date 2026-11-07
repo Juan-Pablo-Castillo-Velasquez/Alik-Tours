@@ -8,8 +8,8 @@ for (let i = 0; i < 20 && !ok; i++) {
   const r = await p.goto(`${B}/openapi.json`, { timeout: 90000 }).catch(() => null);
   try {
     const j = JSON.parse(await p.evaluate(() => document.body.innerText));
-    ok = !!j.components?.schemas?.HabitacionResponse?.properties?.imagenes && !!j.paths?.["/api/hoteles/habitaciones/{habitacion_id}/imagenes"];
-    console.log("intento", i, "status", r?.status(), "imagenes en HabitacionResponse + endpoint:", ok);
+    ok = !!j.components?.schemas?.HabitacionResponse?.properties?.servicios && !!j.paths?.["/api/hoteles/habitaciones/{habitacion_id}/imagenes/{id_imagen}"]?.patch;
+    console.log("intento", i, "status", r?.status(), "ficha completa (servicios + PATCH foto):", ok);
   } catch { console.log("intento", i, "status", r?.status(), "(sin JSON)"); }
   if (!ok) await p.waitForTimeout(30000);
 }
