@@ -11,13 +11,13 @@ async function get(u) {
   }
   return null;
 }
-const paquetes = (await get("/api/paquetes?limit=200&solo_activos=false")) || [];
+const rawP = await get("/api/paquetes?limit=100"); console.log("RAWP", JSON.stringify(rawP).slice(0, 300)); const paquetes = Array.isArray(rawP) ? rawP : (rawP?.items ?? []);
 console.log("PAQUETES", paquetes.length);
 for (const pq of paquetes) {
   const d = await get(`/api/paquetes/${pq.id_paquete}/detalle`);
   console.log(JSON.stringify({ id: pq.id_paquete, activo: pq.activo, dias: pq.duracion_dias, precio: pq.precio_base, salida: pq.ciudad_salida, destino: pq.ciudad_destino, hoteles: d?.hoteles?.map(h => [h.id_hotel, h.noches_incluidas]), servicios: d?.servicios?.map(s => [s.nombre_servicio, s.incluido, s.dia_actividad]), no_incluye: !!pq.no_incluye, condiciones: !!pq.condiciones, fotos: d?.imagenes?.length }));
 }
-const hoteles = (await get("/api/hoteles?limit=200")) || [];
+const rawH = await get("/api/hoteles?limit=100"); const hoteles = Array.isArray(rawH) ? rawH : (rawH?.items ?? []);
 console.log("HOTELES", hoteles.length);
 for (const h of hoteles) {
   console.log(JSON.stringify({ id: h.id_hotel, ciudad: h.ciudad, estrellas: h.calificacion, desc: !!h.descripcion, politicas: !!h.politicas, caracts: (h.hotel_caracteristicas||[]).length, habitaciones: (h.habitaciones||[]).map(x => [x.numero_habitacion, x.tipo_habitacion?.nombre_tipo, x.precio_noche, x.estado]) }));
