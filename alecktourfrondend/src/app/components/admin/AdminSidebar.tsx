@@ -54,6 +54,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "hoteles", label: "Hoteles", icon: Hotel, ready: true },
       { id: "paquetes", label: "Paquetes turísticos", icon: Package, ready: true },
+      { id: "vuelos", label: "Vuelos", icon: Plane, ready: true },
     ],
   },
   {

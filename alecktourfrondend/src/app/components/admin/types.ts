@@ -23,6 +23,7 @@ export type Module =
   | "crear-reserva"
   | "hoteles"
   | "paquetes"
+  | "vuelos"
   | "clientes"
   | "cancelaciones"
   | "empresas"
@@ -144,6 +145,20 @@ export interface Paquete {
   // Portada del paquete (mismo patrón que Hotel.imagen_url) -- antes
   // Paquete no tenía ningún campo de imagen propio.
   imagen_url?: string | null;
+  noches?: number | null;
+  destino_ciudad?: string | null;
+  destino_pais?: string | null;
+  destinos_secundarios?: string | null;
+  categoria?: string | null;
+  vigencia_desde?: string | null;
+  vigencia_hasta?: string | null;
+  modalidad_alojamiento?: "sin" | "incluido" | "opcional";
+  modalidad_vuelo?: "sin" | "incluido" | "opcional" | "cotizacion";
+  unidad_precio?: "por_persona" | "por_paquete";
+  precio_nino?: number | null;
+  precio_infante?: number | null;
+  min_viajeros?: number | null;
+  max_viajeros?: number | null;
 }
 
 export interface Cliente {

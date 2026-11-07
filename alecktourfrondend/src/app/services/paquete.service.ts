@@ -1,4 +1,72 @@
 import { apiFetch } from '../api/v1/api';
+import type { OfertaVuelo } from './vuelo.service';
+
+export type ModalidadAlojamiento = 'sin' | 'incluido' | 'opcional';
+export type ModalidadVuelo = 'sin' | 'incluido' | 'opcional' | 'cotizacion';
+export type UnidadPrecio = 'por_persona' | 'por_paquete';
+export type CategoriaInclusion =
+  | 'alojamiento' | 'desayuno' | 'alimentacion' | 'transporte_terrestre' | 'transporte_aereo'
+  | 'actividades' | 'entradas' | 'guia' | 'traslados' | 'seguro' | 'gastos_personales'
+  | 'equipaje' | 'impuestos' | 'otro';
+
+export const ETIQUETA_CATEGORIA_INCLUSION: Record<CategoriaInclusion, string> = {
+  alojamiento: 'Alojamiento',
+  desayuno: 'Desayuno',
+  alimentacion: 'Alimentación',
+  transporte_terrestre: 'Transporte terrestre',
+  transporte_aereo: 'Transporte aéreo',
+  actividades: 'Actividades',
+  entradas: 'Entradas',
+  guia: 'Guía turístico',
+  traslados: 'Traslados',
+  seguro: 'Seguro',
+  gastos_personales: 'Gastos personales',
+  equipaje: 'Equipaje',
+  impuestos: 'Impuestos y cargos',
+  otro: 'Otro',
+};
+
+export const ETIQUETA_MODALIDAD_ALOJAMIENTO: Record<ModalidadAlojamiento, string> = {
+  sin: 'Sin alojamiento',
+  incluido: 'Alojamiento incluido',
+  opcional: 'Alojamiento opcional',
+};
+
+export const ETIQUETA_MODALIDAD_VUELO: Record<ModalidadVuelo, string> = {
+  sin: 'Sin vuelo',
+  incluido: 'Vuelo incluido',
+  opcional: 'Vuelo opcional',
+  cotizacion: 'Vuelo sujeto a cotización',
+};
+
+export interface ItinerarioDia {
+  id_dia?: number;
+  dia: number;
+  titulo: string;
+  descripcion?: string | null;
+  actividades?: string | null;
+  horario?: string | null;
+  lugar?: string | null;
+  informacion_adicional?: string | null;
+}
+
+export interface InclusionPaquete {
+  id_inclusion?: number;
+  tipo: 'incluye' | 'no_incluye';
+  categoria: CategoriaInclusion;
+  descripcion: string;
+}
+
+export interface SalidaPaquete {
+  id_salida?: number;
+  fecha_salida: string;
+  fecha_regreso?: string | null;
+  cupos?: number | null;
+  estado: 'abierta' | 'cerrada';
+  notas?: string | null;
+  cupos_usados?: number;
+  cupos_disponibles?: number | null;
+}
 
 export interface PaquetePopular {
   id_paquete: number;
@@ -32,6 +100,21 @@ export interface PaqueteResponse {
   // Paquete no tenía ningún campo de imagen propio, ver POST
   // /paquetes/{id}/imagen en reserva_route.py.
   imagen_url?: string | null;
+  // Ficha comercial completa
+  noches?: number | null;
+  destino_ciudad?: string | null;
+  destino_pais?: string | null;
+  destinos_secundarios?: string | null;
+  categoria?: string | null;
+  vigencia_desde?: string | null;
+  vigencia_hasta?: string | null;
+  modalidad_alojamiento?: ModalidadAlojamiento;
+  modalidad_vuelo?: ModalidadVuelo;
+  unidad_precio?: UnidadPrecio;
+  precio_nino?: number | null;
+  precio_infante?: number | null;
+  min_viajeros?: number | null;
+  max_viajeros?: number | null;
 }
 
 // Una foto de la galería del paquete (distinta de imagen_url, la portada) --
@@ -63,6 +146,8 @@ export interface PaqueteServicioDetalle {
   dia_actividad: number | null;
   incluido: boolean;
   capacidad_maxima: number | null;
+  /** Solo en los opcionales: se cobra por persona al agregarlo. */
+  precio_por_persona?: number | null;
 }
 
 // Igual que PaqueteResponse pero con destinos/hoteles/servicios reales —
@@ -75,6 +160,10 @@ export interface PaqueteDetalleResponse extends PaqueteResponse {
   // Galería de fotos reales del paquete (distinta de imagen_url, la
   // portada).
   imagenes: ImagenGaleriaResponse[];
+  itinerario?: ItinerarioDia[];
+  inclusiones?: InclusionPaquete[];
+  salidas?: SalidaPaquete[];
+  vuelos?: OfertaVuelo[];
 }
 
 export const paqueteService = {

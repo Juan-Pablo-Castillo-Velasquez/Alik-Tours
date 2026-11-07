@@ -38,6 +38,7 @@ import ModuleEmpresas from "../components/admin/ModuleEmpresas";
 import { empresaService, type SolicitudCorporativa } from "../services/empresa.service";
 import ModuleBanners from "../components/admin/ModuleBanners";
 import ModuleComunidad from "../components/admin/ModuleComunidad";
+import ModuleVuelos from "../components/admin/ModuleVuelos";
 import { bannerService, type Banner, type BannerFormData } from "../services/banner.service";
 import ModuleTemas from "../components/admin/ModuleTemas";
 import ModuleMensajes from "../components/admin/ModuleMensajes";
@@ -916,6 +917,8 @@ export default function AdminDashboard() {
     ),
     configuracion: <ModuleConfiguracion />,
     comunidad: <ModuleComunidad />,
+    // Autosuficiente: trae sus ofertas con filtros y paginación del backend.
+    vuelos: <ModuleVuelos />,
     banners: (
       <ModuleBanners
         banners={banners}
