@@ -80,6 +80,8 @@ Migración `f5b9d2e7a1c3_ecosistema_reservas` (reversible, solo agrega):
 | POST | `/api/reservas/{id}/cotizacion-vuelo` | Admin |
 | PUT | `/api/reservas/{id}` | Admin — ahora con transiciones válidas e historial |
 | POST/PUT | `/api/paquetes` | Admin — ahora con itinerario, inclusiones, salidas, vuelos y modalidades |
+| POST/PUT | `/api/hoteles/` | Admin — ficha completa y `servicios` con estado |
+| GET | `/api/hoteles/?todos=true` | Staff — incluye hoteles ocultos |
 
 ## 6. Pruebas (Fase 12)
 
@@ -96,17 +98,78 @@ Migración `f5b9d2e7a1c3_ecosistema_reservas` (reversible, solo agrega):
 | G. Reserva administrativa | descuento con motivo en historial, notas internas ocultas al cliente, estado inicial confirmado; cliente no puede descontar; precio congelado; transiciones inválidas → 409; cambio de precio → 409 | ✅ |
 | H. Integridad | cupos de salida y sillas de vuelo no se sobrevenden; última habitación solo una vez; vuelo solo-paquete no se vende suelto; doble envío → una sola reserva; coherencia del paquete | ✅ |
 
-Suite completa del backend: 450 pruebas en verde (más las 425 anteriores sin cambios).
+| Ficha del hotel | políticas y servicios por estado, vaciar datos, web inválida → 422, hotel oculto fuera del sitio y visible en el panel, habitación oculta no reservable en línea, máximo de adultos | ✅ |
 
-## 7. Pendiente (se completa en las siguientes entregas)
+Suite completa del backend: 454 pruebas en verde (incluye las 425 anteriores, sin cambios). Frontend (Vitest): 257 pruebas, cobertura ≥ 80 %, con pruebas nuevas de `useCotizacion` y `PagoDeReserva`.
 
-- Panel: módulo de vuelos, formulario de paquetes por pasos, crear reserva por tipo, detalle de reserva con desglose/viajeros/vuelo.
-- Web: reserva de paquete para el cliente, pago de una reserva existente, ficha de paquete con itinerario/incluye/vuelo.
-- Ficha completa del hotel.
-- Datos a revisar por la agencia: paquetes 5 y 6 (vuelo como servicio), hoteles 9 y 10 sin habitaciones, ciudades mal escritas.
+## 7. Entregas (todas publicadas en `main` tras CI verde)
 
-## 8. Publicación y reversión
+| Parte | PR | Contenido |
+|---|---|---|
+| 1 | #40 | Backend: vuelos, paquetes completos, cotizador, desglose congelado, viajeros, estados. Migración `f5b9d2e7a1c3` |
+| 2 | #41 | Panel: módulo Vuelos y formulario de paquetes por pasos |
+| 3 | #42 | Web: reservar paquete, pagar reserva existente, ficha de paquete, checkout de hotel con adultos/niños |
+| 4 | #43 | Panel: crear reserva (hotel/paquete/vuelo) y detalle comercial; ficha completa del hotel y de la habitación. Migración `a7c3e9b2d4f6` |
 
-- Publicación: PR → CI verde → `main` (Render corre `alembic upgrade head` al arrancar).
-- Reversión de código: revertir el merge en `main`.
-- Reversión de base de datos: `alembic downgrade e4a2c8f1b6d9` (borra solo lo agregado; probado arriba/abajo/arriba en PostgreSQL 16 con los datos de prueba).
+## 8. Arquitectura final
+
+```
+Hotel ─1:N─ Habitacion ─1:N─ ImagenHabitacion
+  │  └─N:M─ Caracteristica (hotel_caracteristicas: estado incluido/de_pago/no_disponible)
+  └─N:M─ Paquete (paquete_hotel, noches)
+Paquete ─1:N─ ItinerarioDia · PaqueteInclusion · SalidaPaquete · ImagenPaquete
+        ─N:M─ Servicio (paquete_servicios: incluido u opcional)
+        ─N:M─ OfertaVuelo (paquete_vuelos)
+Reserva ─N:1─ Cliente · Paquete? · SalidaPaquete? · OfertaVuelo?
+        ─1:N─ ReservaConcepto (desglose congelado) · ViajeroReserva · ReservaHabitacion
+                · ReservaServicio · Pago · HistorialReserva
+        └─ snapshot_producto (JSON: lo vendido al momento de reservar)
+```
+
+Flujo único de precio: `SeleccionProducto` → `cotizacion_service.cotizar()` → (a) `/reservas/cotizar` para mostrar, (b) `crear_con_cotizacion` para guardar con bloqueo de filas. El pago (`/reservas/{id}/pagar`) cobra `precio_total`, que en reservas nuevas es la suma del desglose congelado.
+
+## 9. Matriz de trazabilidad
+
+| Requisito | Implementación | Prueba | Resultado |
+|---|---|---|---|
+| Vuelos gestionables desde administración | `vuelo_route.py`, `ModuleVuelos.tsx` | `TestVuelosAdmin` | ✅ |
+| Filtros y paginación reales de vuelos | `/api/vuelos/admin` (estado, texto, origen, destino, aerolínea, fechas) | `test_crear_listar_filtrar_y_publicar` | ✅ |
+| No inventar disponibilidad aérea | Aviso "ofertas gestionadas por la agencia"; horas opcionales | Revisión de pantallas | ✅ |
+| Vuelo incluido / opcional / cotización / sin | `Paquete.modalidad_vuelo` + cotizador | Escenarios E y F | ✅ |
+| Alojamiento incluido / opcional / sin | `Paquete.modalidad_alojamiento` + cotizador | Escenarios B, C, D | ✅ |
+| No cobrar dos veces lo incluido | Conceptos incluidos en $0 | C y E (`subtotal == 0`) | ✅ |
+| Cliente reserva sin opcionales | Opcionales solo si se eligen | B y D (sin hotel) | ✅ |
+| Itinerario por días e incluye/no incluye | `itinerario_paquete`, `paquete_inclusiones` | B (detalle y snapshot) | ✅ |
+| Salidas con cupos sin sobreventa | `salidas_paquete` + `FOR UPDATE` | H `test_cupos_de_salida_no_se_sobrevenden` | ✅ |
+| Sillas de vuelo sin sobreventa | `ofertas_vuelo.cupos` + `FOR UPDATE` | H `test_sillas_del_vuelo_no_se_sobrevenden` | ✅ |
+| Última habitación: solo una reserva | `_verificar_disponibilidad` con `FOR UPDATE` | H `test_la_ultima_habitacion...` | ✅ |
+| Precios calculados en backend | `cotizacion_service` | A–H | ✅ |
+| Cambio de precio durante el checkout | `precio_esperado` → 409 | G `test_precio_esperado_distinto...` | ✅ |
+| Doble envío | `clave_idempotencia` | H `test_doble_envio...` | ✅ |
+| Precio histórico congelado | `reserva_conceptos` + `snapshot_producto` | G `test_precio_congelado...` | ✅ |
+| Transiciones de estado válidas + historial | `TRANSICIONES_RESERVA` | G | ✅ |
+| Notas internas ocultas al cliente | `ReservaDetailAdminResponse` | G | ✅ |
+| Documentos protegidos | Enmascarados al cliente; manifiesto solo staff | E | ✅ |
+| Descuentos solo autorizados | `descuento` solo staff, con motivo en historial | G | ✅ |
+| Reserva de paquete del cliente de principio a fin | `ReservarPaquete.tsx` + `PagoDeReserva` | B–F (API) + tests de `PagoDeReserva` y `useCotizacion` (Vitest) | ✅ API / ⚠️ pantalla sin E2E |
+| Reserva administrativa completa | `ModuleCrearReserva.tsx` | G (API) | ✅ API / ⚠️ pantalla sin E2E |
+| Pagos simulados identificados | Aviso "modo de prueba" en `PagoDeReserva` | Vitest `PagoDeReserva` | ✅ |
+| Ficha completa del hotel y servicios por estado | Migración `a7c3e9b2d4f6`, `FichaHotelCampos.tsx` | `TestFichaCompletaDelHotel` | ✅ |
+| Hotel/habitación ocultos | `publicado` / `publicada` | `TestFichaCompletaDelHotel` | ✅ |
+| Capacidad adultos/niños de la habitación | Cotizador | `test_habitacion_oculta...` | ✅ |
+| Migraciones seguras y reversibles | Solo agregan; up/down/up probados | PostgreSQL 16 local con datos de prueba | ✅ |
+
+## 10. Pendiente y riesgos
+
+- **Sin E2E de las pantallas nuevas** (reservar paquete, crear reserva del panel, vuelos): la lógica está cubierta por el API y Vitest, pero conviene un recorrido manual tras publicar.
+- **Datos por completar** (no se inventan): ofertas aéreas reales; paquetes 5 y 6 tienen el vuelo como "servicio" (recrearlo como oferta y cambiar la modalidad); hoteles 9 y 10 sin habitaciones; ciudades mal escritas ("bgotoa"); itinerarios e inclusiones de cada paquete; políticas y servicios de cada hotel.
+- **Servicios de hotel anteriores** quedan como "Disponible" (sin decir si cobran) hasta que el admin confirme su estado.
+- **Moneda**: todo en COP; no hay conversión de divisas.
+- **Inventario**: habitaciones físicas (una unidad por número), no por cantidad.
+- **Facturación**: el comprobante sigue siendo un comprobante de pago interno, no factura electrónica DIAN.
+
+## 11. Publicación y reversión
+
+- Publicación: PR → CI verde (lint, backend, frontend, integración, E2E, Docker) → `main` (Render corre `alembic upgrade head` al arrancar; Vercel publica el frontend).
+- Reversión de código: revertir los commits en `main`.
+- Reversión de base de datos: `alembic downgrade e4a2c8f1b6d9` (deshace las dos migraciones; borra solo lo agregado). Ojo: borra también el desglose y los viajeros de las reservas nuevas — hacer respaldo antes.
