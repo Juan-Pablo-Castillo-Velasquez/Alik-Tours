@@ -32,7 +32,11 @@ import PackageResultCard from "../components/PackageResultCard";
 import { resolveFotoUrl } from "../components/admin/types";
 import { useTema } from "../context/TemaContext";
 import { HotelDetailResponse, hotelService } from "../services/hotel.service";
+import { ETIQUETA_CLASE, hora, rutaOferta } from "../services/vuelo.service";
 import {
+  ETIQUETA_CATEGORIA_INCLUSION,
+  ETIQUETA_MODALIDAD_ALOJAMIENTO,
+  ETIQUETA_MODALIDAD_VUELO,
   PaqueteDetalleResponse,
   PaqueteHotelDetalle,
   PaqueteResponse,
@@ -432,7 +436,42 @@ export default function PackageDetail() {
                 hotel. */}
             <section className="bg-card border border-border rounded-2xl shadow-sm p-8">
               <EncabezadoSeccion icon={CalendarDays} titulo="Itinerario del viaje" />
-              {itinerario.length > 0 ? (
+              {(pkg.itinerario ?? []).length > 0 ? (
+                <ol className="space-y-6">
+                  {(pkg.itinerario ?? []).map((d, idx, arr) => {
+                    const delDia = actividades.filter((s) => s.dia_actividad === d.dia);
+                    return (
+                      <li key={d.dia} className={`relative pl-7 ${idx < arr.length - 1 ? "pb-6 border-l-2 border-primary/15" : ""}`}>
+                        <span className="absolute -left-[7px] top-0 w-3.5 h-3.5 rounded-full bg-primary ring-4 ring-primary/10" />
+                        <p className="text-xs font-bold uppercase tracking-wide text-primary">Día {d.dia}</p>
+                        <h3 className="font-bold text-foreground">{d.titulo}</h3>
+                        {(d.lugar || d.horario) && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {d.lugar && <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> {d.lugar}</span>}
+                            {d.lugar && d.horario && " · "}
+                            {d.horario && <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {d.horario}</span>}
+                          </p>
+                        )}
+                        {d.descripcion && <p className="text-sm text-muted-foreground mt-2 whitespace-pre-line">{d.descripcion}</p>}
+                        {(d.actividades || delDia.length > 0) && (
+                          <ul className="mt-2 space-y-1">
+                            {(d.actividades ?? "").split("\n").map((a) => a.trim()).filter(Boolean).map((a) => (
+                              <li key={a} className="flex items-start gap-2 text-sm"><CheckCircle2 className="w-4 h-4 mt-0.5 text-primary shrink-0" /> {a}</li>
+                            ))}
+                            {delDia.map((s) => (
+                              <li key={s.id_servicio} className="flex items-start gap-2 text-sm">
+                                <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${s.incluido ? "text-primary" : "text-muted-foreground/50"}`} />
+                                <span>{s.nombre_servicio}{!s.incluido && <span className="ml-2 text-[10px] font-bold uppercase text-muted-foreground">Opcional{s.precio_por_persona != null ? ` · +$${s.precio_por_persona.toLocaleString("es-CO")} p/p` : ""}</span>}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {d.informacion_adicional && <p className="mt-2 text-xs text-muted-foreground italic">{d.informacion_adicional}</p>}
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : itinerario.length > 0 ? (
                 <div className="space-y-6">
                   {itinerario.map(([dia, items], idx) => (
                     <div
@@ -481,6 +520,72 @@ export default function PackageDetail() {
                 </p>
               )}
             </section>
+
+            {(pkg.inclusiones ?? []).length > 0 && (
+              <section className="bg-card border border-border rounded-2xl shadow-sm p-8">
+                <EncabezadoSeccion icon={CheckCircle2} titulo="Qué incluye y qué no" />
+                <div className="grid gap-6 sm:grid-cols-2">
+                  {(["incluye", "no_incluye"] as const).map((tipo) => {
+                    const items = (pkg.inclusiones ?? []).filter((i) => i.tipo === tipo);
+                    if (!items.length) return null;
+                    return (
+                      <div key={tipo}>
+                        <h3 className={`mb-2 text-sm font-bold ${tipo === "incluye" ? "text-success" : "text-destructive"}`}>
+                          {tipo === "incluye" ? "Incluye" : "No incluye"}
+                        </h3>
+                        <ul className="space-y-2">
+                          {items.map((i, k) => (
+                            <li key={k} className="flex items-start gap-2 text-sm">
+                              {tipo === "incluye" ? <CheckCircle2 className="w-4 h-4 mt-0.5 text-success shrink-0" /> : <XCircle className="w-4 h-4 mt-0.5 text-destructive shrink-0" />}
+                              <span>
+                                <span className="block text-[11px] uppercase tracking-wide text-muted-foreground">{ETIQUETA_CATEGORIA_INCLUSION[i.categoria]}</span>
+                                {i.descripcion}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {(pkg.modalidad_vuelo ?? "sin") !== "sin" && (
+              <section className="bg-card border border-border rounded-2xl shadow-sm p-8">
+                <EncabezadoSeccion icon={Plane} titulo={ETIQUETA_MODALIDAD_VUELO[pkg.modalidad_vuelo ?? "sin"]} />
+                <p className="text-sm text-muted-foreground mb-4">
+                  {pkg.modalidad_vuelo === "incluido" && "El vuelo ya está en el precio del paquete: no se cobra aparte."}
+                  {pkg.modalidad_vuelo === "opcional" && "Puedes reservar el paquete sin vuelo o agregarlo al reservar, con su precio adicional."}
+                  {pkg.modalidad_vuelo === "cotizacion" && "Si quieres el vuelo, lo pides al reservar y la agencia te envía la tarifa. No es un precio garantizado hasta que lo confirmemos."}
+                </p>
+                <div className="space-y-3">
+                  {(pkg.vuelos ?? []).map((o) => (
+                    <div key={o.id_oferta} className="rounded-xl bg-muted/40 p-4 text-sm">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <p className="font-semibold text-foreground">{rutaOferta(o)}</p>
+                        {pkg.modalidad_vuelo === "opcional" && <p className="font-bold text-primary">+${Number(o.precio_adulto).toLocaleString("es-CO")} <span className="text-xs font-normal text-muted-foreground">por adulto</span></p>}
+                      </div>
+                      <p className="text-muted-foreground">
+                        Ida: {o.fecha_salida}{hora(o.hora_salida) ? ` · ${hora(o.hora_salida)}` : ""}
+                        {o.fecha_regreso ? ` · Regreso: ${o.fecha_regreso}${hora(o.hora_regreso) ? ` · ${hora(o.hora_regreso)}` : ""}` : ""}
+                      </p>
+                      <p className="text-muted-foreground">
+                        {o.aerolinea || "Aerolínea por confirmar"}{o.clase ? ` · ${ETIQUETA_CLASE[o.clase]}` : ""}
+                        {o.escalas != null ? ` · ${o.escalas === 0 ? "Directo" : `${o.escalas} escala(s)`}` : ""}
+                      </p>
+                      {(o.equipaje_mano || o.equipaje_bodega) && (
+                        <p className="text-muted-foreground">Equipaje: {[o.equipaje_mano && `mano ${o.equipaje_mano}`, o.equipaje_bodega && `bodega ${o.equipaje_bodega}`].filter(Boolean).join(" · ")}</p>
+                      )}
+                      {o.impuestos_incluidos === false && <p className="mt-1 text-xs text-warning">Tarifa sin impuestos: la agencia te informa el valor antes de emitir.</p>}
+                    </div>
+                  ))}
+                  {(pkg.vuelos ?? []).length > 0 && (
+                    <p className="text-[11px] text-muted-foreground">Ofertas gestionadas por la agencia. Los horarios sin hora los confirma la aerolínea.</p>
+                  )}
+                </div>
+              </section>
+            )}
 
             {/* Transporte incluido — antes los tramos de transporte (si
                 existían) se perdían mezclados en el checklist plano de
@@ -616,8 +721,8 @@ export default function PackageDetail() {
               <section className="bg-card border border-border rounded-2xl shadow-sm p-8">
                 <EncabezadoSeccion icon={Sparkles} titulo="Personaliza tu experiencia" />
                 <p className="text-muted-foreground mb-6">
-                  Este paquete tiene actividades opcionales adicionales — revísalas y
-                  coordínalas con tu asesor al reservar.
+                  Este paquete tiene actividades opcionales con costo adicional: las eliges al
+                  reservar y se suman a tu total.
                 </p>
                 <Link
                   to={`/personalize/${pkg.id_paquete}`}
@@ -651,7 +756,7 @@ export default function PackageDetail() {
                     pagar.
                   </AccordionContent>
                 </AccordionItem>
-                {pkg.no_incluye && pkg.no_incluye.trim() && (
+                {!(pkg.inclusiones ?? []).some((i) => i.tipo === "no_incluye") && pkg.no_incluye && pkg.no_incluye.trim() && (
                   <AccordionItem value="no-incluye">
                     <AccordionTrigger>
                       <span className="flex items-center gap-2">
@@ -713,12 +818,21 @@ export default function PackageDetail() {
           <div className="lg:col-span-1">
             <div className="bg-card border border-border rounded-2xl shadow-xl p-8 sticky top-24">
               <div className="mb-6">
-                <p className="text-muted-foreground mb-2">Precio por persona</p>
+                <p className="text-muted-foreground mb-2">
+                  {pkg.unidad_precio === "por_paquete" ? "Precio del paquete" : "Precio por adulto"}
+                </p>
                 <div className="flex items-end gap-2">
                   <span className="text-4xl font-bold text-primary">
                     ${pkg.precio_base.toLocaleString("es-CO")}
                   </span>
                 </div>
+                {pkg.unidad_precio !== "por_paquete" && (pkg.precio_nino != null || pkg.precio_infante != null) && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {pkg.precio_nino != null && `Niño: $${pkg.precio_nino.toLocaleString("es-CO")}`}
+                    {pkg.precio_nino != null && pkg.precio_infante != null && " · "}
+                    {pkg.precio_infante != null && (pkg.precio_infante === 0 ? "Infante: sin costo" : `Infante: $${pkg.precio_infante.toLocaleString("es-CO")}`)}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-3.5 mb-6 pb-6 border-b border-border">
@@ -728,7 +842,9 @@ export default function PackageDetail() {
                       <Clock className="w-4 h-4" />
                       Duración
                     </span>
-                    <span className="font-medium text-foreground">{pkg.duracion_dias} días</span>
+                    <span className="font-medium text-foreground">
+                      {pkg.duracion_dias} días{pkg.noches != null ? ` / ${pkg.noches} noches` : ""}
+                    </span>
                   </div>
                 )}
                 {pkg.hoteles.length > 0 && (
@@ -768,31 +884,43 @@ export default function PackageDetail() {
                     <span className="font-medium text-foreground">{destinoPrincipal}</span>
                   </div>
                 )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2 text-muted-foreground"><HotelIcon className="w-4 h-4" /> Alojamiento</span>
+                  <span className="font-medium text-foreground text-right">{ETIQUETA_MODALIDAD_ALOJAMIENTO[pkg.modalidad_alojamiento ?? "sin"]}</span>
+                </div>
+                {(pkg.modalidad_vuelo ?? "sin") !== "sin" && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2 text-muted-foreground"><Plane className="w-4 h-4" /> Vuelo</span>
+                    <span className="font-medium text-foreground text-right">{ETIQUETA_MODALIDAD_VUELO[pkg.modalidad_vuelo ?? "sin"]}</span>
+                  </div>
+                )}
+                {(pkg.salidas ?? []).some((s) => s.estado === "abierta") && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2 text-muted-foreground"><CalendarDays className="w-4 h-4" /> Próxima salida</span>
+                    <span className="font-medium text-foreground">{(pkg.salidas ?? []).filter((s) => s.estado === "abierta").map((s) => s.fecha_salida).sort()[0]}</span>
+                  </div>
+                )}
               </div>
 
-              {pkg.hoteles.length > 0 ? (
-                // El checkout real reserva una habitación específica de un
-                // hotel (ver Checkout.tsx: espera un id_hotel + ?habitacion=)
-                // -- todavía no existe un checkout a nivel de PAQUETE, así
-                // que cada hotel incluido manda a su propio flujo real de
-                // elegir habitación y fecha en vez de simular una reserva
-                // de "paquete completo" que el backend no soporta.
-                <div className="space-y-2 mb-4">
-                  {pkg.hoteles.map((hotel) => (
-                    <Link
-                      key={hotel.id_hotel}
-                      to={`/hotel/${hotel.id_hotel}`}
-                      className="block w-full py-3.5 px-4 bg-primary text-primary-foreground text-center font-semibold rounded-xl hover:opacity-90 transition-all duration-300"
-                    >
-                      {pkg.hoteles.length > 1
-                        ? `Reservar en ${hotel.nombre_hotel}`
-                        : "Ver hotel y reservar"}
-                    </Link>
-                  ))}
-                </div>
+              {pkg.activo ? (
+                <Link
+                  to={`/package/${pkg.id_paquete}/reservar`}
+                  className="mb-3 block w-full rounded-xl bg-primary py-3.5 px-4 text-center font-semibold text-primary-foreground transition-all duration-300 hover:opacity-90"
+                >
+                  Reservar este paquete
+                </Link>
               ) : (
                 <div className="w-full py-4 bg-muted text-muted-foreground text-center font-semibold rounded-xl mb-4">
-                  Reserva disponible próximamente
+                  Paquete no disponible por ahora
+                </div>
+              )}
+              {pkg.hoteles.length > 0 && (
+                <div className="mb-4 space-y-1 text-center">
+                  {pkg.hoteles.map((hotel) => (
+                    <Link key={hotel.id_hotel} to={`/hotel/${hotel.id_hotel}`} className="block text-sm font-medium text-primary hover:underline">
+                      Ver {hotel.nombre_hotel}
+                    </Link>
+                  ))}
                 </div>
               )}
 

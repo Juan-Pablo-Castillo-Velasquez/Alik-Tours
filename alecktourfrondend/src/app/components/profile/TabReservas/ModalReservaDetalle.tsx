@@ -340,6 +340,51 @@ export default function ModalReservaDetalle({ reservaId, onClose }: Props) {
                 </section>
               )}
 
+              {/* Desglose congelado al reservar (lo que se cobra). */}
+              {(detalle?.conceptos?.length ?? 0) > 0 && (
+                <section>
+                  <SectionTitle icon={Wallet}>Qué estás pagando</SectionTitle>
+                  <ul className="divide-y divide-border rounded-xl border border-border text-xs">
+                    {detalle!.conceptos!.map((c, i) => (
+                      <li key={i} className="flex items-start justify-between gap-3 px-3 py-2">
+                        <span>
+                          {c.descripcion}
+                          {c.incluido && <span className="ml-1 font-semibold text-success">· Incluido</span>}
+                          {!c.incluido && c.cantidad > 1 && c.precio_unitario > 0 && (
+                            <span className="block text-muted-foreground">{c.cantidad} × {money(c.precio_unitario)}</span>
+                          )}
+                        </span>
+                        <span className="shrink-0 font-semibold">{c.tipo === "vuelo_cotizacion" ? "Por cotizar" : money(c.subtotal)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {detalle?.estado_vuelo === "cotizacion_pendiente" && (
+                    <p className="mt-2 text-[11px] text-warning">El vuelo está pendiente de cotización: la agencia te enviará la tarifa.</p>
+                  )}
+                </section>
+              )}
+
+              {(detalle?.viajeros?.length ?? 0) > 0 && (
+                <section>
+                  <SectionTitle icon={Wallet}>Viajeros</SectionTitle>
+                  <ul className="space-y-1 text-xs">
+                    {detalle!.viajeros!.map((v) => (
+                      <li key={v.id_viajero} className="flex justify-between gap-2">
+                        <span>{v.nombres} {v.apellidos}{v.es_titular ? " (titular)" : ""}</span>
+                        <span className="text-muted-foreground">{v.tipo === "adulto" ? "Adulto" : v.tipo === "nino" ? "Niño" : "Infante"}{v.numero_documento ? ` · ${v.tipo_documento ?? ""} ${v.numero_documento}` : ""}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {detalle?.solicitudes_especiales && (
+                <section>
+                  <SectionTitle icon={Wallet}>Tus solicitudes especiales</SectionTitle>
+                  <p className="whitespace-pre-line text-xs text-muted-foreground">{detalle.solicitudes_especiales}</p>
+                </section>
+              )}
+
               {/* Promoción / descuento aplicado */}
               {ahorro > 0 && (
                 <section>

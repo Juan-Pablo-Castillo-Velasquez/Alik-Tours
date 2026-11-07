@@ -29,6 +29,8 @@ const HotelDetail = lazy(() => import("./pages/HotelDetail"));
 const PackageDetail = lazy(() => import("./pages/PackageDetail"));
 const Packages = lazy(() => import("./pages/Packages"));
 const Personalization = lazy(() => import("./pages/Personalization"));
+const ReservarPaquete = lazy(() => import("./pages/ReservarPaquete"));
+const PagarReserva = lazy(() => import("./pages/PagarReserva"));
 const PreferencesForm = lazy(() => import("./pages/PreferencesForm"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -76,6 +78,22 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/package/:id/reservar",
+        element: (
+          <ProtectedRoute>
+            <ReservarPaquete />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/pagar/:id",
+        element: (
+          <ProtectedRoute>
+            <PagarReserva />
           </ProtectedRoute>
         ),
       },

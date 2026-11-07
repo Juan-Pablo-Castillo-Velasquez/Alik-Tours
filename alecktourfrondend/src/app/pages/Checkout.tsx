@@ -103,7 +103,10 @@ export default function Checkout() {
   const [direccion, setDireccion] = useState('');
   const [ciudad, setCiudad] = useState('');
 
+  // people = adultos; los niños van aparte (el backend los cuenta para la
+  // capacidad y los guarda en la reserva).
   const [people, setPeople] = useState(2);
+  const [ninos, setNinos] = useState(0);
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [metodoPago, setMetodoPago] = useState<number>(1);
@@ -372,7 +375,7 @@ export default function Checkout() {
             reserva: reservaFinal,
             hotel,
             habitacion,
-            people,
+            people: people + ninos,
             totalPrice,
             paymentAmount: pago.monto,
             paymentOption,
@@ -511,11 +514,25 @@ export default function Checkout() {
       if (!reservaId) {
         // El precio NO se manda: el backend lo calcula con precio_noche de
         // la BD y valida que la habitación siga disponible (409 si no).
+        // Flujo con desglose congelado: el backend recalcula el total y, si
+        // no coincide con el que vio el cliente, responde 409 (precio cambió).
         const reserva = await reservaService.create({
+          tipo_producto: 'hotel',
+          adultos: people,
+          ninos,
+          precio_esperado: totalPrice,
+          viajeros: [{
+            tipo: 'adulto',
+            es_titular: true,
+            nombres: nombres.trim(),
+            apellidos: apellidos.trim(),
+            tipo_documento: 'CC',
+            numero_documento: cedula.trim().replace(/[^A-Za-z0-9.\- ]/g, '') || null,
+          }],
           id_cliente: usuario.id_cliente,
           fecha_inicio: fechaInicio,
           fecha_fin: fechaFin,
-          numero_personas: people,
+          numero_personas: people + ninos,
           terminos_version: TERMINOS_VERSION,
           clave_idempotencia: claveIntentoRef.current,
           habitaciones: [
@@ -890,14 +907,23 @@ export default function Checkout() {
                         onChange={(e) => setFechaFin(e.target.value)}
                         className="w-full px-3 py-2.5 rounded-xl border border-border bg-input-background text-foreground text-sm focus:ring-2 focus:ring-primary/40 focus:outline-none" />
                     </div>
-                    <div>
-                      <label htmlFor="checkout-huespedes" className="block text-xs font-medium text-muted-foreground mb-1.5">Huéspedes</label>
-                      <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-input-background">
-                        <Users className="w-4 h-4 text-muted-foreground shrink-0" />
-                        <input id="checkout-huespedes" type="number" min={1} max={habitacion.tipo_habitacion?.capacidad_personas ?? 10}
-                          value={people}
-                          onChange={(e) => setPeople(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-full bg-transparent text-foreground text-sm focus:outline-none" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label htmlFor="checkout-huespedes" className="block text-xs font-medium text-muted-foreground mb-1.5">Adultos</label>
+                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-input-background">
+                          <Users className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <input id="checkout-huespedes" type="number" min={1} max={Math.max((habitacion.tipo_habitacion?.capacidad_personas ?? 10) - ninos, 1)}
+                            value={people}
+                            onChange={(e) => setPeople(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-full bg-transparent text-foreground text-sm focus:outline-none" />
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="checkout-ninos" className="block text-xs font-medium text-muted-foreground mb-1.5">Niños</label>
+                        <input id="checkout-ninos" type="number" min={0} max={Math.max((habitacion.tipo_habitacion?.capacidad_personas ?? 10) - people, 0)}
+                          value={ninos}
+                          onChange={(e) => setNinos(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-full px-3 py-2.5 rounded-xl border border-border bg-input-background text-foreground text-sm focus:outline-none" />
                       </div>
                     </div>
                   </div>
@@ -1020,7 +1046,7 @@ export default function Checkout() {
                       </div>
                       <div className="flex justify-between text-xs py-1">
                         <span className="text-muted-foreground">Huéspedes</span>
-                        <strong className="text-foreground">{people}</strong>
+                        <strong className="text-foreground">{people} adulto(s){ninos ? `, ${ninos} niño(s)` : ""}</strong>
                       </div>
                       <div className="flex justify-between text-xs py-1">
                         <span className="text-muted-foreground">Habitación</span>

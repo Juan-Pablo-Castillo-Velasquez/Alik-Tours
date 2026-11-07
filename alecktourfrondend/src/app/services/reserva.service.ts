@@ -1,5 +1,7 @@
 import { apiFetch } from '../api/v1/api';
-import { ReservaCreate, ReservaResponse } from '../data/reservaTypes';
+import { Cotizacion, Concepto, ReservaCreate, ReservaResponse, SeleccionProducto, Viajero } from '../data/reservaTypes';
+import type { OfertaVuelo } from './vuelo.service';
+import type { SalidaPaquete } from './paquete.service';
 
 export type CodigoMetodoPago =
   | 'tarjeta_credito'
@@ -82,6 +84,26 @@ export interface ReservaDetail {
     celular?: string | null;
   } | null;
   canal_origen?: string | null;
+  // Flujo nuevo
+  tipo_producto?: 'hotel' | 'paquete' | 'vuelo' | null;
+  adultos?: number | null;
+  ninos?: number | null;
+  infantes?: number | null;
+  total_pagado?: number;
+  saldo_pendiente?: number;
+  conceptos?: Concepto[];
+  viajeros?: Viajero[];
+  salida?: SalidaPaquete | null;
+  oferta_vuelo?: OfertaVuelo | null;
+  estado_vuelo?: string | null;
+  solicitudes_especiales?: string | null;
+  /** Solo llega con datos al equipo de la agencia. */
+  notas_internas?: string | null;
+  snapshot_producto?: Record<string, any> | null;
+  habitaciones?: { id_habitacion: number; fecha_checkin: string; fecha_checkout: string; precio_acordado?: number | null }[];
+  nombre_paquete?: string | null;
+  hotel_nombre?: string | null;
+  destino?: string | null;
 }
 
 export interface PagarRequest {
@@ -116,6 +138,13 @@ export const reservaService = {
     apiFetch<PagoResponse[]>(`/pagos/reserva/${reservaId}`),
   create: (data: ReservaCreate) =>
     apiFetch<ReservaResponse>('/reservas', { method: 'POST', body: data }),
+  /** Desglose y total calculados en el backend, sin crear la reserva. */
+  cotizar: (seleccion: SeleccionProducto) =>
+    apiFetch<Cotizacion>('/reservas/cotizar', { method: 'POST', body: seleccion }),
+  actualizarNotasInternas: (id: number, notas_internas: string | null) =>
+    apiFetch<ReservaDetail>(`/reservas/${id}/notas-internas`, { method: 'PUT', body: { notas_internas } }),
+  confirmarCotizacionVuelo: (id: number, data: { precio_total: number; descripcion: string; id_oferta_vuelo?: number | null }) =>
+    apiFetch<ReservaDetail>(`/reservas/${id}/cotizacion-vuelo`, { method: 'POST', body: data }),
   update: (id: number, data: Partial<ReservaCreate>) =>
     apiFetch<ReservaResponse>(`/reservas/${id}`, { method: 'PUT', body: data }),
   delete: (id: number) =>

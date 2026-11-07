@@ -1,6 +1,7 @@
 import { ChevronRight, MapPin, MessageCircle, Plane, Share2, Users } from "lucide-react";
 import { motion } from "motion/react";
 import { forwardRef } from "react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 import ComprobantePDF from "../ComprobantePDF";
 import { ClienteResponse } from "../../../services/cliente.service";
@@ -153,11 +154,14 @@ const ReservaCard = forwardRef<HTMLDivElement, Props>(function ReservaCard(
         {/* Saldo tras el anticipo del 50%: el backend ya acepta pagarlo
             (tipo_pago "saldo"); mientras tanto el cliente lo coordina con
             su asesor, que lo registra desde el panel. */}
-        {reserva.estado === "confirmada" && Number(reserva.saldo_pendiente ?? 0) > 0 && (
+        {(reserva.estado === "confirmada" || reserva.estado === "pendiente") && Number(reserva.saldo_pendiente ?? 0) > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 mb-4">
             <span className="text-xs text-foreground">
               Pagado ${Number(reserva.total_pagado ?? 0).toLocaleString("es-CO")} · <strong>Saldo pendiente ${Number(reserva.saldo_pendiente).toLocaleString("es-CO")} COP</strong>
             </span>
+            <Link to={`/pagar/${reserva.id_reserva}`} className="rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90">
+              {Number(reserva.total_pagado ?? 0) > 0 ? "Pagar saldo" : "Pagar"}
+            </Link>
             {onHablarDeReserva && (
               <button
                 onClick={onHablarDeReserva}

@@ -113,8 +113,8 @@ export default function Personalization() {
                 Actividades opcionales de {pkg.nombre_paquete}
               </h2>
               <p className="text-muted-foreground">
-                No vienen incluidas en el precio base del paquete -- coordínalas con tu
-                asesor al momento de reservar.
+                No vienen incluidas en el precio base del paquete: las eliges al reservar
+                y se suman al total, por persona.
               </p>
             </div>
           </div>
@@ -194,10 +194,10 @@ export default function Personalization() {
             reserva por hotel. */}
         <div className="mt-8 flex flex-col sm:flex-row gap-4">
           <Link
-            to={`/package/${pkg.id_paquete}`}
+            to={`/package/${pkg.id_paquete}/reservar`}
             className="flex-1 text-center py-4 bg-primary text-primary-foreground font-semibold rounded-xl hover:shadow-xl hover:brightness-110 transition-all duration-300"
           >
-            Ver detalle completo y reservar
+            Reservar y elegir opcionales
           </Link>
           <Link
             to="/packages"
