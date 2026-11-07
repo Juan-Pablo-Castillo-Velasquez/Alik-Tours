@@ -26,6 +26,19 @@
   <a href="#api">API</a>
   •
   <a href="#contribución">Contribución</a>
+  •
+  <a href="#autores">Autores</a>
+</p>
+
+<p align="center">
+  <strong>En producción:</strong>
+  <a href="https://alik-tours.vercel.app">alik-tours.vercel.app</a>
+  ·
+  <a href="https://proyectoalectoursdocker.onrender.com/docs">API (Swagger)</a>
+</p>
+
+<p align="center">
+  Creado por <strong>Juan Pablo Castillo Velásquez</strong>, <strong>Fernando Gutiérrez</strong> y <strong>Cristian Sinisterra</strong>.
 </p>
 
 ---
@@ -34,7 +47,9 @@
 
 AlekTours es una plataforma web orientada a la gestión integral de servicios turísticos.
 
-El sistema permite centralizar la gestión de hoteles, habitaciones, reservas, paquetes turísticos, usuarios, servicios y procesos relacionados con la experiencia del viajero.
+El sistema permite centralizar la gestión de hoteles, habitaciones, vuelos, paquetes turísticos, reservas, pagos, usuarios, servicios y procesos relacionados con la experiencia del viajero.
+
+Todo se conecta en un mismo ecosistema de reservas: un paquete puede incluir alojamiento y vuelo, un vuelo se puede reservar solo desde la sección **Vuelos**, y cada reserva guarda el desglose de precio que el cliente vio al confirmar, junto con los datos de sus viajeros.
 
 El proyecto está construido bajo una arquitectura desacoplada entre frontend y backend, utilizando una API REST desarrollada con FastAPI, PostgreSQL como sistema de persistencia y Docker Compose para la administración del entorno.
 
@@ -73,9 +88,12 @@ El proyecto está construido bajo una arquitectura desacoplada entre frontend y 
 | Módulo          | Funcionalidad                                  |
 | --------------- | ---------------------------------------------- |
 | Usuarios        | Registro, autenticación, perfiles y roles      |
-| Hoteles         | Gestión de hoteles y habitaciones              |
-| Reservas        | Creación, consulta, confirmación y cancelación |
-| Paquetes        | Gestión de paquetes turísticos                 |
+| Hoteles         | Ficha completa del hotel, habitaciones con fotos, servicios y políticas |
+| Vuelos          | Ofertas aéreas de la agencia: búsqueda pública en `/vuelos`, detalle y reserva con pasajeros |
+| Paquetes        | Paquetes con alojamiento y vuelo opcional, itinerario, inclusiones y salidas |
+| Cotizador       | Un único motor de precios para el sitio y el panel; el desglose queda congelado en la reserva |
+| Reservas        | Hoteles, paquetes y vuelos; creación desde el sitio o el panel, confirmación y cancelación |
+| Viajeros        | Datos de cada pasajero por reserva, con documentos protegidos |
 | Servicios       | Administración de servicios turísticos         |
 | Pagos           | Gestión y seguimiento de pagos                 |
 | Notificaciones  | Correos transaccionales                        |
@@ -794,6 +812,7 @@ Documentos principales:
 * [`CONTRIBUTING.md`](CONTRIBUTING.md)
 * [`SECURITY.md`](SECURITY.md)
 * [`db_schema.sql`](db_schema.sql)
+* [`docs/auditoria/ecosistema-reservas.md`](docs/auditoria/ecosistema-reservas.md): ecosistema de vuelos, hoteles, paquetes y reservas (trazabilidad, riesgos y rollback).
 
 Referencia técnica (`docs/referencia-tecnica/`):
 
@@ -863,7 +882,17 @@ Este proyecto se distribuye bajo los términos definidos en [`LICENCE`](LICENCE)
 
 # Repositorio
 
-[GitHub — AlekTours](https://github.com/Juan-Pablo-Castillo-Velasquez/proyectoalectoursDocker)
+[GitHub — AlekTours](https://github.com/Juan-Pablo-Castillo-Velasquez/Alik-Tours)
+
+---
+
+# Autores
+
+AlekTours fue creado por:
+
+* **Juan Pablo Castillo Velásquez**
+* **Fernando Gutiérrez**
+* **Cristian Sinisterra**
 
 ---
 
