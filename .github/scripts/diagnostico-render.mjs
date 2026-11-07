@@ -12,17 +12,17 @@ for (let i = 0; i < 24 && !ok; i++) {
   const r = await p.goto(`${B}/openapi.json`, { timeout: 90000 }).catch(() => null);
   try {
     const j = JSON.parse(await p.evaluate(() => document.body.innerText));
-    ok = !!j.components?.schemas?.HotelResponse?.properties?.hora_checkin && !!j.paths?.["/api/vuelos"];
-    console.log("intento", i, "status", r?.status(), "ficha hotel + vuelos:", ok);
+    ok = !!j.components?.schemas?.OfertaVueloResponse?.properties?.tipo_servicio && !!j.components?.schemas?.ReservaResponse?.properties?.vuelo_ruta;
+    console.log("intento", i, "status", r?.status(), "tipo_servicio + vuelo_ruta:", ok);
   } catch { console.log("intento", i, "status", r?.status(), "(sin JSON)"); }
   if (!ok) await p.waitForTimeout(30000);
 }
-for (const u of ["/health", "/api/hoteles/1", "/api/paquetes/1/detalle"]) {
+for (const u of ["/health", "/api/vuelos?solo_independientes=true"]) {
   const r = await p.goto(B + u, { timeout: 60000 }).catch(() => null);
   console.log("GET", r?.status(), u, "|", r ? (await p.evaluate(() => document.body.innerText)).slice(0, 120).replace(/\s+/g, " ") : "");
 }
 await p.close();
-const paginas = [["paquete", "/package/1"], ["hotel", "/hotel/2"], ["paquetes", "/packages"], ["reservar-sin-login", "/package/1/reservar"]];
+const paginas = [["inicio", "/"], ["vuelos", "/vuelos"], ["paquete", "/package/1"]];
 for (const [modo, opts] of [["escritorio", { viewport: { width: 1366, height: 900 } }], ["celular", devices["iPhone 13"]]]) {
   const ctx = await b.newContext(opts);
   for (const [nombre, ruta] of paginas) {
@@ -36,7 +36,7 @@ for (const [modo, opts] of [["escritorio", { viewport: { width: 1366, height: 90
     const texto = (await pg.evaluate(() => document.body.innerText).catch(() => "")).replace(/\s+/g, " ");
     console.log(`[${modo}] ${ruta} errores=${errores.length}`, errores.slice(0, 3).join(" | ").slice(0, 300));
     console.log(`   texto: ${texto.slice(0, 200)}`);
-    for (const clave of ["Reservar este paquete", "Servicios e instalaciones", "Políticas del hotel", "Alojamiento"]) {
+    for (const clave of ["Reserva tu vuelo con la agencia", "Buscar vuelos", "Vuelos", "Pídenos una cotización", "Reservar este paquete"]) {
       if (texto.includes(clave)) console.log(`   contiene: ${clave}`);
     }
     await pg.close();
