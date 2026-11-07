@@ -4,6 +4,7 @@ import logging
 import os
 import threading
 import uuid
+from datetime import date
 from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile
@@ -14,6 +15,7 @@ from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
 from app.core.deps import exigir_propietario_o_admin, get_current_usuario, usuario_es_staff
 from app.core.exceptions import (
+    BaseAPIException,
     CapacidadInsuficienteError,
     HabitacionNoDisponibleError,
     HabitacionNoEncontradaError,
@@ -28,7 +30,16 @@ from app.core.mail import send_reservation_confirmation
 from app.core.security import require_admin, require_empleado
 from app.models.hotel_model import Hotel, HotelCaracteristica
 from app.models.metodo_pago_guardado_model import MetodoPagoGuardado
-from app.models.reserva_model import MetodoPago, Pago, Paquete, PaqueteHotel, PaqueteServicio, Reserva
+from app.models.reserva_model import (
+    HistorialReserva,
+    MetodoPago,
+    Pago,
+    Paquete,
+    PaqueteHotel,
+    PaqueteServicio,
+    Reserva,
+    ReservaConcepto,
+)
 from app.models.servicio_model import Servicio
 from app.models.user_model import Usuario
 from app.repositories.reserva_repository import (
@@ -46,8 +57,11 @@ from app.schemas.reserva_detail import (
     ReservaServicioDetail,
 )
 from app.schemas.reserva_schema import (
+    CotizacionResponse,
+    CotizacionVueloInput,
     MetodoPagoCreate,
     MetodoPagoResponse,
+    NotasInternasUpdate,
     PagarRequest,
     PagarResponse,
     PagoCreate,
@@ -60,11 +74,15 @@ from app.schemas.reserva_schema import (
     PaqueteServicioDetalle,
     PaqueteUpdate,
     ReservaCreate,
-    ReservaDetailResponse,
+    ReservaDetailAdminResponse,
     ReservaResponse,
     ReservaUpdate,
+    SalidaResponse,
+    SeleccionProducto,
 )
+from app.schemas.vuelo_schema import OfertaVueloResponse
 from app.services import payment_service
+from app.services.cotizacion_service import cotizar, cupos_usados_salida, sillas_usadas
 from app.services.notificacion_service import crear_notificacion
 from app.services.pago_estado_service import TransicionPagoInvalida, cambiar_estado_pago, total_pagado
 from app.services.reserva_detail_service import ReservaDetailService
@@ -264,6 +282,7 @@ def get_paquete_detalle(paquete_id: int, db: Session = Depends(get_db)):
             dia_actividad=ps.dia_actividad,
             incluido=ps.incluido if ps.incluido is not None else True,
             capacidad_maxima=ps.servicio.capacidad_maxima,
+            precio_por_persona=float(ps.servicio.precio_base) if ps.incluido is False else None,
         )
         for ps in paquete.paquete_servicios
         if ps.servicio
@@ -273,21 +292,36 @@ def get_paquete_detalle(paquete_id: int, db: Session = Depends(get_db)):
         ImagenGaleriaResponse(id_imagen=img.id_imagen, url=img.url, orden=img.orden) for img in paquete.imagenes
     ]
 
+    hoy = date.today()
+    salidas = []
+    for s in paquete.salidas:
+        usados = cupos_usados_salida(db, s.id_salida)
+        salida = SalidaResponse.model_validate(s)
+        salida.cupos_usados = usados
+        salida.cupos_disponibles = None if s.cupos is None else max(s.cupos - usados, 0)
+        salidas.append(salida)
+    vuelos = []
+    for pv in paquete.paquete_vuelos:
+        o = pv.oferta
+        if not o or o.estado in ("borrador", "finalizada") or o.fecha_salida < hoy:
+            continue
+        datos = OfertaVueloResponse.model_validate(o)
+        usadas = sillas_usadas(db, o.id_oferta)
+        datos.cupos_usados = usadas
+        datos.cupos_disponibles = None if o.cupos is None else max(o.cupos - usadas, 0)
+        vuelos.append(datos)
+
+    base = PaqueteResponse.model_validate(paquete).model_dump()
     return PaqueteDetalleResponse(
-        id_paquete=paquete.id_paquete,
-        nombre_paquete=paquete.nombre_paquete,
-        descripcion=paquete.descripcion,
-        duracion_dias=paquete.duracion_dias,
-        precio_base=float(paquete.precio_base),
-        activo=paquete.activo,
-        ciudad_salida=paquete.ciudad_salida,
-        condiciones=paquete.condiciones,
-        no_incluye=paquete.no_incluye,
-        imagen_url=paquete.imagen_url,
+        **base,
         destinos=destinos,
         hoteles=hoteles,
         servicios=servicios,
         imagenes=imagenes,
+        itinerario=paquete.itinerario,
+        inclusiones=paquete.inclusiones,
+        salidas=salidas,
+        vuelos=vuelos,
     )
 
 
@@ -297,8 +331,9 @@ def create_paquete(paquete: PaqueteCreate, db: Session = Depends(get_db), admin_
     reales (paquete_hotel — ver PaqueteRepository._sync_hoteles)."""
     try:
         nuevo = PaqueteRepository.create(db, paquete.model_dump())
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.detail) from e
+    except BaseAPIException as e:
+        db.rollback()
+        raise HTTPException(status_code=e.status_code, detail=e.detail) from e
     delete_pattern(PAQUETES_CACHE_PATTERN)
     return nuevo
 
@@ -313,8 +348,9 @@ def update_paquete(
         raise HTTPException(status_code=404, detail="Paquete no encontrado")
     try:
         actualizado = PaqueteRepository.update(db, paquete_id, paquete.model_dump(exclude_unset=True))
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=e.detail) from e
+    except BaseAPIException as e:
+        db.rollback()
+        raise HTTPException(status_code=e.status_code, detail=e.detail) from e
     delete_pattern(PAQUETES_CACHE_PATTERN)
     return actualizado
 
@@ -571,18 +607,142 @@ def get_actividad_reciente(
     return ReservaDetailService.get_historial_reciente(db, limit)
 
 
-@router.get("/reservas/{reserva_id}", response_model=ReservaDetailResponse)
+def _enmascarar(documento: str | None) -> str | None:
+    if not documento:
+        return documento
+    return "•" * max(len(documento) - 4, 0) + documento[-4:]
+
+
+@router.get("/reservas/{reserva_id}", response_model=ReservaDetailAdminResponse)
 def get_reserva(
     reserva_id: int,
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_usuario),
     authorization: str | None = Header(None),
 ):
-    """Obtiene detalles completos de una reserva con paquete, pagos y habitaciones"""
+    """Detalle completo: producto, desglose, viajeros, vuelo, pagos.
+    Las notas internas solo las ve el equipo; al cliente se le devuelven
+    los documentos de los viajeros enmascarados."""
     reserva = ReservaRepository.get_by_id(db, reserva_id)
     if not reserva:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
     exigir_propietario_o_admin(current_user, reserva.id_cliente, authorization)
+    detalle = ReservaDetailAdminResponse.model_validate(reserva)
+    if not usuario_es_staff(authorization):
+        detalle.notas_internas = None
+        for v in detalle.viajeros:
+            v.numero_documento = _enmascarar(v.numero_documento)
+    return detalle
+
+
+@router.post("/reservas/cotizar", response_model=CotizacionResponse)
+def cotizar_reserva(
+    seleccion: SeleccionProducto,
+    db: Session = Depends(get_db),
+    authorization: str | None = Header(None),
+):
+    """Calcula el desglose y el total de una reserva SIN crearla (lo usan
+    el checkout y el panel para mostrar el resumen). Mismo cálculo que
+    POST /reservas: lo que se ve es lo que se cobra."""
+    try:
+        cot = cotizar(db, seleccion, es_staff=usuario_es_staff(authorization), bloquear=False)
+        return cot.como_respuesta()
+    except BaseAPIException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail) from e
+    finally:
+        db.rollback()  # libera cualquier bloqueo de lectura
+
+
+def _id_empleado_de(db: Session, current_user: Usuario) -> int | None:
+    return current_user.empleado.id_empleado if getattr(current_user, "empleado", None) else None
+
+
+@router.put("/reservas/{reserva_id}/notas-internas", response_model=ReservaDetailAdminResponse)
+def actualizar_notas_internas(
+    reserva_id: int,
+    data: NotasInternasUpdate,
+    db: Session = Depends(get_db),
+    staff_id: int = Depends(require_empleado),
+):
+    reserva = ReservaRepository.get_by_id(db, reserva_id)
+    if not reserva:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    reserva.notas_internas = (data.notas_internas or "").strip() or None
+    db.commit()
+    db.refresh(reserva)
+    return reserva
+
+
+@router.post("/reservas/{reserva_id}/cotizacion-vuelo", response_model=ReservaDetailAdminResponse)
+def confirmar_cotizacion_vuelo(
+    reserva_id: int,
+    data: CotizacionVueloInput,
+    db: Session = Depends(get_db),
+    admin_id: int = Depends(require_admin),
+):
+    """La agencia confirma el precio del vuelo que el cliente pidió cotizar.
+    Se agrega como concepto nuevo (el total sube con trazabilidad en el
+    historial) y se avisa al cliente. Solo una vez por reserva."""
+    reserva = ReservaRepository.get_by_id_for_update(db, reserva_id)
+    if not reserva:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    if reserva.estado_vuelo != "cotizacion_pendiente":
+        raise HTTPException(status_code=409, detail="Esta reserva no tiene un vuelo pendiente de cotización")
+    if reserva.estado not in ("pendiente", "confirmada"):
+        raise HTTPException(status_code=409, detail=f"La reserva está {reserva.estado}: no se puede cotizar")
+    if data.id_oferta_vuelo:
+        from app.models.vuelo_model import OfertaVuelo
+
+        oferta = db.query(OfertaVuelo).filter(OfertaVuelo.id_oferta == data.id_oferta_vuelo).with_for_update().first()
+        if not oferta:
+            raise HTTPException(status_code=404, detail="Oferta aérea no encontrada")
+        if oferta.cupos is not None:
+            sillas = (reserva.adultos or reserva.numero_personas) + (reserva.ninos or 0)
+            if sillas > oferta.cupos - sillas_usadas(db, oferta.id_oferta):
+                raise HTTPException(status_code=409, detail="No quedan sillas suficientes en esa oferta aérea")
+        reserva.id_oferta_vuelo = oferta.id_oferta
+    orden = max((c.orden for c in reserva.conceptos), default=-1) + 1
+    db.add(
+        ReservaConcepto(
+            id_reserva=reserva.id_reserva,
+            tipo="vuelo",
+            descripcion=f"Vuelo cotizado por la agencia: {data.descripcion}"[:255],
+            cantidad=1,
+            precio_unitario=data.precio_total,
+            subtotal=data.precio_total,
+            orden=orden,
+            id_oferta_vuelo=data.id_oferta_vuelo,
+        )
+    )
+    reserva.estado_vuelo = "cotizado"
+    admin = db.query(Usuario).filter(Usuario.id_usuario == admin_id).first()
+    db.add(
+        HistorialReserva(
+            id_reserva=reserva.id_reserva,
+            estado_anterior=reserva.estado,
+            estado_nuevo=reserva.estado,
+            id_empleado_responsable=_id_empleado_de(db, admin) if admin else None,
+            comentarios=f"Vuelo cotizado: {data.descripcion} por ${data.precio_total:,.0f} (se suma al total)",
+        )
+    )
+    db.commit()
+    db.refresh(reserva)
+    try:
+        crear_notificacion(
+            db,
+            tipo="reserva",
+            titulo="Ya tenemos la cotización de tu vuelo",
+            mensaje=(
+                f"El vuelo de tu reserva #{reserva.id_reserva} cuesta ${data.precio_total:,.0f}. "
+                "Revisa el nuevo total en tu reserva."
+            ),
+            id_referencia=reserva.id_reserva,
+            id_cliente=reserva.id_cliente,
+        )
+    except Exception as e:  # el aviso no debe deshacer la cotización
+        logger.error(f"No se pudo avisar la cotización de vuelo de la reserva {reserva.id_reserva}: {e}")
+    delete_pattern(RESERVAS_CACHE_PATTERN)
+    delete_pattern("kpi:dashboard:resumen")
     return reserva
 
 
@@ -617,6 +777,15 @@ def _avisar_reserva_creada(db: Session, reserva: Reserva) -> None:
         logger.error(f"No se pudo crear el aviso de la reserva {reserva.id_reserva}: {e}", exc_info=True)
 
 
+# Transiciones válidas del estado de una reserva (los pagos tienen las suyas
+# en pago_estado_service). Cancelada y finalizada son finales.
+TRANSICIONES_RESERVA = {
+    "pendiente": {"confirmada", "cancelada"},
+    "confirmada": {"finalizada", "cancelada", "pendiente"},
+    "cancelada": set(),
+    "finalizada": set(),
+}
+
 _AVISO_ESTADO_RESERVA = {
     "confirmada": ("Tu reserva está confirmada", "La reserva #{id} quedó confirmada. ¡Prepárate para viajar!"),
     "cancelada": ("Tu reserva fue cancelada", "La reserva #{id} fue cancelada. Si tienes dudas, escríbenos."),
@@ -648,10 +817,44 @@ def create_reserva(
     # sesión podía crear reservas a nombre de otro cliente. El frontend
     # (Checkout.tsx) ya siempre manda el id_cliente del usuario logueado,
     # así que esto no cambia el comportamiento normal.
-    if current_user.id_cliente != reserva.id_cliente and not usuario_es_staff(authorization):
+    es_staff = usuario_es_staff(authorization)
+    if current_user.id_cliente != reserva.id_cliente and not es_staff:
         raise HTTPException(status_code=403, detail="No puedes crear una reserva a nombre de otro cliente")
+    if reserva.tipo_producto:
+        # Flujo nuevo: desglose congelado, viajeros, vuelo y cupos.
+        try:
+            nueva = ReservaRepository.crear_con_cotizacion(
+                db, reserva, es_staff=es_staff, id_empleado_responsable=_id_empleado_de(db, current_user)
+            )
+        except BaseAPIException as e:
+            db.rollback()
+            raise HTTPException(status_code=e.status_code, detail=e.detail) from e
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error inesperado creando reserva: {type(e).__name__}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Error interno del servidor") from e
+        if getattr(nueva, "_recien_creada", False):
+            _avisar_reserva_creada(db, nueva)
+        delete_pattern(RESERVAS_CACHE_PATTERN)
+        delete_pattern("kpi:dashboard:resumen")
+        return nueva
     try:
-        nueva = ReservaRepository.create(db, reserva.model_dump())
+        nueva = ReservaRepository.create(
+            db,
+            reserva.model_dump(
+                include={
+                    "id_cliente",
+                    "id_empleado",
+                    "id_paquete",
+                    "fecha_inicio",
+                    "fecha_fin",
+                    "numero_personas",
+                    "terminos_version",
+                    "clave_idempotencia",
+                    "habitaciones",
+                }
+            ),
+        )
         if getattr(nueva, "_recien_creada", False):
             _avisar_reserva_creada(db, nueva)
         delete_pattern(RESERVAS_CACHE_PATTERN)
@@ -909,7 +1112,40 @@ def update_reserva(
     if not db_reserva:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
     estado_anterior = db_reserva.estado
-    actualizada = ReservaRepository.update(db, reserva_id, reserva.model_dump(exclude_unset=True))
+    cambios = reserva.model_dump(exclude_unset=True)
+    nuevo_estado = cambios.get("estado")
+    if (
+        nuevo_estado
+        and nuevo_estado != estado_anterior
+        and nuevo_estado not in TRANSICIONES_RESERVA.get(estado_anterior, set())
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail=f"No se puede pasar una reserva de '{estado_anterior}' a '{nuevo_estado}'",
+        )
+    if db_reserva.conceptos and set(cambios) & {"id_paquete", "fecha_inicio", "fecha_fin", "numero_personas"}:
+        # El desglose está congelado: cambiar producto, fechas o personas
+        # cambiaría el precio sin trazabilidad. Se cancela y se crea otra.
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Esta reserva tiene su precio congelado: para cambiar producto, fechas o viajeros "
+                "cancélala y crea una nueva."
+            ),
+        )
+    actualizada = ReservaRepository.update(db, reserva_id, cambios)
+    if actualizada and actualizada.estado != estado_anterior:
+        admin = db.query(Usuario).filter(Usuario.id_usuario == admin_id).first()
+        db.add(
+            HistorialReserva(
+                id_reserva=reserva_id,
+                estado_anterior=estado_anterior,
+                estado_nuevo=actualizada.estado,
+                id_empleado_responsable=_id_empleado_de(db, admin) if admin else None,
+                comentarios=f"Estado cambiado por la agencia: {estado_anterior} → {actualizada.estado}",
+            )
+        )
+        db.commit()
     # Aviso al cliente solo si el estado de verdad cambió en ESTA llamada.
     if actualizada and actualizada.estado != estado_anterior and actualizada.estado in _AVISO_ESTADO_RESERVA:
         titulo, mensaje = _AVISO_ESTADO_RESERVA[actualizada.estado]

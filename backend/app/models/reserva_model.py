@@ -13,6 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.types import JSON
 
 from app.core.database import Base
 
@@ -46,7 +47,64 @@ class Paquete(Base):
     # ítem. Informar las exclusiones antes de la compra (Ley 1480).
     no_incluye = Column(Text, nullable=True)
 
+    # --- Ficha comercial completa (todo nullable / con default: los
+    # paquetes existentes siguen funcionando igual) ---
+    noches = Column(Integer, CheckConstraint("noches IS NULL OR noches >= 0", name="ck_paquete_noches"))
+    destino_ciudad = Column(String(100))
+    destino_pais = Column(String(100))
+    destinos_secundarios = Column(String(255))
+    categoria = Column(String(60))
+    vigencia_desde = Column(Date)
+    vigencia_hasta = Column(Date)
+    # sin | incluido | opcional
+    modalidad_alojamiento = Column(
+        String(20),
+        CheckConstraint("modalidad_alojamiento IN ('sin', 'incluido', 'opcional')", name="ck_paquete_mod_aloj"),
+        nullable=False,
+        default="sin",
+        server_default="sin",
+    )
+    # sin | incluido | opcional | cotizacion
+    modalidad_vuelo = Column(
+        String(20),
+        CheckConstraint(
+            "modalidad_vuelo IN ('sin', 'incluido', 'opcional', 'cotizacion')", name="ck_paquete_mod_vuelo"
+        ),
+        nullable=False,
+        default="sin",
+        server_default="sin",
+    )
+    # por_persona: precio_base es por adulto | por_paquete: precio único del paquete
+    unidad_precio = Column(
+        String(20),
+        CheckConstraint("unidad_precio IN ('por_persona', 'por_paquete')", name="ck_paquete_unidad_precio"),
+        nullable=False,
+        default="por_persona",
+        server_default="por_persona",
+    )
+    # None = el niño paga tarifa de adulto; los infantes solo se aceptan si
+    # hay tarifa de infante configurada (puede ser 0).
+    precio_nino = Column(
+        Numeric(10, 2), CheckConstraint("precio_nino IS NULL OR precio_nino >= 0", name="ck_paquete_precio_nino")
+    )
+    precio_infante = Column(
+        Numeric(10, 2),
+        CheckConstraint("precio_infante IS NULL OR precio_infante >= 0", name="ck_paquete_precio_infante"),
+    )
+    min_viajeros = Column(Integer, CheckConstraint("min_viajeros IS NULL OR min_viajeros > 0", name="ck_paquete_min"))
+    max_viajeros = Column(Integer, CheckConstraint("max_viajeros IS NULL OR max_viajeros > 0", name="ck_paquete_max"))
+
     paquete_servicios = relationship("PaqueteServicio", back_populates="paquete", cascade="all, delete-orphan")
+    paquete_vuelos = relationship("PaqueteVuelo", back_populates="paquete", cascade="all, delete-orphan")
+    itinerario = relationship(
+        "ItinerarioDia", back_populates="paquete", cascade="all, delete-orphan", order_by="ItinerarioDia.dia"
+    )
+    inclusiones = relationship(
+        "PaqueteInclusion", back_populates="paquete", cascade="all, delete-orphan", order_by="PaqueteInclusion.orden"
+    )
+    salidas = relationship(
+        "SalidaPaquete", back_populates="paquete", cascade="all, delete-orphan", order_by="SalidaPaquete.fecha_salida"
+    )
     paquete_hotel = relationship("PaqueteHotel", back_populates="paquete", cascade="all, delete-orphan")
     reservas = relationship("Reserva", back_populates="paquete")
     # Galería de fotos reales del paquete (distinta de imagen_url, la
@@ -92,6 +150,86 @@ class PaqueteHotel(Base):
 
     paquete = relationship("Paquete", back_populates="paquete_hotel")
     hotel = relationship("Hotel")
+
+
+class ItinerarioDia(Base):
+    """Un día del itinerario real del paquete (lo define el admin; nunca se
+    genera automáticamente)."""
+
+    __tablename__ = "itinerario_paquete"
+
+    id_dia = Column(Integer, primary_key=True, index=True)
+    id_paquete = Column(Integer, ForeignKey("paquetes.id_paquete", ondelete="CASCADE"), nullable=False, index=True)
+    dia = Column(Integer, CheckConstraint("dia > 0", name="ck_itinerario_dia"), nullable=False)
+    titulo = Column(String(150), nullable=False)
+    descripcion = Column(Text)
+    actividades = Column(Text)  # una por línea
+    horario = Column(String(120))
+    lugar = Column(String(150))
+    informacion_adicional = Column(Text)
+
+    paquete = relationship("Paquete", back_populates="itinerario")
+
+
+CATEGORIAS_INCLUSION = (
+    "alojamiento",
+    "desayuno",
+    "alimentacion",
+    "transporte_terrestre",
+    "transporte_aereo",
+    "actividades",
+    "entradas",
+    "guia",
+    "traslados",
+    "seguro",
+    "gastos_personales",
+    "equipaje",
+    "impuestos",
+    "otro",
+)
+
+
+class PaqueteInclusion(Base):
+    """Qué incluye / qué NO incluye el paquete, ítem por ítem y con su
+    descripción propia (reemplaza a futuro el texto libre `no_incluye`, que
+    se sigue mostrando mientras el paquete no tenga ítems estructurados)."""
+
+    __tablename__ = "paquete_inclusiones"
+    __table_args__ = (
+        CheckConstraint("tipo IN ('incluye', 'no_incluye')", name="ck_inclusion_tipo"),
+        CheckConstraint(f"categoria IN {CATEGORIAS_INCLUSION}", name="ck_inclusion_categoria"),
+    )
+
+    id_inclusion = Column(Integer, primary_key=True, index=True)
+    id_paquete = Column(Integer, ForeignKey("paquetes.id_paquete", ondelete="CASCADE"), nullable=False, index=True)
+    tipo = Column(String(12), nullable=False)
+    categoria = Column(String(30), nullable=False)
+    descripcion = Column(String(500), nullable=False)
+    orden = Column(Integer, nullable=False, default=0)
+
+    paquete = relationship("Paquete", back_populates="inclusiones")
+
+
+class SalidaPaquete(Base):
+    """Fecha de salida programada con cupos. Si un paquete no tiene salidas,
+    el cliente elige la fecha de inicio (dentro de la vigencia)."""
+
+    __tablename__ = "salidas_paquete"
+    __table_args__ = (
+        CheckConstraint("cupos IS NULL OR cupos >= 0", name="ck_salida_cupos"),
+        CheckConstraint("fecha_regreso IS NULL OR fecha_regreso >= fecha_salida", name="ck_salida_fechas"),
+        CheckConstraint("estado IN ('abierta', 'cerrada')", name="ck_salida_estado"),
+    )
+
+    id_salida = Column(Integer, primary_key=True, index=True)
+    id_paquete = Column(Integer, ForeignKey("paquetes.id_paquete", ondelete="CASCADE"), nullable=False, index=True)
+    fecha_salida = Column(Date, nullable=False)
+    fecha_regreso = Column(Date)
+    cupos = Column(Integer)
+    estado = Column(String(10), nullable=False, default="abierta")
+    notas = Column(String(255))
+
+    paquete = relationship("Paquete", back_populates="salidas")
 
 
 class ImagenPaquete(Base):
@@ -141,6 +279,30 @@ class Reserva(Base):
     # creada en vez de crear otra. Única por cliente.
     clave_idempotencia = Column(String(64), nullable=True)
 
+    # --- Ecosistema de reservas (nullable: las reservas anteriores no los tienen) ---
+    # hotel | paquete | vuelo
+    tipo_producto = Column(
+        String(10),
+        CheckConstraint(
+            "tipo_producto IS NULL OR tipo_producto IN ('hotel', 'paquete', 'vuelo')", name="ck_reserva_tipo"
+        ),
+    )
+    adultos = Column(Integer, CheckConstraint("adultos IS NULL OR adultos >= 0", name="ck_reserva_adultos"))
+    ninos = Column(Integer, CheckConstraint("ninos IS NULL OR ninos >= 0", name="ck_reserva_ninos"))
+    infantes = Column(Integer, CheckConstraint("infantes IS NULL OR infantes >= 0", name="ck_reserva_infantes"))
+    id_salida = Column(Integer, ForeignKey("salidas_paquete.id_salida", ondelete="SET NULL"), index=True)
+    id_oferta_vuelo = Column(Integer, ForeignKey("ofertas_vuelo.id_oferta", ondelete="SET NULL"), index=True)
+    # no_aplica | incluido | opcional | cotizacion_pendiente | cotizado
+    estado_vuelo = Column(String(25))
+    # Lo que pidió el cliente (lo ve él también).
+    solicitudes_especiales = Column(Text)
+    # Solo para el equipo: NUNCA se manda en respuestas al cliente.
+    notas_internas = Column(Text)
+    # Fotografía de lo vendido al momento de reservar (nombre, condiciones,
+    # qué incluye, vuelo...) para que cambios posteriores del producto no
+    # alteren lo que se le vendió al cliente.
+    snapshot_producto = Column(JSON)
+
     cliente = relationship("Cliente", back_populates="reservas")
     empleado = relationship("Empleado", back_populates="reservas")
     paquete = relationship("Paquete", back_populates="reservas")
@@ -148,13 +310,28 @@ class Reserva(Base):
     reserva_servicios = relationship("ReservaServicio", back_populates="reserva", cascade="all, delete-orphan")
     pagos = relationship("Pago", back_populates="reserva")
     historial_reservas = relationship("HistorialReserva", back_populates="reserva", cascade="all, delete-orphan")
+    conceptos = relationship(
+        "ReservaConcepto", back_populates="reserva", cascade="all, delete-orphan", order_by="ReservaConcepto.orden"
+    )
+    viajeros = relationship(
+        "ViajeroReserva", back_populates="reserva", cascade="all, delete-orphan", order_by="ViajeroReserva.id_viajero"
+    )
+    salida = relationship("SalidaPaquete")
+    oferta_vuelo = relationship("OfertaVuelo")
     solicitudes_cancelacion = relationship(
         "SolicitudCancelacion", back_populates="reserva", cascade="all, delete-orphan"
     )
 
     @property
     def precio_total(self) -> float:
-        """Total real de la reserva: suma de habitaciones + servicios acordados en BD."""
+        """Total real de la reserva.
+
+        Reservas nuevas: suma del desglose congelado (reserva_conceptos),
+        que ya trae paquete, habitaciones, vuelo, extras y descuentos.
+        Reservas anteriores (sin desglose): habitaciones + servicios, como
+        siempre, para no cambiar retroactivamente ningún total."""
+        if self.conceptos:
+            return float(round(sum((c.subtotal or 0) for c in self.conceptos), 2))
         total = sum((rh.precio_acordado or 0) for rh in self.reserva_habitaciones)
         total += sum((rs.precio_acordado or 0) for rs in self.reserva_servicios)
         return float(total)
@@ -245,6 +422,69 @@ class ReservaServicio(Base):
 
     reserva = relationship("Reserva", back_populates="reserva_servicios")
     servicio = relationship("Servicio", back_populates="reserva_servicios")
+
+
+TIPOS_CONCEPTO = (
+    "paquete",
+    "habitacion",
+    "alojamiento_incluido",
+    "vuelo",
+    "vuelo_incluido",
+    "vuelo_cotizacion",
+    "servicio_opcional",
+    "cargo",
+    "impuesto",
+    "descuento",
+)
+
+
+class ReservaConcepto(Base):
+    """Línea del desglose de precio de una reserva, congelada al reservar
+    (precio unitario y descripción del momento de la compra). Lo incluido
+    en el paquete aparece con subtotal 0 para que el cliente vea que no se
+    le cobra dos veces."""
+
+    __tablename__ = "reserva_conceptos"
+    __table_args__ = (CheckConstraint(f"tipo IN {TIPOS_CONCEPTO}", name="ck_concepto_tipo"),)
+
+    id_concepto = Column(Integer, primary_key=True, index=True)
+    id_reserva = Column(Integer, ForeignKey("reservas.id_reserva", ondelete="CASCADE"), nullable=False, index=True)
+    tipo = Column(String(25), nullable=False)
+    descripcion = Column(String(255), nullable=False)
+    cantidad = Column(Integer, nullable=False, default=1)
+    precio_unitario = Column(Numeric(12, 2), nullable=False, default=0)
+    subtotal = Column(Numeric(12, 2), nullable=False, default=0)
+    incluido = Column(Boolean, nullable=False, default=False)
+    orden = Column(Integer, nullable=False, default=0)
+    # Referencias opcionales al producto de origen (trazabilidad).
+    id_habitacion = Column(Integer, ForeignKey("habitaciones.id_habitacion", ondelete="SET NULL"))
+    id_oferta_vuelo = Column(Integer, ForeignKey("ofertas_vuelo.id_oferta", ondelete="SET NULL"))
+    id_servicio = Column(Integer, ForeignKey("servicios.id_servicio", ondelete="SET NULL"))
+    fecha_creacion = Column(TIMESTAMP, server_default=func.now())
+
+    reserva = relationship("Reserva", back_populates="conceptos")
+
+
+class ViajeroReserva(Base):
+    """Viajero / pasajero / huésped de una reserva. Solo los datos que pide
+    la operación; el documento nunca se escribe en logs y al cliente se le
+    devuelve enmascarado."""
+
+    __tablename__ = "viajeros_reserva"
+    __table_args__ = (CheckConstraint("tipo IN ('adulto', 'nino', 'infante')", name="ck_viajero_tipo"),)
+
+    id_viajero = Column(Integer, primary_key=True, index=True)
+    id_reserva = Column(Integer, ForeignKey("reservas.id_reserva", ondelete="CASCADE"), nullable=False, index=True)
+    tipo = Column(String(10), nullable=False)
+    nombres = Column(String(100), nullable=False)
+    apellidos = Column(String(100), nullable=False)
+    fecha_nacimiento = Column(Date)
+    nacionalidad = Column(String(60))
+    tipo_documento = Column(String(30))
+    numero_documento = Column(String(30))
+    es_titular = Column(Boolean, nullable=False, default=False)
+
+    reserva = relationship("Reserva", back_populates="viajeros")
 
 
 class MetodoPago(Base):

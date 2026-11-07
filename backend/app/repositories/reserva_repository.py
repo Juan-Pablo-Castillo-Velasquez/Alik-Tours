@@ -12,6 +12,7 @@ from app.core.exceptions import (
     PaqueteDependencyError,
     PaqueteNoEncontradoError,
     ReservaDependencyError,
+    ValidationError,
 )
 from app.models.hotel_model import Habitacion, Hotel
 from app.models.reserva_model import (
@@ -113,6 +114,97 @@ class PaqueteRepository:
         db.delete(imagen)
         db.commit()
 
+    LISTAS = ("itinerario", "inclusiones", "salidas", "vuelos")
+    NO_NULOS = frozenset(
+        {"nombre_paquete", "precio_base", "activo", "modalidad_alojamiento", "modalidad_vuelo", "unidad_precio"}
+    )
+
+    @staticmethod
+    def _sync_ficha(db: Session, paquete: Paquete, listas: dict) -> None:
+        """Itinerario, qué incluye/no incluye, salidas y vuelos asociados.
+        Una clave ausente no toca lo guardado; una lista vacía lo quita."""
+        from app.models.reserva_model import ItinerarioDia, PaqueteInclusion, SalidaPaquete
+        from app.models.vuelo_model import OfertaVuelo, PaqueteVuelo
+        from app.services.cotizacion_service import cupos_usados_salida
+
+        pid = paquete.id_paquete
+        if listas.get("itinerario") is not None:
+            db.query(ItinerarioDia).filter(ItinerarioDia.id_paquete == pid).delete()
+            for d in sorted(listas["itinerario"], key=lambda x: x["dia"]):
+                db.add(ItinerarioDia(id_paquete=pid, **d))
+        if listas.get("inclusiones") is not None:
+            db.query(PaqueteInclusion).filter(PaqueteInclusion.id_paquete == pid).delete()
+            for orden, inc in enumerate(listas["inclusiones"]):
+                db.add(PaqueteInclusion(id_paquete=pid, orden=orden, **inc))
+        if listas.get("vuelos") is not None:
+            ids = list(dict.fromkeys(listas["vuelos"]))
+            reales = {r[0] for r in db.query(OfertaVuelo.id_oferta).filter(OfertaVuelo.id_oferta.in_(ids)).all()}
+            faltantes = set(ids) - reales
+            if faltantes:
+                raise NotFoundError(f"Oferta(s) aérea(s) no encontrada(s): {sorted(faltantes)}")
+            db.query(PaqueteVuelo).filter(PaqueteVuelo.id_paquete == pid).delete()
+            for id_oferta in ids:
+                db.add(PaqueteVuelo(id_paquete=pid, id_oferta=id_oferta))
+        if listas.get("salidas") is not None:
+            existentes = {s.id_salida: s for s in db.query(SalidaPaquete).filter(SalidaPaquete.id_paquete == pid).all()}
+            vistos = set()
+            for sd in listas["salidas"]:
+                id_salida = sd.pop("id_salida", None)
+                if id_salida is not None and id_salida in existentes:
+                    salida = existentes[id_salida]
+                    usados = cupos_usados_salida(db, id_salida)
+                    if sd.get("cupos") is not None and sd["cupos"] < usados:
+                        raise ValidationError(
+                            f"La salida del {salida.fecha_salida} ya tiene {usados} cupo(s) vendidos: "
+                            "los cupos no pueden ser menos que eso"
+                        )
+                    for k, v in sd.items():
+                        setattr(salida, k, v)
+                    vistos.add(id_salida)
+                else:
+                    db.add(SalidaPaquete(id_paquete=pid, **sd))
+            for id_salida, salida in existentes.items():
+                if id_salida in vistos:
+                    continue
+                tiene_reservas = db.query(Reserva.id_reserva).filter(Reserva.id_salida == id_salida).first()
+                if tiene_reservas:
+                    salida.estado = "cerrada"  # se conserva: tiene reservas
+                else:
+                    db.delete(salida)
+
+    @staticmethod
+    def _validar_coherencia(paquete: Paquete) -> None:
+        """Reglas del modelo comercial (se revisan con todo ya guardado)."""
+        if paquete.modalidad_alojamiento == "sin" and paquete.paquete_hotel:
+            raise ValidationError(
+                "El paquete dice 'sin alojamiento' pero tiene hoteles asociados: quítalos o cambia la modalidad"
+            )
+        if paquete.modalidad_alojamiento == "opcional" and not paquete.paquete_hotel:
+            raise ValidationError("Para ofrecer alojamiento opcional asocia al menos un hotel")
+        if paquete.modalidad_vuelo == "sin" and paquete.paquete_vuelos:
+            raise ValidationError(
+                "El paquete dice 'sin vuelo' pero tiene vuelos asociados: quítalos o cambia la modalidad"
+            )
+        if paquete.modalidad_vuelo == "opcional" and not paquete.paquete_vuelos:
+            raise ValidationError("Para ofrecer el vuelo como opcional asocia al menos una oferta aérea")
+        if paquete.modalidad_vuelo == "cotizacion" and paquete.paquete_vuelos:
+            raise ValidationError("Un vuelo 'sujeto a cotización' no lleva ofertas aéreas asociadas")
+        if paquete.noches is not None and paquete.duracion_dias and paquete.noches > paquete.duracion_dias:
+            raise ValidationError("Las noches no pueden ser más que los días del paquete")
+        noches = (
+            paquete.noches
+            if paquete.noches is not None
+            else (paquete.duracion_dias - 1 if paquete.duracion_dias else None)
+        )
+        for s in paquete.salidas:
+            if s.fecha_regreso and noches is not None and (s.fecha_regreso - s.fecha_salida).days != noches:
+                raise ValidationError(
+                    f"La salida del {s.fecha_salida} regresa el {s.fecha_regreso}, pero el paquete es de "
+                    f"{noches} noche(s): revisa las fechas"
+                )
+        if paquete.min_viajeros and paquete.max_viajeros and paquete.max_viajeros < paquete.min_viajeros:
+            raise ValidationError("El máximo de viajeros no puede ser menor que el mínimo")
+
     @staticmethod
     def _sync_hoteles(db: Session, paquete_id: int, hoteles_data: list):
         """Sincroniza paquete_hotel con la lista real recibida — antes esta
@@ -203,11 +295,23 @@ class PaqueteRepository:
         # aparte una vez que el paquete ya tiene id_paquete.
         hoteles_data = paquete_data.pop("hoteles", None) or []
         servicios_data = paquete_data.pop("servicios", None) or []
+        listas = {k: paquete_data.pop(k, None) for k in PaqueteRepository.LISTAS}
+        # Compatibilidad: si no se dice la modalidad pero vienen hoteles, el
+        # alojamiento es incluido (así se mostraban los hoteles hasta hoy).
+        if not paquete_data.get("modalidad_alojamiento"):
+            paquete_data["modalidad_alojamiento"] = "incluido" if hoteles_data else "sin"
+        for campo, defecto in (("modalidad_vuelo", "sin"), ("unidad_precio", "por_persona")):
+            if not paquete_data.get(campo):
+                paquete_data[campo] = defecto
         paquete = Paquete(**paquete_data)
         db.add(paquete)
         db.flush()
         PaqueteRepository._sync_hoteles(db, paquete.id_paquete, hoteles_data)
         PaqueteRepository._sync_servicios(db, paquete.id_paquete, servicios_data)
+        PaqueteRepository._sync_ficha(db, paquete, listas)
+        db.flush()
+        db.refresh(paquete)
+        PaqueteRepository._validar_coherencia(paquete)
         db.commit()
         db.refresh(paquete)
         return paquete
@@ -225,13 +329,28 @@ class PaqueteRepository:
             hoteles_data = paquete_data.pop("hoteles", None) or []
             tiene_servicios = "servicios" in paquete_data
             servicios_data = paquete_data.pop("servicios", None) or []
+            listas = {k: paquete_data.pop(k) for k in PaqueteRepository.LISTAS if k in paquete_data}
             for key, value in paquete_data.items():
-                if value is not None:
-                    setattr(paquete, key, value)
+                # Los campos obligatorios no se pueden vaciar; los de la
+                # ficha sí (null = quitar el dato).
+                if value is None and key in PaqueteRepository.NO_NULOS:
+                    continue
+                setattr(paquete, key, value)
+            if (
+                tiene_hoteles
+                and hoteles_data
+                and "modalidad_alojamiento" not in paquete_data
+                and paquete.modalidad_alojamiento == "sin"
+            ):
+                paquete.modalidad_alojamiento = "incluido"
             if tiene_hoteles:
                 PaqueteRepository._sync_hoteles(db, paquete_id, hoteles_data)
             if tiene_servicios:
                 PaqueteRepository._sync_servicios(db, paquete_id, servicios_data)
+            PaqueteRepository._sync_ficha(db, paquete, listas)
+            db.flush()
+            db.expire(paquete)
+            PaqueteRepository._validar_coherencia(paquete)
             db.commit()
             db.refresh(paquete)
         return paquete
@@ -463,6 +582,151 @@ class ReservaRepository:
         # reenvío de un intento ya guardado), así los avisos salen una vez.
         reserva._recien_creada = True
         return reserva
+
+    @staticmethod
+    def crear_con_cotizacion(db: Session, datos, *, es_staff: bool, id_empleado_responsable: int | None = None):
+        """Flujo nuevo: cotiza en el backend (con bloqueo de cupos y
+        habitaciones), valida viajeros y guarda la reserva con su desglose
+        congelado, sus viajeros y la fotografía del producto vendido."""
+        from app.models.reserva_model import HistorialReserva, ReservaConcepto, ViajeroReserva
+        from app.services.cotizacion_service import CotizacionError, cotizar
+
+        if datos.clave_idempotencia:
+            existente = ReservaRepository._por_clave(db, datos.id_cliente, datos.clave_idempotencia)
+            if existente:
+                return existente
+        if not es_staff and (datos.descuento or datos.notas_internas or datos.estado_inicial or datos.id_empleado):
+            raise CotizacionError("Esos campos solo los puede usar la agencia", status_code=403, code="SOLO_STAFF")
+
+        cot = cotizar(db, datos.seleccion(), es_staff=es_staff, bloquear=True)
+
+        if datos.precio_esperado is not None and abs(float(cot.total) - datos.precio_esperado) > 0.5:
+            raise CotizacionError(
+                f"El precio cambió mientras reservabas: ahora el total es ${float(cot.total):,.0f}. "
+                "Revisa el resumen y confirma de nuevo.",
+                status_code=409,
+                code="PRECIO_CAMBIO",
+            )
+
+        ReservaRepository._validar_viajeros(datos.viajeros, cot)
+
+        estado = datos.estado_inicial if es_staff and datos.estado_inicial else "pendiente"
+        reserva = Reserva(
+            id_cliente=datos.id_cliente,
+            id_empleado=datos.id_empleado if es_staff else None,
+            id_paquete=cot.id_paquete,
+            fecha_inicio=cot.fecha_inicio,
+            fecha_fin=cot.fecha_fin,
+            numero_personas=cot.personas,
+            estado=estado,
+            canal_origen="empleado" if es_staff else "web",
+            terminos_version=datos.terminos_version,
+            terminos_aceptados_en=datetime.now(UTC).replace(tzinfo=None) if datos.terminos_version else None,
+            clave_idempotencia=datos.clave_idempotencia,
+            tipo_producto=cot.tipo_producto,
+            adultos=cot.adultos,
+            ninos=cot.ninos,
+            infantes=cot.infantes,
+            id_salida=cot.id_salida,
+            id_oferta_vuelo=cot.id_oferta_vuelo,
+            estado_vuelo=cot.estado_vuelo,
+            solicitudes_especiales=(datos.solicitudes_especiales or "").strip() or None,
+            notas_internas=((datos.notas_internas or "").strip() or None) if es_staff else None,
+            snapshot_producto=cot.snapshot,
+        )
+        db.add(reserva)
+        db.flush()
+
+        for h in cot.habitaciones:
+            db.add(
+                ReservaHabitacion(
+                    id_reserva=reserva.id_reserva,
+                    id_habitacion=h.habitacion.id_habitacion,
+                    fecha_checkin=h.fecha_checkin,
+                    fecha_checkout=h.fecha_checkout,
+                    precio_acordado=h.precio_acordado,
+                )
+            )
+        for sv in cot.servicios:
+            db.add(
+                ReservaServicio(
+                    id_reserva=reserva.id_reserva,
+                    id_servicio=sv.servicio.id_servicio,
+                    fecha_servicio=sv.fecha_servicio,
+                    numero_personas=sv.personas,
+                    precio_acordado=sv.precio_acordado,
+                )
+            )
+        for orden, linea in enumerate(cot.lineas):
+            db.add(
+                ReservaConcepto(
+                    id_reserva=reserva.id_reserva,
+                    tipo=linea.tipo,
+                    descripcion=linea.descripcion[:255],
+                    cantidad=linea.cantidad,
+                    precio_unitario=linea.precio_unitario,
+                    subtotal=linea.subtotal,
+                    incluido=linea.incluido,
+                    orden=orden,
+                    id_habitacion=linea.id_habitacion,
+                    id_oferta_vuelo=linea.id_oferta_vuelo,
+                    id_servicio=linea.id_servicio,
+                )
+            )
+        for v in datos.viajeros:
+            db.add(ViajeroReserva(id_reserva=reserva.id_reserva, **v.model_dump()))
+        comentario = f"Reserva creada ({'agencia' if es_staff else 'web'}) por ${float(cot.total):,.0f}"
+        if datos.descuento:
+            comentario += f" — incluye descuento autorizado de ${datos.descuento.monto:,.0f}: {datos.descuento.motivo}"
+        db.add(
+            HistorialReserva(
+                id_reserva=reserva.id_reserva,
+                estado_anterior=None,
+                estado_nuevo=estado,
+                id_empleado_responsable=id_empleado_responsable,
+                comentarios=comentario,
+            )
+        )
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if datos.clave_idempotencia:
+                existente = ReservaRepository._por_clave(db, datos.id_cliente, datos.clave_idempotencia)
+                if existente:
+                    return existente
+            raise
+        db.refresh(reserva)
+        reserva._recien_creada = True
+        return reserva
+
+    @staticmethod
+    def _validar_viajeros(viajeros, cot) -> None:
+        """Los viajeros registrados deben cuadrar con los que se cotizaron.
+        Con vuelo, la aerolínea necesita los datos de TODOS los pasajeros."""
+        from app.services.cotizacion_service import CotizacionError
+
+        lleva_vuelo = cot.estado_vuelo in ("incluido", "opcional", "independiente", "cotizacion_pendiente")
+        if lleva_vuelo and cot.id_oferta_vuelo or cot.tipo_producto == "vuelo":
+            if len(viajeros) != cot.personas:
+                raise CotizacionError(
+                    f"Para emitir el vuelo necesitamos los datos de los {cot.personas} pasajero(s)",
+                    code="FALTAN_VIAJEROS",
+                )
+            for v in viajeros:
+                if not (v.fecha_nacimiento and v.tipo_documento and v.numero_documento):
+                    raise CotizacionError(
+                        "Para el vuelo, cada pasajero necesita fecha de nacimiento y documento", code="FALTAN_VIAJEROS"
+                    )
+        conteo = {"adulto": 0, "nino": 0, "infante": 0}
+        for v in viajeros:
+            conteo[v.tipo] += 1
+        if conteo["adulto"] > cot.adultos or conteo["nino"] > cot.ninos or conteo["infante"] > cot.infantes:
+            raise CotizacionError("Hay más viajeros registrados que los indicados en la reserva")
+        if sum(1 for v in viajeros if v.es_titular) > 1:
+            raise CotizacionError("Solo puede haber un titular de la reserva")
+        if any(v.es_titular and v.tipo != "adulto" for v in viajeros):
+            raise CotizacionError("El titular de la reserva debe ser un adulto")
 
     @staticmethod
     def _por_clave(db: Session, id_cliente: int, clave: str):

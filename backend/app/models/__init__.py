@@ -22,18 +22,24 @@ from app.models.resena_model import Resena
 from app.models.reserva_model import (
     HistorialReserva,
     ImagenPaquete,
+    ItinerarioDia,
     MetodoPago,
     Pago,
     Paquete,
     PaqueteHotel,
+    PaqueteInclusion,
     PaqueteServicio,
     Reserva,
+    ReservaConcepto,
     ReservaHabitacion,
     ReservaServicio,
+    SalidaPaquete,
+    ViajeroReserva,
 )
 from app.models.servicio_model import CategoriaServicio, Destino, Proveedor, Servicio, ServicioProveedor
 from app.models.tema_model import Tema
 from app.models.user_model import Usuario
+from app.models.vuelo_model import OfertaVuelo, PaqueteVuelo
 
 # Semana 7 del bootcamp: faltaban aquí 9 modelos (banners, configuración,
 # solicitudes corporativas, métodos de pago guardados, notificaciones,
@@ -86,4 +92,11 @@ __all__ = [
     "ImagenPublicacion",
     "ComentarioComunidad",
     "VideoAgencia",
+    "OfertaVuelo",
+    "PaqueteVuelo",
+    "ItinerarioDia",
+    "PaqueteInclusion",
+    "SalidaPaquete",
+    "ReservaConcepto",
+    "ViajeroReserva",
 ]

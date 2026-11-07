@@ -47,6 +47,7 @@ from app.routes.solicitud_cancelacion_route import router as solicitud_cancelaci
 from app.routes.tema_route import router as tema_router
 from app.routes.usuario_route import permisos_router, roles_router
 from app.routes.usuario_route import router as usuario_router
+from app.routes.vuelo_route import router as vuelo_router
 
 # ============================================================================
 # CONFIGURACIÓN LOGGING
@@ -182,6 +183,7 @@ app.include_router(dashboard_router)
 app.include_router(banner_router)
 app.include_router(tema_router)
 app.include_router(comunidad_router)
+app.include_router(vuelo_router)
 
 # ============================================================================
 # ARCHIVOS ESTATICOS (fotos de perfil, etc.)

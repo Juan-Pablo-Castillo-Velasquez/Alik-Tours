@@ -1,9 +1,85 @@
 from datetime import date, datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schemas.hotel_schema import ImagenGaleriaResponse
 from app.schemas.validadores import FechaValida
+from app.schemas.vuelo_schema import OfertaVueloResponse
+
+ModalidadAlojamiento = Literal["sin", "incluido", "opcional"]
+ModalidadVuelo = Literal["sin", "incluido", "opcional", "cotizacion"]
+UnidadPrecio = Literal["por_persona", "por_paquete"]
+CategoriaInclusion = Literal[
+    "alojamiento",
+    "desayuno",
+    "alimentacion",
+    "transporte_terrestre",
+    "transporte_aereo",
+    "actividades",
+    "entradas",
+    "guia",
+    "traslados",
+    "seguro",
+    "gastos_personales",
+    "equipaje",
+    "impuestos",
+    "otro",
+]
+
+
+class ItinerarioDiaInput(BaseModel):
+    dia: int = Field(..., gt=0, le=60)
+    titulo: str = Field(..., min_length=2, max_length=150)
+    descripcion: str | None = Field(None, max_length=3000)
+    actividades: str | None = Field(None, max_length=3000)
+    horario: str | None = Field(None, max_length=120)
+    lugar: str | None = Field(None, max_length=150)
+    informacion_adicional: str | None = Field(None, max_length=2000)
+
+
+class ItinerarioDiaResponse(ItinerarioDiaInput):
+    id_dia: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class InclusionInput(BaseModel):
+    tipo: Literal["incluye", "no_incluye"]
+    categoria: CategoriaInclusion
+    descripcion: str = Field(..., min_length=2, max_length=500)
+
+
+class InclusionResponse(InclusionInput):
+    id_inclusion: int
+    orden: int = 0
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SalidaInput(BaseModel):
+    id_salida: int | None = None  # para conservar la salida al editar (tiene reservas)
+    fecha_salida: FechaValida
+    fecha_regreso: FechaValida | None = None
+    cupos: int | None = Field(None, ge=0, le=10000)
+    estado: Literal["abierta", "cerrada"] = "abierta"
+    notas: str | None = Field(None, max_length=255)
+
+    @model_validator(mode="after")
+    def _fechas(self):
+        if self.fecha_regreso and self.fecha_regreso < self.fecha_salida:
+            raise ValueError("La fecha de regreso no puede ser antes de la salida")
+        return self
+
+
+class SalidaResponse(BaseModel):
+    id_salida: int
+    fecha_salida: date
+    fecha_regreso: date | None = None
+    cupos: int | None = None
+    estado: str
+    notas: str | None = None
+    cupos_usados: int = 0
+    cupos_disponibles: int | None = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaqueteHotelInput(BaseModel):
@@ -26,7 +102,43 @@ class PaqueteServicioInput(BaseModel):
     incluido: bool = True
 
 
-class PaqueteCreate(BaseModel):
+class _FichaPaquete(BaseModel):
+    """Campos de la ficha comercial completa (todos opcionales)."""
+
+    noches: int | None = Field(None, ge=0, le=60)
+    destino_ciudad: str | None = Field(None, max_length=100)
+    destino_pais: str | None = Field(None, max_length=100)
+    destinos_secundarios: str | None = Field(None, max_length=255)
+    categoria: str | None = Field(None, max_length=60)
+    vigencia_desde: FechaValida | None = None
+    vigencia_hasta: FechaValida | None = None
+    modalidad_alojamiento: ModalidadAlojamiento | None = None
+    modalidad_vuelo: ModalidadVuelo | None = None
+    unidad_precio: UnidadPrecio | None = None
+    precio_nino: float | None = Field(None, ge=0)
+    precio_infante: float | None = Field(None, ge=0)
+    min_viajeros: int | None = Field(None, gt=0, le=500)
+    max_viajeros: int | None = Field(None, gt=0, le=500)
+    itinerario: list[ItinerarioDiaInput] | None = None
+    inclusiones: list[InclusionInput] | None = None
+    salidas: list[SalidaInput] | None = None
+    # ids de ofertas aéreas asociadas
+    vuelos: list[int] | None = None
+
+    @model_validator(mode="after")
+    def _coherencia_ficha(self):
+        if self.vigencia_desde and self.vigencia_hasta and self.vigencia_hasta < self.vigencia_desde:
+            raise ValueError("La vigencia termina antes de empezar")
+        if self.min_viajeros and self.max_viajeros and self.max_viajeros < self.min_viajeros:
+            raise ValueError("El máximo de viajeros no puede ser menor que el mínimo")
+        if self.itinerario:
+            dias = [d.dia for d in self.itinerario]
+            if len(dias) != len(set(dias)):
+                raise ValueError("Hay días repetidos en el itinerario")
+        return self
+
+
+class PaqueteCreate(_FichaPaquete):
     nombre_paquete: str = Field(..., min_length=1, max_length=100)
     descripcion: str | None = None
     duracion_dias: int | None = Field(None, gt=0)
@@ -41,7 +153,7 @@ class PaqueteCreate(BaseModel):
     servicios: list[PaqueteServicioInput] | None = None
 
 
-class PaqueteUpdate(BaseModel):
+class PaqueteUpdate(_FichaPaquete):
     nombre_paquete: str | None = None
     descripcion: str | None = None
     duracion_dias: int | None = Field(None, gt=0)
@@ -76,6 +188,20 @@ class PaqueteResponse(BaseModel):
     # Paquete no tenía ningún campo de imagen propio, ver POST
     # /paquetes/{id}/imagen en reserva_route.py.
     imagen_url: str | None = None
+    noches: int | None = None
+    destino_ciudad: str | None = None
+    destino_pais: str | None = None
+    destinos_secundarios: str | None = None
+    categoria: str | None = None
+    vigencia_desde: date | None = None
+    vigencia_hasta: date | None = None
+    modalidad_alojamiento: str = "sin"
+    modalidad_vuelo: str = "sin"
+    unidad_precio: str = "por_persona"
+    precio_nino: float | None = None
+    precio_infante: float | None = None
+    min_viajeros: int | None = None
+    max_viajeros: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -105,6 +231,8 @@ class PaqueteServicioDetalle(BaseModel):
     # Para cuántas personas alcanza este servicio — info comercial real que
     # ya vive en Servicio.capacidad_maxima, antes nunca viajaba hasta acá.
     capacidad_maxima: int | None = None
+    # Precio por persona si es opcional (se cobra aparte al agregarlo).
+    precio_por_persona: float | None = None
 
 
 class PaqueteDetalleResponse(PaqueteResponse):
@@ -116,6 +244,10 @@ class PaqueteDetalleResponse(PaqueteResponse):
     destinos: list[str] = []
     hoteles: list[PaqueteHotelDetalle] = []
     servicios: list[PaqueteServicioDetalle] = []
+    itinerario: list[ItinerarioDiaResponse] = []
+    inclusiones: list[InclusionResponse] = []
+    salidas: list[SalidaResponse] = []
+    vuelos: list[OfertaVueloResponse] = []
     # Galería de fotos reales del paquete (distinta de imagen_url, la
     # portada) -- ver ImagenPaquete en reserva_model.py.
     imagenes: list[ImagenGaleriaResponse] = []
@@ -196,27 +328,158 @@ class HabitacionReservaResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ViajeroInput(BaseModel):
+    tipo: Literal["adulto", "nino", "infante"]
+    nombres: str = Field(..., min_length=1, max_length=100)
+    apellidos: str = Field(..., min_length=1, max_length=100)
+    fecha_nacimiento: FechaValida | None = None
+    nacionalidad: str | None = Field(None, max_length=60)
+    tipo_documento: str | None = Field(None, max_length=30)
+    numero_documento: str | None = Field(None, max_length=30, pattern=r"^[A-Za-z0-9.\- ]*$")
+    es_titular: bool = False
+
+
+class ViajeroResponse(BaseModel):
+    id_viajero: int
+    tipo: str
+    nombres: str
+    apellidos: str
+    fecha_nacimiento: date | None = None
+    nacionalidad: str | None = None
+    tipo_documento: str | None = None
+    numero_documento: str | None = None
+    es_titular: bool = False
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DescuentoInput(BaseModel):
+    """Descuento autorizado (solo administración) — queda en el desglose y
+    en el historial con su motivo."""
+
+    monto: float = Field(..., gt=0)
+    motivo: str = Field(..., min_length=3, max_length=200)
+
+
+class SeleccionProducto(BaseModel):
+    """Lo que el cliente (o el asesor) eligió. Es la entrada del cotizador:
+    el precio SIEMPRE lo calcula el backend a partir de esto."""
+
+    tipo_producto: Literal["hotel", "paquete", "vuelo"]
+    id_paquete: int | None = None
+    id_salida: int | None = None
+    id_oferta_vuelo: int | None = None
+    incluir_vuelo: bool = False
+    fecha_inicio: FechaValida | None = None
+    fecha_fin: FechaValida | None = None
+    adultos: int = Field(1, ge=1, le=50)
+    ninos: int = Field(0, ge=0, le=50)
+    infantes: int = Field(0, ge=0, le=20)
+    habitaciones: list[HabitacionReservaCreate] = []
+    servicios_opcionales: list[int] = []
+    descuento: DescuentoInput | None = None
+
+    @model_validator(mode="after")
+    def _coherencia(self):
+        if self.tipo_producto == "paquete" and not self.id_paquete:
+            raise ValueError("Elige el paquete")
+        if self.tipo_producto == "vuelo" and not self.id_oferta_vuelo:
+            raise ValueError("Elige la oferta aérea")
+        if self.tipo_producto == "hotel" and not self.habitaciones:
+            raise ValueError("Elige al menos una habitación")
+        if self.infantes > self.adultos:
+            raise ValueError("Cada infante debe viajar con un adulto")
+        if self.fecha_inicio and self.fecha_fin and self.fecha_fin < self.fecha_inicio:
+            raise ValueError("La fecha final no puede ser antes de la inicial")
+        if len(set(self.servicios_opcionales)) != len(self.servicios_opcionales):
+            raise ValueError("Hay servicios opcionales repetidos")
+        return self
+
+
+class ConceptoResponse(BaseModel):
+    tipo: str
+    descripcion: str
+    cantidad: int
+    precio_unitario: float
+    subtotal: float
+    incluido: bool = False
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CotizacionResponse(BaseModel):
+    tipo_producto: str
+    fecha_inicio: date
+    fecha_fin: date
+    noches: int
+    adultos: int
+    ninos: int
+    infantes: int
+    conceptos: list[ConceptoResponse]
+    total: float
+    estado_vuelo: str | None = None
+    advertencias: list[str] = []
+
+
 class ReservaCreate(BaseModel):
     id_cliente: int
     id_empleado: int | None = None
     id_paquete: int | None = None
-    fecha_inicio: FechaValida
-    fecha_fin: FechaValida
-    numero_personas: int = Field(..., gt=0)
+    # Obligatorias en el flujo anterior; en el nuevo (tipo_producto) las
+    # calcula el backend según el producto.
+    fecha_inicio: FechaValida | None = None
+    fecha_fin: FechaValida | None = None
+    numero_personas: int | None = Field(None, gt=0)
     # Versión de los términos aceptada en el checkout (evidencia de
     # consentimiento); la fecha la pone el servidor.
     terminos_version: str | None = Field(None, max_length=40)
     # Una por intento de reserva (ver Reserva.clave_idempotencia).
     clave_idempotencia: str | None = Field(None, min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
-    # NUEVO: habitaciones reales que se están reservando (precio se calcula en backend, no se confía en el frontend)
+    # Habitaciones reales que se reservan (precio calculado en backend).
     habitaciones: list[HabitacionReservaCreate] | None = None
+    # --- Flujo nuevo: desglose, viajeros, vuelo ---
+    tipo_producto: Literal["hotel", "paquete", "vuelo"] | None = None
+    id_salida: int | None = None
+    id_oferta_vuelo: int | None = None
+    incluir_vuelo: bool = False
+    adultos: int | None = Field(None, ge=1, le=50)
+    ninos: int = Field(0, ge=0, le=50)
+    infantes: int = Field(0, ge=0, le=20)
+    servicios_opcionales: list[int] = []
+    viajeros: list[ViajeroInput] = Field(default=[], max_length=120)
+    solicitudes_especiales: str | None = Field(None, max_length=2000)
+    notas_internas: str | None = Field(None, max_length=4000)  # solo staff
+    descuento: DescuentoInput | None = None  # solo staff
+    # Total que vio el cliente: si el precio cambió entretanto, 409.
+    precio_esperado: float | None = Field(None, ge=0)
+    estado_inicial: Literal["pendiente", "confirmada"] | None = None  # solo staff
 
-    @field_validator("fecha_fin")
-    @classmethod
-    def validate_fechas(cls, v, info):
-        if "fecha_inicio" in info.data and v <= info.data["fecha_inicio"]:
-            raise ValueError("fecha_fin debe ser posterior a fecha_inicio")
-        return v
+    @model_validator(mode="after")
+    def validate_fechas(self):
+        if self.tipo_producto is None:
+            # Flujo anterior: fechas y personas obligatorias, como siempre.
+            if self.fecha_inicio is None or self.fecha_fin is None:
+                raise ValueError("fecha_inicio y fecha_fin son obligatorias")
+            if self.numero_personas is None:
+                raise ValueError("numero_personas es obligatorio")
+            if self.fecha_fin <= self.fecha_inicio:
+                raise ValueError("fecha_fin debe ser posterior a fecha_inicio")
+        return self
+
+    def seleccion(self) -> SeleccionProducto:
+        return SeleccionProducto(
+            tipo_producto=self.tipo_producto,
+            id_paquete=self.id_paquete,
+            id_salida=self.id_salida,
+            id_oferta_vuelo=self.id_oferta_vuelo,
+            incluir_vuelo=self.incluir_vuelo,
+            fecha_inicio=self.fecha_inicio,
+            fecha_fin=self.fecha_fin,
+            adultos=self.adultos or self.numero_personas or 1,
+            ninos=self.ninos,
+            infantes=self.infantes,
+            habitaciones=self.habitaciones or [],
+            servicios_opcionales=self.servicios_opcionales,
+            descuento=self.descuento,
+        )
 
 
 class ReservaUpdate(BaseModel):
@@ -278,6 +541,15 @@ class ReservaResponse(BaseModel):
     # load agregado (selectinload) que evita N+1 al resolver esto por fila.
     pagos: list[PagoResponse] = []
 
+    tipo_producto: str | None = None
+    adultos: int | None = None
+    ninos: int | None = None
+    infantes: int | None = None
+    id_salida: int | None = None
+    id_oferta_vuelo: int | None = None
+    estado_vuelo: str | None = None
+    solicitudes_especiales: str | None = None
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -331,7 +603,29 @@ class ReservaDetailResponse(ReservaResponse):
     # OJO: el modelo SQLAlchemy llama a esta relación "reserva_habitaciones", por eso el alias.
     habitaciones: list[HabitacionReservaResponse] = Field(default=[], validation_alias="reserva_habitaciones")
     empleado: AsesorResponse | None = None
-    # canal_origen y pagos ya vienen heredados de ReservaResponse (ver
-    # arriba) — se quitó la redeclaración duplicada que había acá.
+    conceptos: list[ConceptoResponse] = []
+    viajeros: list[ViajeroResponse] = []
+    salida: SalidaResponse | None = None
+    oferta_vuelo: OfertaVueloResponse | None = None
+    snapshot_producto: dict | None = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class ReservaDetailAdminResponse(ReservaDetailResponse):
+    """Igual que el detalle del cliente + notas internas (solo staff)."""
+
+    notas_internas: str | None = None
+
+
+class NotasInternasUpdate(BaseModel):
+    notas_internas: str | None = Field(None, max_length=4000)
+
+
+class CotizacionVueloInput(BaseModel):
+    """La agencia confirma el precio de un vuelo que estaba 'sujeto a
+    cotización'. Queda como un concepto del desglose y en el historial."""
+
+    precio_total: float = Field(..., gt=0)
+    descripcion: str = Field(..., min_length=3, max_length=200)
+    id_oferta_vuelo: int | None = None
