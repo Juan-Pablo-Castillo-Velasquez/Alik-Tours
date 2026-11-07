@@ -122,3 +122,80 @@ export async function crearClienteConCedula(request, cedula) {
   );
   return cuenta;
 }
+
+// --- Ecosistema de reservas (vuelos y paquetes) ---
+
+/** Login del admin sembrado: respuesta completa (token, roles...). */
+export async function sesionAdmin(request) {
+  return postJson(request, '/auth/login', { username: ADMIN.correo, password: ADMIN.password });
+}
+
+/** Deja al navegador con esa sesión, igual que el login real (AuthContext). */
+export async function abrirSesionEnNavegador(page, sesion, extra = {}) {
+  await page.goto('/');
+  await page.evaluate(
+    ([s, e]) => {
+      localStorage.setItem('token', s.access_token);
+      localStorage.setItem(
+        'usuario',
+        JSON.stringify({ username: s.username, user_id: s.user_id, id_cliente: s.id_cliente, roles: s.roles, verificado: true, activo: true, ...e }),
+      );
+    },
+    [sesion, extra],
+  );
+}
+
+/** Cliente verificado CON perfil de cliente (necesario para reservar). */
+export async function crearClienteConPerfil(request) {
+  const cuenta = await crearClienteVerificado(request);
+  const cliente = await postJson(
+    request,
+    '/api/clientes',
+    { nombre: 'Viajera', apellido: 'Prueba', cedula: cedulaUnica(), correo: cuenta.correo, celular: '3001234567' },
+    cuenta.sesion.access_token,
+  );
+  return { ...cuenta, cliente };
+}
+
+/** Fecha ISO a N días de hoy. */
+export function enDias(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+export async function crearOfertaVuelo(request, token, datos = {}) {
+  return postJson(
+    request,
+    '/api/vuelos',
+    {
+      titulo: unico('Vuelo E2E'),
+      origen_ciudad: 'Bogotá',
+      origen_iata: 'BOG',
+      destino_ciudad: 'Cartagena',
+      destino_iata: 'CTG',
+      fecha_salida: enDias(40),
+      fecha_regreso: enDias(43),
+      precio_adulto: 450000,
+      estado: 'publicada',
+      cupos: 20,
+      ...datos,
+    },
+    token,
+  );
+}
+
+export async function crearPaquete(request, token, datos = {}) {
+  return postJson(
+    request,
+    '/api/paquetes',
+    { nombre_paquete: unico('Paquete E2E'), duracion_dias: 4, noches: 3, precio_base: 1000000, ...datos },
+    token,
+  );
+}
+
+export async function obtenerReserva(request, token, idReserva) {
+  const r = await request.get(`${API_URL}/api/reservas/${idReserva}`, { headers: { Authorization: `Bearer ${token}` } });
+  expect(r.ok()).toBeTruthy();
+  return r.json();
+}
