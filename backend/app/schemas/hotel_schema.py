@@ -29,7 +29,60 @@ class TipoHabitacionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class HabitacionCreate(BaseModel):
+# Catálogo de servicios que el admin puede marcar en cada habitación. Las
+# etiquetas, iconos y categorías viven en el frontend
+# (components/hotel/serviciosHabitacion.ts); aquí solo las claves válidas.
+SERVICIOS_HABITACION = frozenset(
+    {
+        # Baño
+        "ducha", "banera", "agua_caliente", "secador", "articulos_aseo", "toallas", "bata_pantuflas",
+        # Dormitorio
+        "ropa_cama", "almohadas_extra", "cortinas_blackout", "armario", "cuna",
+        # Clima
+        "aire_acondicionado", "ventilador", "calefaccion",
+        # Tecnología
+        "wifi", "tv", "tv_cable", "streaming", "telefono", "enchufes_cama",
+        # Comida y bebida
+        "minibar", "nevera", "cafetera", "hervidor", "microondas", "cocineta", "agua_cortesia",
+        # Comodidad
+        "escritorio", "caja_fuerte", "plancha", "sofa", "zona_estar", "balcon", "terraza", "jacuzzi",
+        # Servicio
+        "limpieza_diaria", "servicio_habitacion", "despertador",
+    }
+)  # fmt: skip
+
+
+class DetallesHabitacion(BaseModel):
+    """Ficha de la habitación (todo opcional). En un PUT, mandar null borra
+    el dato; no mandarlo lo deja como estaba."""
+
+    descripcion: str | None = Field(None, max_length=2000)
+    tamano_m2: int | None = Field(None, gt=0, le=10000)
+    tipo_cama: str | None = Field(None, max_length=80)
+    vista: str | None = Field(None, max_length=80)
+    comodidades: str | None = Field(None, max_length=2000)
+    piso: int | None = Field(None, ge=-5, le=200)
+    tipo_bano: str | None = Field(None, max_length=120)
+    servicios: list[str] | None = Field(None, max_length=60)
+    desayuno_incluido: bool | None = None
+    permite_fumar: bool | None = None
+    admite_mascotas: bool | None = None
+    accesible: bool | None = None
+    cama_extra: bool | None = None
+
+    @field_validator("servicios")
+    @classmethod
+    def validar_servicios(cls, v):
+        if v is None:
+            return v
+        desconocidos = sorted(set(v) - SERVICIOS_HABITACION)
+        if desconocidos:
+            raise ValueError(f"Servicios no reconocidos: {', '.join(desconocidos)}")
+        # Sin duplicados, respetando el orden en que llegaron.
+        return list(dict.fromkeys(v))
+
+
+class HabitacionCreate(DetallesHabitacion):
     # El hotel sale de la URL (POST /api/hoteles/{hotel_id}/habitaciones) y
     # la ruta lo asigna siempre desde ahí. Antes era obligatorio en el body,
     # pero el panel nunca lo mandaba: "Agregar habitación" fallaba con
@@ -40,11 +93,6 @@ class HabitacionCreate(BaseModel):
     numero_habitacion: str = Field(..., min_length=1, max_length=20)
     precio_noche: float = Field(..., ge=0)
     estado: str = Field(default="disponible")
-    descripcion: str | None = Field(None, max_length=2000)
-    tamano_m2: int | None = Field(None, gt=0, le=10000)
-    tipo_cama: str | None = Field(None, max_length=80)
-    vista: str | None = Field(None, max_length=80)
-    comodidades: str | None = Field(None, max_length=2000)
 
     @field_validator("estado")
     @classmethod
@@ -54,15 +102,11 @@ class HabitacionCreate(BaseModel):
         return v
 
 
-class HabitacionUpdate(BaseModel):
+class HabitacionUpdate(DetallesHabitacion):
+    id_tipo_habitacion: int | None = None
     numero_habitacion: str | None = Field(None, min_length=1, max_length=20)  # VARCHAR(20)
     precio_noche: float | None = Field(None, ge=0)
     estado: str | None = None
-    descripcion: str | None = Field(None, max_length=2000)
-    tamano_m2: int | None = Field(None, gt=0, le=10000)
-    tipo_cama: str | None = Field(None, max_length=80)
-    vista: str | None = Field(None, max_length=80)
-    comodidades: str | None = Field(None, max_length=2000)
 
     @field_validator("estado")
     @classmethod
@@ -85,7 +129,25 @@ class HabitacionResponse(BaseModel):
     tipo_cama: str | None = None
     vista: str | None = None
     comodidades: str | None = None
-    imagenes: list["ImagenGaleriaResponse"] = []
+    piso: int | None = None
+    tipo_bano: str | None = None
+    servicios: list[str] = []
+    desayuno_incluido: bool | None = None
+    permite_fumar: bool | None = None
+    admite_mascotas: bool | None = None
+    accesible: bool | None = None
+    cama_extra: bool | None = None
+    imagenes: list["ImagenHabitacionResponse"] = []
+
+    @field_validator("servicios", mode="before")
+    @classmethod
+    def servicios_desde_texto(cls, v):
+        # En la BD se guardan como "wifi,tv,minibar".
+        if v is None:
+            return []
+        if isinstance(v, str):
+            return [s for s in v.split(",") if s]
+        return v
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -213,6 +275,17 @@ class ImagenGaleriaResponse(BaseModel):
     orden: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ImagenHabitacionResponse(ImagenGaleriaResponse):
+    descripcion: str | None = None
+
+
+class ImagenHabitacionUpdate(BaseModel):
+    """Pie de foto y/o marcarla como portada (la primera de la galería)."""
+
+    descripcion: str | None = Field(None, max_length=120)
+    portada: bool = False
 
 
 class HotelDetailResponse(HotelResponse):

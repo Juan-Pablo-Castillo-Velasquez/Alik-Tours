@@ -19,7 +19,7 @@ export interface TipoHabitacionResponse {
   capacidad_personas: number;
 }
 
-export interface HabitacionResponse {
+export interface HabitacionResponse extends DetallesHabitacion {
   id_habitacion: number;
   id_hotel: number;
   id_tipo_habitacion: number;
@@ -27,23 +27,34 @@ export interface HabitacionResponse {
   precio_noche: number;
   estado: string;
   tipo_habitacion?: TipoHabitacionResponse;
-  // Información propia de la habitación (todo opcional).
-  descripcion?: string | null;
-  tamano_m2?: number | null;
-  tipo_cama?: string | null;
-  vista?: string | null;
-  /** Una comodidad por línea. */
-  comodidades?: string | null;
   /** Fotos propias de la habitación (ver POST /hoteles/habitaciones/{id}/imagenes). */
-  imagenes?: ImagenGaleriaResponse[];
+  imagenes?: ImagenHabitacionResponse[];
 }
 
-export interface DetallesHabitacion {
+/** Condiciones sí/no de la habitación. null = no especificado (no se muestra). */
+export type CondicionHabitacion =
+  | "desayuno_incluido"
+  | "permite_fumar"
+  | "admite_mascotas"
+  | "accesible"
+  | "cama_extra";
+
+/** Ficha de la habitación (todo opcional; la vista pública solo muestra lo cargado). */
+export type DetallesHabitacion = {
   descripcion?: string | null;
   tamano_m2?: number | null;
   tipo_cama?: string | null;
   vista?: string | null;
+  /** Otras comodidades, una por línea. */
   comodidades?: string | null;
+  piso?: number | null;
+  tipo_bano?: string | null;
+  /** Claves del catálogo (components/hotel/serviciosHabitacion.ts). */
+  servicios?: string[] | null;
+} & Partial<Record<CondicionHabitacion, boolean | null>>;
+
+export interface ImagenHabitacionResponse extends ImagenGaleriaResponse {
+  descripcion?: string | null;
 }
 
 // Una foto de la galería del hotel (distinta de imagen_url, la portada) --
@@ -191,8 +202,13 @@ export const hotelService = {
   subirFotoHabitacion: (habitacionId: number, imagen: File) => {
     const fd = new FormData();
     fd.append('imagen', imagen);
-    return apiFetch<ImagenGaleriaResponse>(`/hoteles/habitaciones/${habitacionId}/imagenes`, { method: 'POST', body: fd });
+    return apiFetch<ImagenHabitacionResponse>(`/hoteles/habitaciones/${habitacionId}/imagenes`, { method: 'POST', body: fd });
   },
+  editarFotoHabitacion: (habitacionId: number, idImagen: number, cambios: { descripcion?: string | null; portada?: boolean }) =>
+    apiFetch<ImagenHabitacionResponse>(`/hoteles/habitaciones/${habitacionId}/imagenes/${idImagen}`, {
+      method: 'PATCH',
+      body: cambios,
+    }),
   borrarFotoHabitacion: (habitacionId: number, idImagen: number) =>
     apiFetch<{ message: string }>(`/hoteles/habitaciones/${habitacionId}/imagenes/${idImagen}`, { method: 'DELETE' }),
   borrarFotoGaleria: (id: number, idImagen: number) =>

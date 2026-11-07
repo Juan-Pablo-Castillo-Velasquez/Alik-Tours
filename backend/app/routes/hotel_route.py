@@ -32,6 +32,8 @@ from app.schemas.hotel_schema import (
     HotelResponse,
     HotelUpdate,
     ImagenGaleriaResponse,
+    ImagenHabitacionResponse,
+    ImagenHabitacionUpdate,
     TipoHabitacionCreate,
     TipoHabitacionResponse,
 )
@@ -414,12 +416,18 @@ def update_habitacion(
         and HabitacionRepository.get_by_hotel_and_number(db, db_habitacion.id_hotel, nuevo_numero)
     ):
         raise HTTPException(status_code=409, detail="Ya existe habitación con ese número")
+    # El panel también permite cambiar el tipo (Doble -> Suite...).
+    if (
+        habitacion.id_tipo_habitacion is not None
+        and not db.query(TipoHabitacion).filter_by(id_tipo_habitacion=habitacion.id_tipo_habitacion).first()
+    ):
+        raise HTTPException(status_code=404, detail="Tipo de habitación no encontrado")
     actualizada = HabitacionRepository.update(db, habitacion_id, habitacion.model_dump(exclude_unset=True))
     delete_pattern(HOTELES_CACHE_PATTERN)
     return actualizada
 
 
-@router.post("/habitaciones/{habitacion_id}/imagenes", response_model=ImagenGaleriaResponse, status_code=201)
+@router.post("/habitaciones/{habitacion_id}/imagenes", response_model=ImagenHabitacionResponse, status_code=201)
 async def subir_foto_habitacion(
     habitacion_id: int,
     imagen: UploadFile = File(...),
@@ -445,6 +453,29 @@ async def subir_foto_habitacion(
     nueva = HotelRepository.add_imagen_habitacion(db, habitacion_id, url)
     delete_pattern(HOTELES_CACHE_PATTERN)
     return nueva
+
+
+@router.patch("/habitaciones/{habitacion_id}/imagenes/{id_imagen}", response_model=ImagenHabitacionResponse)
+def editar_foto_habitacion(
+    habitacion_id: int,
+    id_imagen: int,
+    cambios: ImagenHabitacionUpdate,
+    db: Session = Depends(get_db),
+    admin_id: int = Depends(require_admin),
+):
+    """Pie de foto y/o marcarla como portada de la habitación."""
+    imagen = HotelRepository.get_imagen_habitacion(db, habitacion_id, id_imagen)
+    if not imagen:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+    actualizada = HotelRepository.actualizar_imagen_habitacion(
+        db,
+        imagen,
+        descripcion=cambios.descripcion,
+        portada=cambios.portada,
+        cambiar_descripcion="descripcion" in cambios.model_fields_set,
+    )
+    delete_pattern(HOTELES_CACHE_PATTERN)
+    return actualizada
 
 
 @router.delete("/habitaciones/{habitacion_id}/imagenes/{id_imagen}")

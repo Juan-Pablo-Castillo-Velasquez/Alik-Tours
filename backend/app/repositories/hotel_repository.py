@@ -260,6 +260,24 @@ class HotelRepository:
         return imagen
 
     @staticmethod
+    def actualizar_imagen_habitacion(
+        db: Session, imagen: ImagenHabitacion, descripcion: str | None, portada: bool, cambiar_descripcion: bool
+    ) -> ImagenHabitacion:
+        if cambiar_descripcion:
+            imagen.descripcion = (descripcion or "").strip() or None
+        if portada:
+            minimo = (
+                db.query(func.min(ImagenHabitacion.orden))
+                .filter(ImagenHabitacion.id_habitacion == imagen.id_habitacion)
+                .scalar()
+            )
+            if minimo is not None and imagen.orden > minimo:
+                imagen.orden = minimo - 1
+        db.commit()
+        db.refresh(imagen)
+        return imagen
+
+    @staticmethod
     def get_imagen_habitacion(db: Session, id_habitacion: int, id_imagen: int):
         """Por (id_imagen, id_habitacion) juntos: nunca borra la foto de otra habitación."""
         return (
@@ -341,9 +359,20 @@ class HabitacionRepository:
             db.query(Habitacion).filter(Habitacion.id_hotel == hotel_id, Habitacion.numero_habitacion == numero).first()
         )
 
+    # Campos obligatorios: un null en el PUT se ignora. El resto (la ficha)
+    # sí se puede borrar mandando null desde el panel.
+    CAMPOS_OBLIGATORIOS = frozenset({"numero_habitacion", "precio_noche", "estado", "id_tipo_habitacion"})
+
+    @staticmethod
+    def _a_columnas(data: dict) -> dict:
+        datos = dict(data)
+        if isinstance(datos.get("servicios"), list):
+            datos["servicios"] = ",".join(datos["servicios"]) or None
+        return datos
+
     @staticmethod
     def create(db: Session, habitacion_data: dict):
-        habitacion = Habitacion(**habitacion_data)
+        habitacion = Habitacion(**HabitacionRepository._a_columnas(habitacion_data))
         db.add(habitacion)
         db.commit()
         db.refresh(habitacion)
@@ -353,9 +382,10 @@ class HabitacionRepository:
     def update(db: Session, habitacion_id: int, habitacion_data: dict):
         habitacion = db.query(Habitacion).filter(Habitacion.id_habitacion == habitacion_id).first()
         if habitacion:
-            for key, value in habitacion_data.items():
-                if value is not None:
-                    setattr(habitacion, key, value)
+            for key, value in HabitacionRepository._a_columnas(habitacion_data).items():
+                if value is None and key in HabitacionRepository.CAMPOS_OBLIGATORIOS:
+                    continue
+                setattr(habitacion, key, value)
             db.commit()
             db.refresh(habitacion)
         return habitacion

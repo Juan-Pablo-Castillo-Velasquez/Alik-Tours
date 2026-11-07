@@ -27,7 +27,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import CalendarioOcupacion from "../components/hotel/CalendarioOcupacion";
-import DetalleHabitacion, { DatosHabitacion } from "../components/hotel/DetalleHabitacion";
+import DetalleHabitacion, { DatosHabitacion, ServiciosDestacados } from "../components/hotel/DetalleHabitacion";
 import Footer from "../components/Footer";
 import HalloweenAccentDiscreto from "../components/HalloweenAccentDiscreto";
 import Navbar from "../components/Navbar";
@@ -614,7 +614,13 @@ export default function HotelDetail() {
                         >
                           {/* Foto de la habitación: la suya si la tiene;
                               si no, una de referencia marcada como tal. */}
-                          <div className="relative h-40 md:h-auto md:w-48 shrink-0 overflow-hidden bg-muted">
+                          <div
+                            className="relative h-40 md:h-auto md:w-48 shrink-0 overflow-hidden bg-muted cursor-zoom-in"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHabitacionDetalle(hab);
+                            }}
+                          >
                             <img
                               src={
                                 hab.imagenes && hab.imagenes.length > 0
@@ -663,6 +669,7 @@ export default function HotelDetail() {
                             {/* Antes decía "Cama doble" en TODAS las
                                 habitaciones; ahora solo lo que está cargado. */}
                             <DatosHabitacion hab={hab} />
+                            <ServiciosDestacados hab={hab} />
 
                             <button
                               type="button"
@@ -672,7 +679,9 @@ export default function HotelDetail() {
                               }}
                               className="mt-3 text-sm font-semibold text-primary hover:underline"
                             >
-                              Ver detalles y fotos
+                              {hab.imagenes && hab.imagenes.length > 0
+                                ? `Ver detalles y ${hab.imagenes.length} ${hab.imagenes.length === 1 ? "foto" : "fotos"}`
+                                : "Ver detalles"}
                             </button>
 
                             {/* Fechas ya ocupadas — dato real (reservas
@@ -961,6 +970,7 @@ export default function HotelDetail() {
       <DetalleHabitacion
         hab={habitacionDetalle}
         fotoReferencia={habitacionDetalle ? getRoomImage(habitacionDetalle.id_habitacion) : ""}
+        hotel={hotel}
         onClose={() => setHabitacionDetalle(null)}
         onElegir={(h) => {
           setSelectedHabitacion(h);

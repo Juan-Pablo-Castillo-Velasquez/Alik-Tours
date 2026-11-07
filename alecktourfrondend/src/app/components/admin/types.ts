@@ -1,3 +1,4 @@
+import type { DetallesHabitacion } from "../../services/hotel.service";
 import { BASE_URL } from "../../api/v1/api";
 
 // Convierte una ruta relativa de foto de perfil (ej. "/uploads/perfiles/xxx.jpg",
@@ -90,19 +91,15 @@ export interface TipoHabitacionAdmin {
 // Antes solo declaraba { id_habitacion: number } — el backend (HotelDetailResponse)
 // ya manda la habitación completa en cada hotel de GET /hoteles/, solo faltaba
 // declararlo acá. Usado por el selector de hotel/habitación de Crear Reserva.
-export interface HabitacionAdmin {
+export interface HabitacionAdmin extends DetallesHabitacion {
   id_habitacion: number;
   id_hotel: number;
+  id_tipo_habitacion?: number;
   numero_habitacion: string;
   precio_noche: number;
   estado: "disponible" | "ocupada" | "mantenimiento";
   tipo_habitacion?: TipoHabitacionAdmin | null;
-  descripcion?: string | null;
-  tamano_m2?: number | null;
-  tipo_cama?: string | null;
-  vista?: string | null;
-  comodidades?: string | null;
-  imagenes?: { id_imagen: number; url: string; orden: number }[];
+  imagenes?: { id_imagen: number; url: string; orden: number; descripcion?: string | null }[];
 }
 
 export interface HotelData {

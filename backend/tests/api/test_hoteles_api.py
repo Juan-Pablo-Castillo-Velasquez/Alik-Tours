@@ -303,3 +303,68 @@ class TestFotosYDetallesDeHabitacion:
         )
 
         assert r.status_code == 403
+
+    def test_ficha_completa_servicios_y_condiciones(self, client, admin, tipo_doble):
+        h = self._habitacion(
+            client,
+            admin,
+            tipo_doble,
+            piso=4,
+            tipo_bano="Privado con ducha",
+            servicios=["wifi", "minibar", "wifi"],
+            desayuno_incluido=True,
+            permite_fumar=False,
+        )
+
+        assert h["servicios"] == ["wifi", "minibar"]  # sin duplicados
+        assert (h["piso"], h["tipo_bano"]) == (4, "Privado con ducha")
+        assert (h["desayuno_incluido"], h["permite_fumar"], h["admite_mascotas"]) == (True, False, None)
+
+    def test_servicio_desconocido_responde_422(self, client, admin, tipo_doble):
+        id_hotel = client.post("/api/hoteles/", json=_hotel(), headers=admin).json()["id_hotel"]
+        r = client.post(
+            f"/api/hoteles/{id_hotel}/habitaciones",
+            json={
+                "id_tipo_habitacion": tipo_doble.id_tipo_habitacion,
+                "numero_habitacion": "1",
+                "precio_noche": 1,
+                "servicios": ["helipuerto"],
+            },
+            headers=admin,
+        )
+        assert r.status_code == 422
+
+    def test_el_admin_puede_borrar_datos_de_la_ficha_con_null(self, client, admin, tipo_doble):
+        h = self._habitacion(client, admin, tipo_doble, vista="Mar", servicios=["tv"], accesible=True)
+
+        r = client.put(
+            f"/api/hoteles/habitaciones/{h['id_habitacion']}",
+            json={"vista": None, "servicios": None, "accesible": None, "precio_noche": None},
+            headers=admin,
+        )
+
+        assert r.status_code == 200
+        body = r.json()
+        assert (body["vista"], body["servicios"], body["accesible"]) == (None, [], None)
+        assert body["precio_noche"] == 350000  # obligatorio: el null se ignora
+
+    def test_pie_de_foto_y_portada(self, client, admin, tipo_doble, sin_archivos_reales):
+        h = self._habitacion(client, admin, tipo_doble)
+        ruta = f"/api/hoteles/habitaciones/{h['id_habitacion']}/imagenes"
+        f1 = client.post(ruta, files={"imagen": ("a.png", b"img", "image/png")}, headers=admin).json()
+        f2 = client.post(ruta, files={"imagen": ("b.png", b"img", "image/png")}, headers=admin).json()
+
+        r = client.patch(f"{ruta}/{f2['id_imagen']}", json={"descripcion": " Baño ", "portada": True}, headers=admin)
+
+        assert r.status_code == 200
+        fotos = client.get(f"/api/hoteles/{h['id_hotel']}").json()["habitaciones"][0]["imagenes"]
+        assert [f["id_imagen"] for f in fotos] == [f2["id_imagen"], f1["id_imagen"]]
+        assert fotos[0]["descripcion"] == "Baño"
+
+    def test_cambiar_tipo_de_habitacion_y_tipo_inexistente(self, client, admin, tipo_doble):
+        h = self._habitacion(client, admin, tipo_doble)
+        ruta = f"/api/hoteles/habitaciones/{h['id_habitacion']}"
+
+        assert client.put(ruta, json={"id_tipo_habitacion": 999999}, headers=admin).status_code == 404
+        ok = client.put(ruta, json={"id_tipo_habitacion": tipo_doble.id_tipo_habitacion}, headers=admin)
+        assert ok.status_code == 200

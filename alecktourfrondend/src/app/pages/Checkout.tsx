@@ -17,6 +17,7 @@ import { clienteService } from "../services/cliente.service";
 import { HabitacionResponse, HotelDetailResponse, hotelService, RangoOcupado } from "../services/hotel.service";
 import CalendarioOcupacion from "../components/hotel/CalendarioOcupacion";
 import { listaComodidades } from "../components/hotel/DetalleHabitacion";
+import { serviciosAgrupados } from "../components/hotel/serviciosHabitacion";
 import { resolveFotoUrl } from "../components/admin/types";
 import { MetodoPago, pagoService, reservaService } from "../services/reserva.service";
 import { MetodoPagoGuardado, metodoPagoGuardadoService } from "../services/metodoPagoGuardado.service";
@@ -939,10 +940,17 @@ export default function Checkout() {
                           {habitacion.vista ? ` · Vista: ${habitacion.vista}` : ""}
                           {` · $${precioPorNoche.toLocaleString('es-CO')} / noche`}
                         </p>
-                        {listaComodidades(habitacion.comodidades).length > 0 && (
-                          <p className="text-[11px] text-muted-foreground mt-1">
-                            Incluye: {listaComodidades(habitacion.comodidades).join(" · ")}
-                          </p>
+                        {(() => {
+                          const incluye = [
+                            ...serviciosAgrupados(habitacion.servicios).flatMap((c) => c.servicios.map((s) => s.etiqueta)),
+                            ...listaComodidades(habitacion.comodidades),
+                          ];
+                          return incluye.length > 0 ? (
+                            <p className="text-[11px] text-muted-foreground mt-1">Incluye: {incluye.join(" · ")}</p>
+                          ) : null;
+                        })()}
+                        {habitacion.desayuno_incluido === true && (
+                          <p className="text-[11px] font-semibold text-success mt-1">Desayuno incluido</p>
                         )}
                       </div>
                     </div>

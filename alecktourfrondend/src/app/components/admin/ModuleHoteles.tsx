@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import {
   Search, Trash2, Pencil, PlusCircle, Star, MapPin, Bed, Hotel, AlertTriangle,
-  Eye, Plus, X, Clock, Loader2, DoorOpen, ImageIcon, ImagePlus,
+  Eye, X, Clock, Loader2, DoorOpen, ImageIcon, ImagePlus,
 } from "lucide-react";
 import { HotelData, inputCls, labelCls, resolveFotoUrl } from "./types";
 import { apiFetch } from "../../api/v1/api";
 import { hotelService, TipoHabitacionResponse, HabitacionResponse } from "../../services/hotel.service";
 import AdminModal from "./ui/AdminModal";
+import FormHabitacion from "./FormHabitacion";
 import StatCard from "./ui/StatCard";
 import SectionHeader from "./ui/SectionHeader";
 import EmptyState from "./ui/EmptyState";
@@ -26,12 +27,6 @@ const EMPTY_FORM = {
 // `habitaciones`, todo en una sola transacción en el backend).
 type HabitacionNueva = { id_tipo_habitacion: string; numero_habitacion: string; precio_noche: string; estado: string };
 const HABITACION_NUEVA_VACIA: HabitacionNueva = { id_tipo_habitacion: "", numero_habitacion: "", precio_noche: "", estado: "disponible" };
-
-const EMPTY_HAB_FORM = {
-  id_tipo_habitacion: "", numero_habitacion: "", precio_noche: "", estado: "disponible",
-  // Información que ve el cliente en "Ver detalles" de la habitación.
-  descripcion: "", tamano_m2: "", tipo_cama: "", vista: "", comodidades: "",
-};
 
 interface Props {
   hoteles: HotelData[];
@@ -216,15 +211,11 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
   // foto real por hotel, ver POST/DELETE /hoteles/{id}/galeria.
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [galeriaMsg, setGaleriaMsg] = useState("");
-  const [habForm, setHabForm] = useState(EMPTY_HAB_FORM);
-  const [subiendoFotoHab, setSubiendoFotoHab] = useState(false);
   const [editingHabId, setEditingHabId] = useState<number | null>(null);
   const [habMsg, setHabMsg] = useState("");
-  const [savingHab, setSavingHab] = useState(false);
 
   function abrirDetalle(h: HotelData) {
     setDetailHotel(h);
-    setHabForm(EMPTY_HAB_FORM);
     setEditingHabId(null);
     setHabMsg("");
     setGaleriaMsg("");
@@ -242,7 +233,6 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
   function cerrarDetalle() {
     setDetailHotel(null);
     setFechasOcupadas({});
-    setHabForm(EMPTY_HAB_FORM);
     setEditingHabId(null);
     setHabMsg("");
     setGaleriaMsg("");
@@ -260,60 +250,20 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
 
   function openHabEdit(hab: HabitacionResponse) {
     setEditingHabId(hab.id_habitacion);
-    setHabForm({
-      id_tipo_habitacion: String(hab.id_tipo_habitacion),
-      numero_habitacion: hab.numero_habitacion,
-      precio_noche: String(hab.precio_noche),
-      estado: hab.estado,
-      descripcion: hab.descripcion ?? "",
-      tamano_m2: hab.tamano_m2 ? String(hab.tamano_m2) : "",
-      tipo_cama: hab.tipo_cama ?? "",
-      vista: hab.vista ?? "",
-      comodidades: hab.comodidades ?? "",
-    });
     setHabMsg("");
   }
 
   function openHabCreate() {
     setEditingHabId(null);
-    setHabForm(EMPTY_HAB_FORM);
     setHabMsg("");
   }
 
-  async function handleHabSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // Recarga el hotel abierto en el pop-up con lo ya guardado en la BD (en
+  // vez de reconstruirlo a mano en el cliente) y avisa a la tabla.
+  async function recargarHotelAbierto() {
     if (!detailHotel) return;
-    setHabMsg("");
-    setSavingHab(true);
-    try {
-      const payload = {
-        id_tipo_habitacion: parseInt(habForm.id_tipo_habitacion, 10),
-        numero_habitacion: habForm.numero_habitacion.trim(),
-        precio_noche: parseFloat(habForm.precio_noche),
-        estado: habForm.estado,
-        descripcion: habForm.descripcion.trim() || null,
-        tamano_m2: habForm.tamano_m2 ? parseInt(habForm.tamano_m2, 10) : null,
-        tipo_cama: habForm.tipo_cama.trim() || null,
-        vista: habForm.vista.trim() || null,
-        comodidades: habForm.comodidades.trim() || null,
-      };
-      if (editingHabId) {
-        await hotelService.updateHabitacion(editingHabId, payload);
-      } else {
-        await hotelService.createHabitacion(detailHotel.id_hotel, payload);
-      }
-      onHabitacionesChanged?.();
-      // Refresca el hotel abierto en el pop-up con los datos ya guardados
-      // en la BD, en vez de tratar de reconstruirlo a mano en el cliente.
-      const actualizado = await hotelService.getById(detailHotel.id_hotel);
-      setDetailHotel(actualizado);
-      setHabForm(EMPTY_HAB_FORM);
-      setEditingHabId(null);
-    } catch (err: any) {
-      setHabMsg(err?.message || "No se pudo guardar la habitación");
-    } finally {
-      setSavingHab(false);
-    }
+    setDetailHotel(await hotelService.getById(detailHotel.id_hotel));
+    onHabitacionesChanged?.();
   }
 
   async function handleHabDelete(id_habitacion: number) {
@@ -346,32 +296,6 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
 
   // Fotos propias de la habitación que se está editando.
   const habEditada = (detailHotel?.habitaciones ?? []).find((h) => h.id_habitacion === editingHabId);
-
-  async function handleSubirFotoHabitacion(file: File | undefined) {
-    if (!file || !detailHotel || !editingHabId) return;
-    setHabMsg("");
-    setSubiendoFotoHab(true);
-    try {
-      await hotelService.subirFotoHabitacion(editingHabId, file);
-      setDetailHotel(await hotelService.getById(detailHotel.id_hotel));
-      onHabitacionesChanged?.();
-    } catch (err: any) {
-      setHabMsg(err?.message || "No se pudo subir la foto de la habitación");
-    } finally {
-      setSubiendoFotoHab(false);
-    }
-  }
-
-  async function handleBorrarFotoHabitacion(id_imagen: number) {
-    if (!detailHotel || !editingHabId) return;
-    try {
-      await hotelService.borrarFotoHabitacion(editingHabId, id_imagen);
-      setDetailHotel(await hotelService.getById(detailHotel.id_hotel));
-      onHabitacionesChanged?.();
-    } catch (err: any) {
-      setHabMsg(err?.message || "No se pudo eliminar la foto");
-    }
-  }
 
   async function handleBorrarFotoGaleria(id_imagen: number) {
     if (!detailHotel) return;
@@ -752,90 +676,20 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
               })}
             </div>
 
-            <form onSubmit={handleHabSubmit} className="space-y-2.5 border-t border-border pt-4">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                  {editingHabId ? "Editar habitación" : "Agregar habitación"}
-                </p>
-                {editingHabId && (
-                  <button type="button" onClick={openHabCreate} className="text-[11px] font-medium text-muted-foreground hover:text-foreground flex items-center gap-1">
-                    <X className="w-3 h-3" /> Cancelar edición
-                  </button>
-                )}
-              </div>
-              {habMsg && <p className="text-xs text-destructive">{habMsg}</p>}
-              <div className="grid grid-cols-2 gap-2.5">
-                <select value={habForm.id_tipo_habitacion}
-                  onChange={(e) => setHabForm({ ...habForm, id_tipo_habitacion: e.target.value })}
-                  className={inputCls} required>
-                  <option value="">Tipo de habitación...</option>
-                  {tiposHabitacion.map((t) => (
-                    <option key={t.id_tipo_habitacion} value={t.id_tipo_habitacion}>
-                      {t.nombre_tipo} (hasta {t.capacidad_personas})
-                    </option>
-                  ))}
-                </select>
-                <input value={habForm.numero_habitacion}
-                  onChange={(e) => setHabForm({ ...habForm, numero_habitacion: e.target.value })}
-                  className={inputCls} required placeholder="Número (ej: 204)" />
-                <input type="number" min="0" step="1000" value={habForm.precio_noche}
-                  onChange={(e) => setHabForm({ ...habForm, precio_noche: e.target.value })}
-                  className={inputCls} required placeholder="Precio/noche" />
-                <select value={habForm.estado}
-                  onChange={(e) => setHabForm({ ...habForm, estado: e.target.value })}
-                  className={inputCls}>
-                  <option value="disponible">Disponible</option>
-                  <option value="ocupada">Ocupada</option>
-                  <option value="mantenimiento">Mantenimiento</option>
-                </select>
-                <input type="number" min="1" value={habForm.tamano_m2}
-                  onChange={(e) => setHabForm({ ...habForm, tamano_m2: e.target.value })}
-                  className={inputCls} placeholder="Tamaño en m² (opcional)" aria-label="Tamaño en metros cuadrados" />
-                <input value={habForm.tipo_cama} maxLength={80}
-                  onChange={(e) => setHabForm({ ...habForm, tipo_cama: e.target.value })}
-                  className={inputCls} placeholder="Camas (ej: 1 king)" aria-label="Tipo de cama" />
-                <input value={habForm.vista} maxLength={80}
-                  onChange={(e) => setHabForm({ ...habForm, vista: e.target.value })}
-                  className={inputCls + " col-span-2"} placeholder="Vista (ej: al mar, a la ciudad)" aria-label="Vista" />
-              </div>
-              <textarea value={habForm.descripcion} maxLength={2000} rows={2}
-                onChange={(e) => setHabForm({ ...habForm, descripcion: e.target.value })}
-                className={inputCls + " resize-none"} placeholder="Descripción de la habitación (opcional)" aria-label="Descripción de la habitación" />
-              <textarea value={habForm.comodidades} maxLength={2000} rows={3}
-                onChange={(e) => setHabForm({ ...habForm, comodidades: e.target.value })}
-                className={inputCls + " resize-none"} placeholder={"Comodidades, una por línea:\nAire acondicionado\nMinibar\nBalcón"} aria-label="Comodidades de la habitación" />
-              {editingHabId ? (
-                <div className="space-y-1.5">
-                  <p className="text-[11px] font-semibold text-muted-foreground">Fotos de esta habitación</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {(habEditada?.imagenes ?? []).map((img) => (
-                      <div key={img.id_imagen} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
-                        <img src={resolveFotoUrl(img.url)} alt="" className="w-full h-full object-cover" />
-                        <button type="button" onClick={() => handleBorrarFotoHabitacion(img.id_imagen)}
-                          className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                          aria-label="Eliminar foto de la habitación">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                    <label className="flex flex-col items-center justify-center gap-1 aspect-square rounded-lg border-2 border-dashed border-border bg-muted/40 cursor-pointer hover:border-primary/40 transition-colors text-muted-foreground">
-                      {subiendoFotoHab ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><ImagePlus className="w-4 h-4" /><span className="text-[10px]">Agregar</span></>)}
-                      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={subiendoFotoHab}
-                        onChange={(e) => handleSubirFotoHabitacion(e.target.files?.[0])} aria-label="Subir foto de la habitación" />
-                    </label>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[11px] text-muted-foreground/70">Las fotos de la habitación se agregan después de crearla (botón editar).</p>
-              )}
-              <button type="submit" disabled={savingHab}
-                className="w-full py-2 bg-gradient-to-r from-primary to-[#A13B55] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50 text-sm flex items-center justify-center gap-1.5">
-                <Plus className="w-4 h-4" /> {savingHab ? "Guardando..." : editingHabId ? "Guardar cambios" : "Agregar habitación"}
-              </button>
-              {tiposHabitacion.length === 0 && (
-                <p className="text-[11px] text-muted-foreground/70">Todavía no hay ningún tipo de habitación registrado en el sistema.</p>
-              )}
-            </form>
+            {habMsg && <p className="text-xs text-destructive border-t border-border pt-3">{habMsg}</p>}
+            <FormHabitacion
+              key={editingHabId ?? "nueva"}
+              idHotel={detailHotel.id_hotel}
+              habitacion={habEditada ?? null}
+              tipos={tiposHabitacion}
+              onCambio={recargarHotelAbierto}
+              onGuardada={async (aviso) => {
+                await recargarHotelAbierto();
+                setEditingHabId(null);
+                setHabMsg(aviso ?? "");
+              }}
+              onCancelar={openHabCreate}
+            />
 
             {/* Galería de fotos -- distinta de la portada (que se sube en
                 el modal de crear/editar): antes no existía ninguna forma

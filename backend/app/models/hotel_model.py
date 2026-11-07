@@ -153,6 +153,18 @@ class Habitacion(Base):
     # Comodidades de la habitación, una por línea (aire acondicionado,
     # minibar, balcón...).
     comodidades = Column(Text, nullable=True)
+    # Ficha completa: piso, tipo de baño, servicios marcados del catálogo
+    # (claves separadas por coma, ver SERVICIOS_HABITACION en el schema) y
+    # condiciones. Los booleanos son nullable a propósito: None = "no
+    # especificado" y la ficha no lo muestra (no se asume ni sí ni no).
+    piso = Column(Integer, nullable=True)
+    tipo_bano = Column(String(120), nullable=True)
+    servicios = Column(Text, nullable=True)
+    desayuno_incluido = Column(Boolean, nullable=True)
+    permite_fumar = Column(Boolean, nullable=True)
+    admite_mascotas = Column(Boolean, nullable=True)
+    accesible = Column(Boolean, nullable=True)
+    cama_extra = Column(Boolean, nullable=True)
 
     hotel = relationship("Hotel", back_populates="habitaciones")
     tipo_habitacion = relationship("TipoHabitacion", back_populates="habitaciones")
@@ -180,6 +192,8 @@ class ImagenHabitacion(Base):
     )
     url = Column(String(500), nullable=False)
     orden = Column(Integer, nullable=False, default=0)
+    # Pie de foto opcional ("Baño", "Vista desde el balcón"...).
+    descripcion = Column(String(120), nullable=True)
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
 
     habitacion = relationship("Habitacion", back_populates="imagenes")
