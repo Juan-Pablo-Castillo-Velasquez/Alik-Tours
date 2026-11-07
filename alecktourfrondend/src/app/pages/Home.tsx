@@ -11,6 +11,7 @@ import OffersHighlight from "../components/OffersHighlight";
 import PromocionAccordeon from "../components/PromocionAccordeon";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import Testimonials from "../components/Testimonials";
+import VuelosInicio from "../components/VuelosInicio";
 import WhyChooseUs from "../components/WhyChooseUs";
 import { useSeoMeta } from "../hooks/useSeoMeta";
 
@@ -28,6 +29,8 @@ export default function Home() {
       <Hero />
       <BannersPromocionales />
       <PromocionAccordeon />
+      {/* Zona de vuelos: buscador rápido y próximas ofertas aéreas. */}
+      <VuelosInicio />
       <Benefits />
       <DestinationsGrid />
       {/* Videos que el admin marca "Mostrar en el inicio" (si no hay, no ocupa espacio). */}

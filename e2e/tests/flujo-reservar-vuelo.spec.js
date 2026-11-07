@@ -35,7 +35,7 @@ test('buscar, ver y reservar un vuelo para un adulto y un niño', async ({ page,
   await page.getByLabel('Nombres del pasajero 2').fill('Tomás');
   await page.getByLabel('Apellidos del pasajero 2').fill('Prueba');
   await page.getByLabel('Fecha de nacimiento del pasajero 2').fill('2018-07-01');
-  await page.getByLabel('Documento del pasajero 2').fill('1122334455');
+  await page.getByLabel('Documento del pasajero 2', { exact: true }).fill('1122334455');
   await page.getByRole('checkbox', { name: /Acepto los/ }).check();
   await page.getByRole('button', { name: 'Confirmar reserva' }).click();
 

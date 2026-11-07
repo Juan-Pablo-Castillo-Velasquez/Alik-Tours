@@ -131,10 +131,14 @@ export default function ReservarPaquete() {
       .getById(usuario.id_cliente)
       .then((c) => {
         setCelular(c.celular ?? null);
-        setViajeros((v) => {
-          if (v.length) return v;
-          return [{ clave: "t", tipo: "adulto", es_titular: true, nombres: c.nombre ?? "", apellidos: c.apellido ?? "", tipo_documento: "CC", numero_documento: c.cedula ?? "", fecha_nacimiento: (c as any).fecha_nacimiento ?? "", nacionalidad: "Colombiana" }];
-        });
+        // El titular (primer adulto) se llena con los datos del cliente.
+        setViajeros((v) =>
+          v.map((x, i) =>
+            i === 0 && !x.nombres
+              ? { ...x, es_titular: true, nombres: c.nombre ?? "", apellidos: c.apellido ?? "", tipo_documento: "CC", numero_documento: c.cedula ?? "", fecha_nacimiento: (c as any).fecha_nacimiento ?? "" }
+              : x,
+          ),
+        );
       })
       .catch(() => {});
   }, [usuario?.id_cliente]);
@@ -159,7 +163,8 @@ export default function ReservarPaquete() {
         const extra = Array.from({ length: Math.max(n - actuales.length, 0) }, (_, i) => ({ clave: `${t}-${Date.now()}-${i}`, tipo: t, nombres: "", apellidos: "", tipo_documento: t === "adulto" ? "CC" : "TI", numero_documento: "", fecha_nacimiento: "", nacionalidad: "Colombiana" }) as ViajeroForm);
         return [...actuales, ...extra].slice(0, n);
       };
-      return [...porTipo("adulto", adultos), ...porTipo("nino", ninos), ...porTipo("infante", infantes)];
+      const lista = [...porTipo("adulto", adultos), ...porTipo("nino", ninos), ...porTipo("infante", infantes)];
+      return lista.map((x, i) => ({ ...x, es_titular: i === 0 }));
     });
   }, [adultos, ninos, infantes]);
 

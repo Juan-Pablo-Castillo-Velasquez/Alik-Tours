@@ -162,7 +162,7 @@ export function hora(h?: string | null): string | null {
 }
 
 export const vueloService = {
-  listarPublicas: (filtros: Omit<FiltrosOfertas, 'estado' | 'q' | 'pagina' | 'por_pagina'> & { solo_independientes?: boolean } = {}) =>
+  listarPublicas: (filtros: Omit<FiltrosOfertas, 'estado' | 'q' | 'pagina' | 'por_pagina'> & { solo_independientes?: boolean; limit?: number } = {}) =>
     apiFetch<OfertaVuelo[]>(`/vuelos${query(filtros)}`),
   listarAdmin: (filtros: FiltrosOfertas = {}) => apiFetch<PaginaOfertas>(`/vuelos/admin${query({ ...filtros })}`),
   obtener: (id: number) => apiFetch<OfertaVueloAdmin>(`/vuelos/${id}`),
