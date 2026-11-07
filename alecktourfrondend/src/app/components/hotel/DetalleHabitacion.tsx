@@ -163,9 +163,23 @@ export default function DetalleHabitacion({ hab, fotoReferencia, hotel, onClose,
   const estado = ESTADOS[hab.estado];
 
   const esenciales: { icono: typeof Users; titulo: string; valor: string }[] = [];
-  if (hab.tipo_habitacion?.capacidad_personas != null)
-    esenciales.push({ icono: Users, titulo: "Huéspedes", valor: `Hasta ${hab.tipo_habitacion.capacidad_personas} ${hab.tipo_habitacion.capacidad_personas === 1 ? "persona" : "personas"}` });
-  if (hab.tipo_cama) esenciales.push({ icono: Bed, titulo: "Camas", valor: hab.tipo_cama });
+  if (hab.tipo_habitacion?.capacidad_personas != null) {
+    const detalle = [
+      hab.capacidad_adultos != null ? `${hab.capacidad_adultos} adulto(s)` : null,
+      hab.capacidad_ninos != null ? `${hab.capacidad_ninos} niño(s)` : null,
+    ].filter(Boolean).join(" y ");
+    esenciales.push({
+      icono: Users,
+      titulo: "Huéspedes",
+      valor: `Hasta ${hab.tipo_habitacion.capacidad_personas} ${hab.tipo_habitacion.capacidad_personas === 1 ? "persona" : "personas"}${detalle ? ` (máx. ${detalle})` : ""}`,
+    });
+  }
+  if (hab.tipo_cama || hab.cantidad_camas != null)
+    esenciales.push({
+      icono: Bed,
+      titulo: "Camas",
+      valor: [hab.cantidad_camas != null ? `${hab.cantidad_camas} cama(s)` : null, hab.tipo_cama].filter(Boolean).join(" · "),
+    });
   if (hab.tamano_m2 != null) esenciales.push({ icono: Maximize2, titulo: "Tamaño", valor: `${hab.tamano_m2} m²` });
   if (hab.vista) esenciales.push({ icono: Eye, titulo: "Vista", valor: hab.vista });
   if (hab.tipo_bano) esenciales.push({ icono: Bath, titulo: "Baño", valor: hab.tipo_bano });
@@ -262,6 +276,7 @@ export default function DetalleHabitacion({ hab, fotoReferencia, hotel, onClose,
                   <h2 className="text-2xl font-bold text-foreground">{nombre}</h2>
                   {estado && <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${estado.cls}`}>{estado.texto}</span>}
                 </div>
+                {hab.nombre && <p className="mt-1 font-semibold text-foreground">{hab.nombre}</p>}
                 <p className="text-sm text-muted-foreground mt-1">
                   Habitación {hab.numero_habitacion}
                   {hotel?.nombre_hotel ? ` · ${hotel.nombre_hotel}` : ""}
@@ -340,6 +355,12 @@ export default function DetalleHabitacion({ hab, fotoReferencia, hotel, onClose,
                       );
                     })}
                   </ul>
+                </Seccion>
+              )}
+
+              {hab.politica_cancelacion && (
+                <Seccion titulo="Cancelación de esta habitación">
+                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{hab.politica_cancelacion}</p>
                 </Seccion>
               )}
 

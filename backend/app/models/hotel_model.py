@@ -8,6 +8,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Time,
     UniqueConstraint,
     func,
 )
@@ -39,6 +40,28 @@ class Hotel(Base):
     # Nullable: la vista pública omite la sección si está vacía.
     descripcion = Column(Text, nullable=True)
     politicas = Column(Text, nullable=True)
+    # --- Ficha completa (todo opcional; la vista pública muestra solo lo cargado) ---
+    tipo_alojamiento = Column(String(40))  # hotel, hostal, cabaña, glamping...
+    departamento = Column(String(100))
+    sitio_web = Column(String(255))
+    latitud = Column(Numeric(9, 6))
+    longitud = Column(Numeric(9, 6))
+    # De dónde sale `calificacion` (estrellas): ej. "Registro Nacional de Turismo".
+    fuente_calificacion = Column(String(120))
+    # Oculto = no aparece en el sitio público (el panel lo sigue viendo).
+    publicado = Column(Boolean, nullable=False, default=True, server_default="true")
+    hora_checkin = Column(Time)
+    hora_checkout = Column(Time)
+    politica_entrada_anticipada = Column(Text)
+    politica_salida_tardia = Column(Text)
+    edad_minima = Column(Integer)
+    politica_ninos = Column(Text)
+    politica_mascotas = Column(Text)
+    politica_cancelacion = Column(Text)
+    condiciones_reserva = Column(Text)
+    impuestos_cargos = Column(Text)
+    restricciones = Column(Text)
+    informacion_adicional = Column(Text)
 
     habitaciones = relationship("Habitacion", back_populates="hotel", cascade="all, delete-orphan")
     hotel_caracteristicas = relationship("HotelCaracteristica", back_populates="hotel", cascade="all, delete-orphan")
@@ -115,6 +138,10 @@ class HotelCaracteristica(Base):
         Integer, ForeignKey("caracteristicas_hotel.id_caracteristica", ondelete="CASCADE"), primary_key=True
     )
     disponible = Column(Boolean, default=True)
+    # incluido | de_pago | no_disponible. NULL = registro anterior: solo se
+    # sabe que existe ("Disponible"), no si tiene costo.
+    estado = Column(String(15))
+    nota = Column(String(150))
 
     hotel = relationship("Hotel", back_populates="hotel_caracteristicas")
     caracteristica = relationship("Caracteristica", back_populates="hotel_caracteristicas")
@@ -165,6 +192,12 @@ class Habitacion(Base):
     admite_mascotas = Column(Boolean, nullable=True)
     accesible = Column(Boolean, nullable=True)
     cama_extra = Column(Boolean, nullable=True)
+    nombre = Column(String(100))  # nombre comercial ("Suite vista al mar")
+    capacidad_adultos = Column(Integer)
+    capacidad_ninos = Column(Integer)
+    cantidad_camas = Column(Integer)
+    politica_cancelacion = Column(Text)
+    publicada = Column(Boolean, nullable=False, default=True, server_default="true")
 
     hotel = relationship("Hotel", back_populates="habitaciones")
     tipo_habitacion = relationship("TipoHabitacion", back_populates="habitaciones")

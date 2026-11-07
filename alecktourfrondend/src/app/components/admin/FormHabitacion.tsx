@@ -29,6 +29,11 @@ function formDesde(h: HabitacionAdmin | null) {
     vista: h?.vista ?? "",
     tipo_bano: h?.tipo_bano ?? "",
     comodidades: h?.comodidades ?? "",
+    nombre: h?.nombre ?? "",
+    capacidad_adultos: h?.capacidad_adultos != null ? String(h.capacidad_adultos) : "",
+    capacidad_ninos: h?.capacidad_ninos != null ? String(h.capacidad_ninos) : "",
+    cantidad_camas: h?.cantidad_camas != null ? String(h.cantidad_camas) : "",
+    politica_cancelacion: h?.politica_cancelacion ?? "",
   };
 }
 
@@ -65,6 +70,7 @@ export default function FormHabitacion({ idHotel, habitacion, tipos, onCambio, o
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState("");
   const [pies, setPies] = useState<Record<number, string>>({});
+  const [publicada, setPublicada] = useState(habitacion?.publicada !== false);
 
   const fotos = habitacion?.imagenes ?? [];
   const cupo = MAX_FOTOS - (editando ? fotos.length : pendientes.length);
@@ -142,6 +148,12 @@ export default function FormHabitacion({ idHotel, habitacion, tipos, onCambio, o
       vista: form.vista.trim() || null,
       tipo_bano: form.tipo_bano.trim() || null,
       comodidades: form.comodidades.trim() || null,
+      nombre: form.nombre.trim() || null,
+      capacidad_adultos: form.capacidad_adultos !== "" ? parseInt(form.capacidad_adultos, 10) : null,
+      capacidad_ninos: form.capacidad_ninos !== "" ? parseInt(form.capacidad_ninos, 10) : null,
+      cantidad_camas: form.cantidad_camas !== "" ? parseInt(form.cantidad_camas, 10) : null,
+      politica_cancelacion: form.politica_cancelacion.trim() || null,
+      publicada,
       // En el orden del catálogo, para que la ficha salga siempre igual.
       servicios: CATALOGO_SERVICIOS.flatMap((c) => c.servicios.map((s) => s.clave)).filter((k) => servicios.has(k)),
       ...condiciones,
@@ -203,6 +215,10 @@ export default function FormHabitacion({ idHotel, habitacion, tipos, onCambio, o
       <div className="space-y-2">
         <p className={subtitulo}>Ficha de la habitación</p>
         <div className="grid grid-cols-2 gap-2.5">
+          <input value={form.nombre} maxLength={100} onChange={(e) => set("nombre", e.target.value)} className={inputCls + " col-span-2"} placeholder='Nombre comercial (ej: "Suite vista al mar")' aria-label="Nombre de la habitación" />
+          <input type="number" min="0" max="50" value={form.capacidad_adultos} onChange={(e) => set("capacidad_adultos", e.target.value)} className={inputCls} placeholder="Máx. adultos" aria-label="Capacidad de adultos" />
+          <input type="number" min="0" max="50" value={form.capacidad_ninos} onChange={(e) => set("capacidad_ninos", e.target.value)} className={inputCls} placeholder="Máx. niños" aria-label="Capacidad de niños" />
+          <input type="number" min="0" max="20" value={form.cantidad_camas} onChange={(e) => set("cantidad_camas", e.target.value)} className={inputCls} placeholder="Cantidad de camas" aria-label="Cantidad de camas" />
           <input type="number" min="1" value={form.tamano_m2} onChange={(e) => set("tamano_m2", e.target.value)} className={inputCls} placeholder="Tamaño en m²" aria-label="Tamaño en metros cuadrados" />
           <input type="number" min="-5" max="200" value={form.piso} onChange={(e) => set("piso", e.target.value)} className={inputCls} placeholder="Piso (ej: 4)" aria-label="Piso" />
           <input value={form.tipo_cama} maxLength={80} onChange={(e) => set("tipo_cama", e.target.value)} className={inputCls} placeholder="Camas (ej: 1 king + 1 sofá cama)" aria-label="Camas" />
@@ -249,6 +265,11 @@ export default function FormHabitacion({ idHotel, habitacion, tipos, onCambio, o
       {/* Condiciones */}
       <div className="space-y-1.5">
         <p className={subtitulo}>Condiciones</p>
+        <textarea value={form.politica_cancelacion} maxLength={3000} rows={2} onChange={(e) => set("politica_cancelacion", e.target.value)} className={inputCls + " resize-y"} placeholder="Política de cancelación propia de esta habitación (si difiere de la del hotel)" aria-label="Política de cancelación de la habitación" />
+        <label className="flex items-center justify-between gap-2 text-xs">
+          <span>Visible y reservable en el sitio</span>
+          <input type="checkbox" checked={publicada} onChange={(e) => setPublicada(e.target.checked)} aria-label="Habitación publicada" />
+        </label>
         {CONDICIONES_HABITACION.map((c) => (
           <div key={c.clave} className="flex items-center justify-between gap-2">
             <span className="text-xs text-foreground">{c.etiqueta}</span>

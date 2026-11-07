@@ -222,7 +222,8 @@ export default function AdminDashboard() {
     const cached = getLocalCache<HotelData[]>("admin_cache_hoteles");
     if (cached) setHoteles(cached);
     try {
-      const fresh = await apiFetch<HotelData[]>("/hoteles/?limit=300");
+      // todos=true: el panel también ve los hoteles ocultos al público.
+      const fresh = await apiFetch<HotelData[]>("/hoteles/?limit=300&todos=true");
       setHoteles(fresh);
       setLocalCache("admin_cache_hoteles", fresh, ADMIN_CACHE_TTL);
     } catch { /* no crítico */ }

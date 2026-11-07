@@ -1,11 +1,12 @@
 import logging
 from datetime import date
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
+from app.core.deps import usuario_es_staff
 from app.core.exceptions import HotelDependencyError, NotFoundError
 from app.core.file_validation import validar_y_leer_archivo
 from app.core.image_storage import borrar_imagen, guardar_imagen
@@ -69,7 +70,9 @@ def get_hotels(
         None, description="Filtra a hoteles con disponibilidad real hasta esta fecha (requiere fecha_checkin)"
     ),
     q: str | None = Query(None, max_length=100, description="Busca por nombre del hotel, ciudad o país"),
+    todos: bool = Query(False, description="Incluye hoteles ocultos (solo staff)"),
     db: Session = Depends(get_db),
+    authorization: str | None = Header(None),
 ):
     """Obtiene lista de hoteles. Cacheada 2 min (30s si se filtra por fechas,
     ya que esa disponibilidad cambia con cada reserva nueva) — es el endpoint
@@ -88,13 +91,14 @@ def get_hotels(
         raise HTTPException(status_code=400, detail="fecha_checkout debe ser posterior a fecha_checkin")
 
     q = (q or "").strip() or None
-    cache_key = f"hoteles:list:{skip}:{limit}:{fecha_checkin}:{fecha_checkout}:{(q or '').lower()}"
+    todos = todos and usuario_es_staff(authorization)
+    cache_key = f"hoteles:list:{skip}:{limit}:{fecha_checkin}:{fecha_checkout}:{(q or '').lower()}:{int(todos)}"
     cached = get_cached(cache_key)
     if cached is not None:
         return cached
 
-    hoteles = HotelRepository.get_all(db, skip, limit, fecha_checkin, fecha_checkout, q=q)
-    data = [HotelDetailResponse.model_validate(h).model_dump(mode="json") for h in hoteles]
+    hoteles = HotelRepository.get_all(db, skip, limit, fecha_checkin, fecha_checkout, q=q, todos=todos)
+    data = [_vista_publica(HotelDetailResponse.model_validate(h), todos).model_dump(mode="json") for h in hoteles]
     set_cached(cache_key, data, ttl_seconds=30 if fecha_checkin else 120)
     return data
 
@@ -162,13 +166,21 @@ def get_destinos_sugeridos(
 # ===================== HOTELES CRUD =====================
 
 
+def _vista_publica(detalle: HotelDetailResponse, staff: bool) -> HotelDetailResponse:
+    """Al público no se le muestran habitaciones ocultas."""
+    if not staff:
+        detalle.habitaciones = [h for h in detalle.habitaciones if h.publicada]
+    return detalle
+
+
 @router.get("/{hotel_id}", response_model=HotelDetailResponse)
-def get_hotel(hotel_id: int, db: Session = Depends(get_db)):
+def get_hotel(hotel_id: int, db: Session = Depends(get_db), authorization: str | None = Header(None)):
     """Obtiene detalles completos de un hotel con sus habitaciones y características"""
     hotel = HotelRepository.get_by_id(db, hotel_id)
-    if not hotel:
+    staff = usuario_es_staff(authorization)
+    if not hotel or (not hotel.publicado and not staff):
         raise HTTPException(status_code=404, detail="Hotel no encontrado")
-    return hotel
+    return _vista_publica(HotelDetailResponse.model_validate(hotel), staff)
 
 
 @router.get("/{hotel_id}/fechas-ocupadas", response_model=list[HabitacionFechasOcupadas])
@@ -189,7 +201,9 @@ def create_hotel(hotel: HotelCreate, db: Session = Depends(get_db), admin_id: in
     no se guarda nada -- nunca queda un hotel a medio crear. Antes las
     habitaciones solo se podían agregar una por una después de crear el
     hotel."""
-    datos = hotel.model_dump(exclude={"habitaciones"})
+    datos = hotel.model_dump(exclude={"habitaciones", "servicios"})
+    if datos.get("publicado") is None:
+        datos.pop("publicado", None)  # por defecto: publicado
     habitaciones = hotel.habitaciones or []
 
     tipos_validos = {t.id_tipo_habitacion for t in db.query(TipoHabitacion.id_tipo_habitacion).all()}
@@ -203,6 +217,8 @@ def create_hotel(hotel: HotelCreate, db: Session = Depends(get_db), admin_id: in
         db.flush()
         for h in habitaciones:
             db.add(Habitacion(id_hotel=nuevo.id_hotel, **h.model_dump()))
+        if hotel.servicios:
+            HotelRepository.sync_servicios(db, nuevo.id_hotel, [s.model_dump() for s in hotel.servicios])
         db.commit()
     except Exception as e:
         db.rollback()

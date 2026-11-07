@@ -509,23 +509,50 @@ export default function HotelDetail() {
 
               <hr className="border-border" />
 
-              {hotel.politicas && (
-                <>
-                  <section>
-                    <h2 className="text-2xl font-semibold mb-4">Políticas del hotel</h2>
-                    <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{hotel.politicas}</p>
-                  </section>
-                  <hr className="border-border" />
-                </>
-              )}
+              {(() => {
+                const hhmm = (h?: string | null) => (h ? h.slice(0, 5) : null);
+                const politicas: [string, string | null | undefined][] = [
+                  ["Check-in", hhmm(hotel.hora_checkin) && `Desde las ${hhmm(hotel.hora_checkin)}`],
+                  ["Check-out", hhmm(hotel.hora_checkout) && `Hasta las ${hhmm(hotel.hora_checkout)}`],
+                  ["Cancelación", hotel.politica_cancelacion],
+                  ["Condiciones de reserva", hotel.condiciones_reserva],
+                  ["Entrada anticipada", hotel.politica_entrada_anticipada],
+                  ["Salida tardía", hotel.politica_salida_tardia],
+                  ["Edad mínima", hotel.edad_minima != null ? `${hotel.edad_minima} años para registrarse` : null],
+                  ["Niños", hotel.politica_ninos],
+                  ["Mascotas", hotel.politica_mascotas],
+                  ["Impuestos y cargos", hotel.impuestos_cargos],
+                  ["Restricciones", hotel.restricciones],
+                  ["Otras políticas", hotel.politicas],
+                  ["Información adicional", hotel.informacion_adicional],
+                ];
+                const cargadas = politicas.filter(([, v]) => v);
+                if (!cargadas.length) return null;
+                return (
+                  <>
+                    <section>
+                      <h2 className="text-2xl font-semibold mb-4">Políticas del hotel</h2>
+                      <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                        {cargadas.map(([t, v]) => (
+                          <div key={t}>
+                            <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t}</dt>
+                            <dd className="mt-0.5 text-sm text-foreground whitespace-pre-line">{v}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </section>
+                    <hr className="border-border" />
+                  </>
+                );
+              })()}
 
               {/* Servicios y Amenidades — tabla con lo que realmente incluye
                   este hotel (hotel.hotel_caracteristicas, dato real, no un
                   badge genérico repetido en cada habitación). */}
-              {caracteristicas.filter((hc) => hc.disponible).length > 0 && (
+              {caracteristicas.length > 0 && (
                 <section>
                   <h2 className="text-2xl font-semibold mb-6">
-                    Qué incluye este hotel
+                    Servicios e instalaciones
                   </h2>
                   <div className="rounded-2xl border border-border overflow-hidden">
                     <table className="w-full text-sm">
@@ -535,13 +562,13 @@ export default function HotelDetail() {
                             Servicio
                           </th>
                           <th className="text-right font-semibold text-muted-foreground uppercase tracking-wider text-xs px-5 py-3">
-                            Incluido
+                            Condición
                           </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {caracteristicas
-                          .filter((hc) => hc.disponible)
+                        {[...caracteristicas]
+                          .sort((a, b) => Number(a.estado === "no_disponible") - Number(b.estado === "no_disponible"))
                           .map((hc, idx) => {
                             const nombre =
                               hc.caracteristica?.nombre_caracteristica ?? "";
@@ -561,10 +588,18 @@ export default function HotelDetail() {
                                   </span>
                                 </td>
                                 <td className="px-5 py-3.5 text-right">
-                                  <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold text-xs">
-                                    <CheckCircle className="w-4 h-4" />
-                                    Sí
-                                  </span>
+                                  {hc.estado === "de_pago" ? (
+                                    <span className="text-xs font-semibold text-warning">De pago{hc.nota ? ` · ${hc.nota}` : ""}</span>
+                                  ) : hc.estado === "no_disponible" || hc.disponible === false ? (
+                                    <span className="text-xs text-muted-foreground">No disponible</span>
+                                  ) : hc.estado === "incluido" ? (
+                                    <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold text-xs">
+                                      <CheckCircle className="w-4 h-4" />
+                                      Incluido{hc.nota ? ` · ${hc.nota}` : ""}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs font-semibold text-foreground">Disponible</span>
+                                  )}
                                 </td>
                               </tr>
                             );

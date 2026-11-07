@@ -29,7 +29,9 @@ def _sin_tildes(texto: str) -> str:
 
 class HotelRepository:
     @staticmethod
-    def get_all(db: Session, skip: int = 0, limit: int = 10, fecha_checkin=None, fecha_checkout=None, q=None):
+    def get_all(
+        db: Session, skip: int = 0, limit: int = 10, fecha_checkin=None, fecha_checkout=None, q=None, todos=False
+    ):
         # GET /hoteles/ responde con HotelDetailResponse (habitaciones +
         # hotel_caracteristicas) y además expone total_resenas/
         # calificacion_promedio (propiedades sobre Hotel.resenas) para cada
@@ -45,6 +47,10 @@ class HotelRepository:
             selectinload(Hotel.resenas),
             selectinload(Hotel.imagenes),
         )
+
+        if not todos:
+            # El sitio público no muestra hoteles ocultos (el panel sí).
+            query = query.filter(Hotel.publicado.is_(True))
 
         if q:
             # Búsqueda en la base de datos (panel de admin y buscador): por
@@ -213,6 +219,7 @@ class HotelRepository:
                 selectinload(Hotel.resenas),
                 selectinload(Hotel.imagenes),
             )
+            .filter(Hotel.publicado.is_(True))
             .filter(Hotel.ciudad == hotel.ciudad, Hotel.id_hotel != hotel_id)
             .order_by(Hotel.calificacion.desc())
             .limit(limit)
@@ -303,12 +310,73 @@ class HotelRepository:
     def update(db: Session, hotel_id: int, hotel_data: dict):
         hotel = db.query(Hotel).filter(Hotel.id_hotel == hotel_id).first()
         if hotel:
+            servicios = hotel_data.pop("servicios", None)
             for key, value in hotel_data.items():
                 if value is not None:
                     setattr(hotel, key, value)
+                elif key in HotelRepository.FICHA_BORRABLE:
+                    setattr(hotel, key, None)  # el panel puede vaciar estos datos
+            if servicios is not None:
+                HotelRepository.sync_servicios(db, hotel_id, servicios)
             db.commit()
             db.refresh(hotel)
         return hotel
+
+    # Datos de la ficha que se pueden borrar mandando null.
+    FICHA_BORRABLE = frozenset(
+        {
+            "tipo_alojamiento",
+            "departamento",
+            "sitio_web",
+            "latitud",
+            "longitud",
+            "fuente_calificacion",
+            "hora_checkin",
+            "hora_checkout",
+            "politica_entrada_anticipada",
+            "politica_salida_tardia",
+            "edad_minima",
+            "politica_ninos",
+            "politica_mascotas",
+            "politica_cancelacion",
+            "condiciones_reserva",
+            "impuestos_cargos",
+            "restricciones",
+            "informacion_adicional",
+        }
+    )
+
+    @staticmethod
+    def sync_servicios(db: Session, hotel_id: int, servicios: list[dict]) -> None:
+        """Reemplaza los servicios del hotel por la lista dada, buscando cada
+        uno en el catálogo por nombre (sin distinguir mayúsculas) o
+        creándolo. Lo que no viene queda "no informado"."""
+        existentes = {hc.id_caracteristica: hc for hc in db.query(HotelCaracteristica).filter_by(id_hotel=hotel_id)}
+        vistos = set()
+        for s in servicios:
+            nombre = s["nombre"].strip()
+            car = (
+                db.query(Caracteristica)
+                .filter(func.lower(Caracteristica.nombre_caracteristica) == nombre.lower())
+                .first()
+            )
+            if not car:
+                car = Caracteristica(nombre_caracteristica=nombre)
+                db.add(car)
+                db.flush()
+            if car.id_caracteristica in vistos:
+                continue
+            vistos.add(car.id_caracteristica)
+            hc = existentes.get(car.id_caracteristica)
+            if not hc:
+                hc = HotelCaracteristica(id_hotel=hotel_id, id_caracteristica=car.id_caracteristica)
+                db.add(hc)
+            hc.estado = s["estado"]
+            hc.nota = (s.get("nota") or "").strip() or None
+            hc.disponible = s["estado"] != "no_disponible"
+        for id_car, hc in existentes.items():
+            if id_car not in vistos:
+                db.delete(hc)
 
     @staticmethod
     def delete(db: Session, hotel_id: int):
@@ -361,13 +429,15 @@ class HabitacionRepository:
 
     # Campos obligatorios: un null en el PUT se ignora. El resto (la ficha)
     # sí se puede borrar mandando null desde el panel.
-    CAMPOS_OBLIGATORIOS = frozenset({"numero_habitacion", "precio_noche", "estado", "id_tipo_habitacion"})
+    CAMPOS_OBLIGATORIOS = frozenset({"numero_habitacion", "precio_noche", "estado", "id_tipo_habitacion", "publicada"})
 
     @staticmethod
     def _a_columnas(data: dict) -> dict:
         datos = dict(data)
         if isinstance(datos.get("servicios"), list):
             datos["servicios"] = ",".join(datos["servicios"]) or None
+        if "publicada" in datos and datos["publicada"] is None:
+            datos.pop("publicada")  # por defecto: publicada
         return datos
 
     @staticmethod

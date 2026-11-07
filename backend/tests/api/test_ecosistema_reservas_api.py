@@ -571,3 +571,93 @@ class TestEscenarioH_CuposEIntegridad:
             headers=admin,
         )
         assert r.status_code == 422
+
+
+class TestFichaCompletaDelHotel:
+    def _hotel(self, client, admin, **extra):
+        r = client.post(
+            "/api/hoteles/",
+            json={"nombre_hotel": "Hotel Mar", "ciudad": "Santa Marta", "pais": "Colombia", **extra},
+            headers=admin,
+        )
+        assert r.status_code == 201, r.text
+        return r.json()
+
+    def test_ficha_politicas_y_servicios_con_estado(self, client, admin):
+        h = self._hotel(
+            client,
+            admin,
+            tipo_alojamiento="hotel",
+            departamento="Magdalena",
+            sitio_web="https://hotelmar.test",
+            hora_checkin="15:00",
+            hora_checkout="12:00",
+            politica_mascotas="No se admiten",
+            servicios=[
+                {"nombre": "Wi-Fi", "estado": "incluido"},
+                {"nombre": "Parqueadero", "estado": "de_pago", "nota": "$20.000 por noche"},
+                {"nombre": "piscina", "estado": "no_disponible"},
+            ],
+        )
+        detalle = client.get(f"/api/hoteles/{h['id_hotel']}").json()
+        assert detalle["hora_checkin"] == "15:00:00" and detalle["departamento"] == "Magdalena"
+        estados = {
+            s["caracteristica"]["nombre_caracteristica"].lower(): s["estado"] for s in detalle["hotel_caracteristicas"]
+        }
+        assert estados == {"wi-fi": "incluido", "parqueadero": "de_pago", "piscina": "no_disponible"}
+
+        # Editar: quitar un servicio (queda "no informado") y vaciar un dato.
+        r = client.put(
+            f"/api/hoteles/{h['id_hotel']}",
+            json={"servicios": [{"nombre": "Wi-Fi", "estado": "incluido"}], "politica_mascotas": None},
+            headers=admin,
+        )
+        assert r.status_code == 200
+        detalle = client.get(f"/api/hoteles/{h['id_hotel']}").json()
+        assert len(detalle["hotel_caracteristicas"]) == 1 and detalle["politica_mascotas"] is None
+
+    def test_sitio_web_invalido_responde_422(self, client, admin):
+        r = client.post("/api/hoteles/", json={"nombre_hotel": "X", "sitio_web": "hotel.com"}, headers=admin)
+        assert r.status_code == 422
+
+    def test_hotel_oculto_no_sale_al_publico_pero_si_al_panel(self, client, admin):
+        h = self._hotel(client, admin, publicado=False)
+        assert all(x["id_hotel"] != h["id_hotel"] for x in client.get("/api/hoteles/").json())
+        assert client.get(f"/api/hoteles/{h['id_hotel']}").status_code == 404
+        con_admin = client.get("/api/hoteles/", params={"todos": True}, headers=admin).json()
+        assert any(x["id_hotel"] == h["id_hotel"] for x in con_admin)
+
+    def test_habitacion_oculta_no_se_muestra_ni_se_reserva_en_linea(self, client, admin, crear_usuario, db):
+        h = self._hotel(client, admin)
+        tipo = TipoHabitacion(nombre_tipo="Doble", capacidad_personas=4)
+        db.add(tipo)
+        db.commit()
+        hab = client.post(
+            f"/api/hoteles/{h['id_hotel']}/habitaciones",
+            json={
+                "id_tipo_habitacion": tipo.id_tipo_habitacion,
+                "numero_habitacion": "9",
+                "precio_noche": 100000,
+                "publicada": False,
+                "capacidad_adultos": 2,
+            },
+            headers=admin,
+        ).json()
+        assert client.get(f"/api/hoteles/{h['id_hotel']}").json()["habitaciones"] == []
+        usuario, hc = crear_usuario()
+        sel = {
+            "tipo_producto": "hotel",
+            "adultos": 1,
+            "habitaciones": [
+                {
+                    "id_habitacion": hab["id_habitacion"],
+                    "fecha_checkin": str(SALIDA),
+                    "fecha_checkout": str(SALIDA + timedelta(days=1)),
+                }
+            ],
+        }
+        assert _reservar(client, hc, usuario.id_cliente, **sel).status_code == 422
+        # Publicada, pero con máximo 2 adultos: 3 adultos no caben.
+        client.put(f"/api/hoteles/habitaciones/{hab['id_habitacion']}", json={"publicada": True}, headers=admin)
+        assert _reservar(client, hc, usuario.id_cliente, **{**sel, "adultos": 3}).status_code == 422
+        assert _reservar(client, hc, usuario.id_cliente, **{**sel, "adultos": 2}).status_code == 201

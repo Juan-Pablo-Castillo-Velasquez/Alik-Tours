@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, time
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -69,6 +70,12 @@ class DetallesHabitacion(BaseModel):
     admite_mascotas: bool | None = None
     accesible: bool | None = None
     cama_extra: bool | None = None
+    nombre: str | None = Field(None, max_length=100)
+    capacidad_adultos: int | None = Field(None, ge=0, le=50)
+    capacidad_ninos: int | None = Field(None, ge=0, le=50)
+    cantidad_camas: int | None = Field(None, ge=0, le=20)
+    politica_cancelacion: str | None = Field(None, max_length=3000)
+    publicada: bool | None = None
 
     @field_validator("servicios")
     @classmethod
@@ -137,6 +144,12 @@ class HabitacionResponse(BaseModel):
     admite_mascotas: bool | None = None
     accesible: bool | None = None
     cama_extra: bool | None = None
+    nombre: str | None = None
+    capacidad_adultos: int | None = None
+    capacidad_ninos: int | None = None
+    cantidad_camas: int | None = None
+    politica_cancelacion: str | None = None
+    publicada: bool = True
     imagenes: list["ImagenHabitacionResponse"] = []
 
     @field_validator("servicios", mode="before")
@@ -176,10 +189,21 @@ class HotelCaracteristicaCreate(BaseModel):
     disponible: bool = True
 
 
+class ServicioHotelInput(BaseModel):
+    """Un servicio/instalación del hotel con su estado real. Lo que no se
+    envía queda como "no informado" (no se muestra)."""
+
+    nombre: str = Field(..., min_length=2, max_length=100)
+    estado: Literal["incluido", "de_pago", "no_disponible"]
+    nota: str | None = Field(None, max_length=150)
+
+
 class HotelCaracteristicaResponse(BaseModel):
     id_hotel: int
     id_caracteristica: int
     disponible: bool
+    estado: str | None = None
+    nota: str | None = None
     caracteristica: CaracteristicaResponse | None = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -214,6 +238,27 @@ class HotelCreate(BaseModel):
     telefono: str | None = Field(None, max_length=20)
     descripcion: str | None = Field(None, max_length=5000)
     politicas: str | None = Field(None, max_length=5000)
+    tipo_alojamiento: str | None = Field(None, max_length=40)
+    departamento: str | None = Field(None, max_length=100)
+    sitio_web: str | None = Field(None, max_length=255, pattern=r"^https?://[^\s]+$")
+    latitud: float | None = Field(None, ge=-90, le=90)
+    longitud: float | None = Field(None, ge=-180, le=180)
+    fuente_calificacion: str | None = Field(None, max_length=120)
+    publicado: bool | None = None
+    hora_checkin: time | None = None
+    hora_checkout: time | None = None
+    politica_entrada_anticipada: str | None = Field(None, max_length=2000)
+    politica_salida_tardia: str | None = Field(None, max_length=2000)
+    edad_minima: int | None = Field(None, ge=0, le=99)
+    politica_ninos: str | None = Field(None, max_length=2000)
+    politica_mascotas: str | None = Field(None, max_length=2000)
+    politica_cancelacion: str | None = Field(None, max_length=3000)
+    condiciones_reserva: str | None = Field(None, max_length=3000)
+    impuestos_cargos: str | None = Field(None, max_length=2000)
+    restricciones: str | None = Field(None, max_length=2000)
+    informacion_adicional: str | None = Field(None, max_length=3000)
+    # None = no tocar; [] = quitar todos (quedan "no informados").
+    servicios: list[ServicioHotelInput] | None = None
     # Opcional: habitaciones creadas en la MISMA transacción que el hotel
     # (o se crea todo, o nada).
     habitaciones: list[HabitacionNuevaEnHotel] | None = None
@@ -242,6 +287,27 @@ class HotelUpdate(BaseModel):
     telefono: str | None = Field(None, max_length=20)
     descripcion: str | None = Field(None, max_length=5000)
     politicas: str | None = Field(None, max_length=5000)
+    tipo_alojamiento: str | None = Field(None, max_length=40)
+    departamento: str | None = Field(None, max_length=100)
+    sitio_web: str | None = Field(None, max_length=255, pattern=r"^https?://[^\s]+$")
+    latitud: float | None = Field(None, ge=-90, le=90)
+    longitud: float | None = Field(None, ge=-180, le=180)
+    fuente_calificacion: str | None = Field(None, max_length=120)
+    publicado: bool | None = None
+    hora_checkin: time | None = None
+    hora_checkout: time | None = None
+    politica_entrada_anticipada: str | None = Field(None, max_length=2000)
+    politica_salida_tardia: str | None = Field(None, max_length=2000)
+    edad_minima: int | None = Field(None, ge=0, le=99)
+    politica_ninos: str | None = Field(None, max_length=2000)
+    politica_mascotas: str | None = Field(None, max_length=2000)
+    politica_cancelacion: str | None = Field(None, max_length=3000)
+    condiciones_reserva: str | None = Field(None, max_length=3000)
+    impuestos_cargos: str | None = Field(None, max_length=2000)
+    restricciones: str | None = Field(None, max_length=2000)
+    informacion_adicional: str | None = Field(None, max_length=3000)
+    # None = no tocar; [] = quitar todos (quedan "no informados").
+    servicios: list[ServicioHotelInput] | None = None
 
 
 class HotelResponse(BaseModel):
@@ -257,6 +323,25 @@ class HotelResponse(BaseModel):
     imagen_url: str | None = None
     descripcion: str | None = None
     politicas: str | None = None
+    tipo_alojamiento: str | None = None
+    departamento: str | None = None
+    sitio_web: str | None = None
+    latitud: float | None = None
+    longitud: float | None = None
+    fuente_calificacion: str | None = None
+    publicado: bool = True
+    hora_checkin: time | None = None
+    hora_checkout: time | None = None
+    politica_entrada_anticipada: str | None = None
+    politica_salida_tardia: str | None = None
+    edad_minima: int | None = None
+    politica_ninos: str | None = None
+    politica_mascotas: str | None = None
+    politica_cancelacion: str | None = None
+    condiciones_reserva: str | None = None
+    impuestos_cargos: str | None = None
+    restricciones: str | None = None
+    informacion_adicional: str | None = None
     # Reseñas reales de clientes (propiedades calculadas en el modelo Hotel a
     # partir de la tabla `resenas`) — nunca cifras inventadas en el frontend.
     total_resenas: int = 0

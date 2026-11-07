@@ -154,7 +154,13 @@ def _verificar_habitacion(db: Session, id_habitacion: int, checkin: date, checko
 
 
 def _cotizar_habitaciones(
-    db: Session, cot: Cotizacion, solicitadas, *, gratis: bool, hoteles_permitidos: set[int] | None
+    db: Session,
+    cot: Cotizacion,
+    solicitadas,
+    *,
+    gratis: bool,
+    hoteles_permitidos: set[int] | None,
+    es_staff: bool = False,
 ) -> None:
     for i, a in enumerate(solicitadas):
         for b in solicitadas[i + 1 :]:
@@ -165,8 +171,12 @@ def _cotizar_habitaciones(
             ):
                 raise CotizacionError("Elegiste la misma habitación dos veces en fechas que se cruzan")
     capacidad = 0
+    cap_adultos: list[int | None] = []
+    cap_ninos: list[int | None] = []
     for h in solicitadas:
         hab = _verificar_habitacion(db, h.id_habitacion, h.fecha_checkin, h.fecha_checkout)
+        if not es_staff and (not hab.publicada or (hab.hotel and not hab.hotel.publicado)):
+            raise CotizacionError("Esa habitación no está disponible para reservar en línea")
         if hoteles_permitidos is not None and hab.id_hotel not in hoteles_permitidos:
             raise CotizacionError("Esa habitación no pertenece a un hotel de este paquete")
         noches = (h.fecha_checkout - h.fecha_checkin).days or 1
@@ -191,8 +201,16 @@ def _cotizar_habitaciones(
             )
         )
         capacidad += hab.tipo_habitacion.capacidad_personas if hab.tipo_habitacion else 0
+        cap_adultos.append(hab.capacidad_adultos)
+        cap_ninos.append(hab.capacidad_ninos)
     if capacidad and cot.personas > capacidad:
         raise CapacidadInsuficienteError(cot.personas, capacidad)
+    # Si TODAS las habitaciones tienen capacidad de adultos/niños cargada,
+    # también se respeta (ej. una cabaña para 4 pero máximo 2 adultos).
+    if cap_adultos and all(c is not None for c in cap_adultos) and cot.adultos > sum(cap_adultos):
+        raise CotizacionError(f"Las habitaciones elegidas admiten máximo {sum(cap_adultos)} adulto(s)")
+    if cap_ninos and all(c is not None for c in cap_ninos) and cot.ninos > sum(cap_ninos):
+        raise CotizacionError(f"Las habitaciones elegidas admiten máximo {sum(cap_ninos)} niño(s)")
 
 
 # ---------------------------------------------------------------------------
@@ -332,15 +350,27 @@ def _snapshot_vuelo(oferta: OfertaVuelo) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _cotizar_hotel(db: Session, sel, cot: Cotizacion) -> None:
-    _cotizar_habitaciones(db, cot, sel.habitaciones, gratis=False, hoteles_permitidos=None)
+def _cotizar_hotel(db: Session, sel, cot: Cotizacion, *, es_staff: bool) -> None:
+    _cotizar_habitaciones(db, cot, sel.habitaciones, gratis=False, hoteles_permitidos=None, es_staff=es_staff)
     cot.fecha_inicio = min(h.fecha_checkin for h in sel.habitaciones)
     cot.fecha_fin = max(h.fecha_checkout for h in sel.habitaciones)
     hoteles = {h.habitacion.hotel for h in cot.habitaciones if h.habitacion.hotel}
+    for hotel in hoteles:
+        if hotel.impuestos_cargos:
+            cot.advertencias.append(f"Impuestos y cargos de {hotel.nombre_hotel}: {hotel.impuestos_cargos}")
     cot.snapshot = {
         "tipo": "hotel",
         "hoteles": [
-            {"id_hotel": h.id_hotel, "nombre": h.nombre_hotel, "ciudad": h.ciudad, "politicas": h.politicas}
+            {
+                "id_hotel": h.id_hotel,
+                "nombre": h.nombre_hotel,
+                "ciudad": h.ciudad,
+                "politicas": h.politicas,
+                "hora_checkin": str(h.hora_checkin) if h.hora_checkin else None,
+                "hora_checkout": str(h.hora_checkout) if h.hora_checkout else None,
+                "politica_cancelacion": h.politica_cancelacion,
+                "impuestos_cargos": h.impuestos_cargos,
+            }
             for h in hoteles
         ],
         "habitaciones": [
@@ -537,7 +567,12 @@ def _cotizar_paquete(db: Session, sel, cot: Cotizacion, *, es_staff: bool, bloqu
             if h.fecha_checkin < cot.fecha_inicio or h.fecha_checkout > cot.fecha_fin:
                 raise CotizacionError("Las noches de hotel deben estar dentro de las fechas del paquete")
         _cotizar_habitaciones(
-            db, cot, sel.habitaciones, gratis=modalidad_aloj == "incluido", hoteles_permitidos=set(hoteles)
+            db,
+            cot,
+            sel.habitaciones,
+            gratis=modalidad_aloj == "incluido",
+            hoteles_permitidos=set(hoteles),
+            es_staff=es_staff,
         )
 
     # --- Vuelo ---
@@ -688,7 +723,7 @@ def cotizar(db: Session, sel, *, es_staff: bool = False, bloquear: bool = False)
     if sel.tipo_producto == "hotel":
         if sel.id_paquete or sel.id_oferta_vuelo:
             raise CotizacionError("Una reserva de hotel no lleva paquete ni vuelo")
-        _cotizar_hotel(db, sel, cot)
+        _cotizar_hotel(db, sel, cot, es_staff=es_staff)
     elif sel.tipo_producto == "vuelo":
         if sel.habitaciones or sel.id_paquete:
             raise CotizacionError("Una reserva de vuelo no lleva paquete ni habitaciones")

@@ -9,6 +9,9 @@ export interface HotelCaracteristicaResponse {
   id_hotel: number;
   id_caracteristica: number;
   disponible: boolean;
+  /** incluido | de_pago | no_disponible (null = registro anterior: "disponible"). */
+  estado?: 'incluido' | 'de_pago' | 'no_disponible' | null;
+  nota?: string | null;
   caracteristica?: CaracteristicaResponse;
 }
 
@@ -51,6 +54,12 @@ export type DetallesHabitacion = {
   tipo_bano?: string | null;
   /** Claves del catálogo (components/hotel/serviciosHabitacion.ts). */
   servicios?: string[] | null;
+  nombre?: string | null;
+  capacidad_adultos?: number | null;
+  capacidad_ninos?: number | null;
+  cantidad_camas?: number | null;
+  politica_cancelacion?: string | null;
+  publicada?: boolean;
 } & Partial<Record<CondicionHabitacion, boolean | null>>;
 
 export interface ImagenHabitacionResponse extends ImagenGaleriaResponse {
@@ -78,6 +87,25 @@ export interface HotelResponse {
   imagen_url?: string | null;
   descripcion?: string | null;
   politicas?: string | null;
+  tipo_alojamiento?: string | null;
+  departamento?: string | null;
+  sitio_web?: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  fuente_calificacion?: string | null;
+  publicado?: boolean;
+  hora_checkin?: string | null;
+  hora_checkout?: string | null;
+  politica_entrada_anticipada?: string | null;
+  politica_salida_tardia?: string | null;
+  edad_minima?: number | null;
+  politica_ninos?: string | null;
+  politica_mascotas?: string | null;
+  politica_cancelacion?: string | null;
+  condiciones_reserva?: string | null;
+  impuestos_cargos?: string | null;
+  restricciones?: string | null;
+  informacion_adicional?: string | null;
   // Reseñas reales de clientes (calculadas en el backend desde la tabla
   // `resenas`) — total_resenas siempre viene, calificacion_promedio es
   // null si el hotel todavía no tiene ninguna reseña real.

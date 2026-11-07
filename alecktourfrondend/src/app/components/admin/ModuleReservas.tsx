@@ -33,6 +33,7 @@ import {
 } from "../ui/select";
 import { enlaceWhatsApp } from "../../utils/whatsapp";
 import BotonExportarCsv from "./ui/BotonExportarCsv";
+import DetalleComercialReserva from "./DetalleComercialReserva";
 import { EncabezadoOrdenable, useOrden } from "./ui/useOrden";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
@@ -607,6 +608,9 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
               {detailError}
             </div>
           )}
+
+          {/* Desglose, viajeros, vuelo y notas internas (reservas del flujo nuevo). */}
+          <DetalleComercialReserva idReserva={reserva.id_reserva} />
 
           {/* Financiero */}
           <section>

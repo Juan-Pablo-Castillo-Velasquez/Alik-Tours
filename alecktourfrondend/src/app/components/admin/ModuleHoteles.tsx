@@ -8,6 +8,7 @@ import { apiFetch } from "../../api/v1/api";
 import { hotelService, TipoHabitacionResponse, HabitacionResponse } from "../../services/hotel.service";
 import AdminModal from "./ui/AdminModal";
 import FormHabitacion from "./FormHabitacion";
+import FichaHotelCampos, { FICHA_HOTEL_VACIA, fichaAPayload, fichaDesdeHotel } from "./FichaHotelCampos";
 import StatCard from "./ui/StatCard";
 import SectionHeader from "./ui/SectionHeader";
 import EmptyState from "./ui/EmptyState";
@@ -84,7 +85,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
     const timer = setTimeout(async () => {
       setBuscando(true);
       try {
-        const data = await apiFetch<HotelData[]>(`/hoteles/?limit=300&q=${encodeURIComponent(q)}`);
+        const data = await apiFetch<HotelData[]>(`/hoteles/?limit=300&todos=true&q=${encodeURIComponent(q)}`);
         if (vigente) {
           setResultadosBusqueda(data);
           setErrorBusqueda(null);
@@ -119,9 +120,12 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
     ? (calificaciones.reduce((a, b) => a + b, 0) / calificaciones.length).toFixed(1)
     : "—";
 
+  const [ficha, setFicha] = useState(FICHA_HOTEL_VACIA);
+
   function openCreate() {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setFicha(FICHA_HOTEL_VACIA);
     setMsg(null);
     setImagenFile(null);
     setImagenPreview(null);
@@ -135,6 +139,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
       pais: h.pais, correo_electronico: h.correo_electronico ?? "", telefono: h.telefono ?? "",
       descripcion: h.descripcion ?? "", politicas: h.politicas ?? "",
     });
+    setFicha(fichaDesdeHotel(h as unknown as Record<string, unknown>));
     setHabitacionesNuevas([]);
     setMsg(null);
     setImagenFile(null);
@@ -168,6 +173,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
       descripcion: form.descripcion.trim() || null,
       politicas: form.politicas.trim() || null,
       calificacion: parseInt(form.calificacion),
+      ...fichaAPayload(ficha),
       imagenFile,
     };
     if (!editingId && habitacionesNuevas.length > 0) {
@@ -402,7 +408,12 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
               {slice.map(h => (
                 <tr key={h.id_hotel} className="hover:bg-accent transition-colors">
                   <td className="px-4 py-3">
-                    <p className="text-xs font-semibold text-foreground">{h.nombre_hotel}</p>
+                    <p className="text-xs font-semibold text-foreground">
+                      {h.nombre_hotel}
+                      {(h as { publicado?: boolean }).publicado === false && (
+                        <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">Oculto</span>
+                      )}
+                    </p>
                     <p className="text-[11px] text-muted-foreground">{h.ciudad}, {h.pais}</p>
                   </td>
                   <td className="px-4 py-3">
@@ -564,11 +575,13 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
               placeholder="Qué hace especial a este hotel, ubicación, ambiente..." />
           </div>
           <div>
-            <label className={labelCls}>Políticas (opcional)</label>
+            <label className={labelCls}>Otras políticas (opcional)</label>
             <textarea value={form.politicas} onChange={e => setForm({ ...form, politicas: e.target.value })}
               className={`${inputCls} min-h-[70px]`} maxLength={5000}
-              placeholder="Check-in/check-out, mascotas, niños, cancelación del hotel..." />
+              placeholder="Lo que no encaje en las políticas detalladas de abajo" />
           </div>
+
+          <FichaHotelCampos ficha={ficha} onChange={setFicha} />
 
           {!editingId && (
             <div className="rounded-xl border border-border p-3 space-y-2">
