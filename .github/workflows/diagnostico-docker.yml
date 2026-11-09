@@ -14,7 +14,7 @@ jobs:
         run: |
           docker compose config -q && echo "docker-compose.yml OK"
           docker compose -f docker-compose.test.yml config -q && echo "docker-compose.test.yml OK"
-          POSTGRES_USER=x POSTGRES_PASSWORD=x POSTGRES_DB=x docker compose -f docker-compose.prod.yml config -q && echo "docker-compose.prod.yml OK"
+          cp backend/.env.example backend/.env && POSTGRES_USER=x POSTGRES_PASSWORD=x POSTGRES_DB=x docker compose -f docker-compose.prod.yml config -q && echo "docker-compose.prod.yml OK (con backend/.env, como exige producción)" && rm backend/.env
       - name: docker compose up --build (como un integrante en su equipo)
         run: docker compose up -d --build
       - name: Esperar backend (/health) y frontend
