@@ -1,0 +1,49 @@
+name: diagnostico-docker
+on:
+  push:
+    branches: [chore/diagnostico-render]
+permissions:
+  contents: read
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validar los tres compose
+        run: |
+          docker compose config -q && echo "docker-compose.yml OK"
+          docker compose -f docker-compose.test.yml config -q && echo "docker-compose.test.yml OK"
+          POSTGRES_USER=x POSTGRES_PASSWORD=x POSTGRES_DB=x docker compose -f docker-compose.prod.yml config -q && echo "docker-compose.prod.yml OK"
+      - name: docker compose up --build (como un integrante en su equipo)
+        run: docker compose up -d --build
+      - name: Esperar backend (/health) y frontend
+        run: |
+          for i in $(seq 1 60); do curl -fs localhost:8000/health && break; sleep 5; done; echo
+          curl -fsS localhost:8000/health
+          for i in $(seq 1 60); do curl -fs -o /dev/null localhost:5173 && break; sleep 5; done
+          curl -fsS localhost:5173 | grep -o "<title>[^<]*</title>"
+      - name: Migraciones al día y API respondiendo
+        run: |
+          docker compose exec -T backend alembic current
+          docker compose exec -T backend alembic heads
+          test "$(docker compose exec -T backend alembic current | grep -c '(head)')" -ge 1
+          for u in /api/hoteles /api/paquetes /api/vuelos /openapi.json; do echo "GET $u -> $(curl -s -o /dev/null -w '%{http_code}' localhost:8000$u)"; test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8000$u)" = 200; done
+          echo "proxy del front -> $(curl -s -o /dev/null -w '%{http_code}' localhost:5173/api/hoteles)"
+          curl -fs -o /dev/null localhost:8025 && echo "Mailpit OK"
+          docker compose exec -T redis redis-cli ping
+          docker compose ps
+      - name: Logs si algo falla
+        if: failure()
+        run: docker compose logs --tail=80
+      - name: BD de pruebas (docker-compose.test.yml) + integración
+        run: |
+          docker compose down -v
+          docker compose -f docker-compose.test.yml up -d --wait
+          cd backend && python3 -m pip install -q -r requirements.txt
+          export DATABASE_URL=postgresql+psycopg2://alektours:alektours@localhost:5433/alektours_test TEST_DATABASE_URL=postgresql+psycopg2://alektours:alektours@localhost:5433/alektours_test
+          alembic upgrade head && alembic downgrade -1 && alembic upgrade head
+          python3 -m pytest tests/integration --no-cov -q
+          cd .. && docker compose -f docker-compose.test.yml down -v
+      - name: Imagen de producción del backend
+        run: docker build --target prod -t alektours-backend-prod backend
