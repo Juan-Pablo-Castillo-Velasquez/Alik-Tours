@@ -28,7 +28,7 @@ jobs:
           docker compose exec -T backend alembic current
           docker compose exec -T backend alembic heads
           test "$(docker compose exec -T backend alembic current | grep -c '(head)')" -ge 1
-          for u in /api/hoteles /api/paquetes /api/vuelos /openapi.json; do echo "GET $u -> $(curl -s -o /dev/null -w '%{http_code}' localhost:8000$u)"; test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8000$u)" = 200; done
+          for u in /api/hoteles /api/paquetes /api/vuelos /openapi.json; do echo "GET $u -> $(curl -sL -o /dev/null -w '%{http_code}' localhost:8000$u)"; test "$(curl -sL -o /dev/null -w '%{http_code}' localhost:8000$u)" = 200; done
           echo "proxy del front -> $(curl -s -o /dev/null -w '%{http_code}' localhost:5173/api/hoteles)"
           curl -fs -o /dev/null localhost:8025 && echo "Mailpit OK"
           docker compose exec -T redis redis-cli ping
