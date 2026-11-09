@@ -620,6 +620,8 @@ Suite construida en el Bootcamp Testing ADSO. Estrategia completa en
 [`docs/estrategia-pruebas.md`](docs/estrategia-pruebas.md) y rotación del
 grupo en [`docs/matriz-rotacion.md`](docs/matriz-rotacion.md).
 
+**Cómo ejecutar las pruebas de cada semana (01 a 09) y quién hizo cada una:** [`docs/testing/README.md`](docs/testing/README.md).
+
 | Parte | Comando | Qué corre |
 |---|---|---|
 | Frontend | `cd alecktourfrondend && pnpm test` | Vitest + Testing Library + MSW, con umbral de cobertura |
