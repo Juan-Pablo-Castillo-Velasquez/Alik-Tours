@@ -43,7 +43,7 @@ jobs:
         run: |
           docker compose down -v
           docker compose -f docker-compose.test.yml up -d --wait
-          cd backend && cp .env.example .env && python -m pip install -q -r requirements.txt
+          cd backend && cp .env.example .env && python -m pip install -q -r requirements-dev.txt
           export DATABASE_URL=postgresql+psycopg2://alektours:alektours@localhost:5433/alektours_test TEST_DATABASE_URL=postgresql+psycopg2://alektours:alektours@localhost:5433/alektours_test
           alembic upgrade head && alembic downgrade -1 && alembic upgrade head
           python -m pytest tests/integration --no-cov -q
