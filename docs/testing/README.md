@@ -29,6 +29,7 @@ cd alecktourfrondend && pnpm install && cd ..
 cd backend && python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp -n .env.example .env            # configuración local (SECRET_KEY, correo...). Windows: copy .env.example .env
 cd ..
 
 # E2E (Playwright)
@@ -46,6 +47,11 @@ cd e2e && pnpm install && pnpm exec playwright install chromium && cd ..
 
 `--no-cov` se usa al correr **unos pocos** archivos del backend: la cobertura
 se exige sobre toda la suite, y con un subconjunto siempre "fallaría" el umbral.
+
+Sin `backend/.env` el backend no arranca y `alembic`/`pytest tests/integration`
+fallan con `ValidationError ... for Settings`: por eso el `cp` de arriba (es
+lo mismo que hace el CI). Las variables que se exportan en los comandos de
+abajo (`DATABASE_URL`, `MAIL_SERVER`...) tienen prioridad sobre ese archivo.
 
 ### Preparación de los E2E
 
