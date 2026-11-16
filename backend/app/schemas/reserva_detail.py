@@ -47,6 +47,9 @@ class NotaInternaCreate(BaseModel):
     queda trazada en historial_reservas para que cualquier empleado que
     retome el caso vea qué gestiones ya se hicieron."""
 
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     comentario: str
 
 

@@ -28,6 +28,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.database import Base, get_db
 from app.core.security import create_access_token
 from app.models import *  # noqa: F401, F403
+from app.models.auth_model import Rol, UsuarioRol
 from app.models.cliente_model import Cliente
 from app.models.user_model import Usuario
 from tests.fakes import RedisEnMemoria, ServidorSMTPFalso
@@ -108,6 +109,9 @@ def redis_falso(monkeypatch):
 
     cache.limpiar_cache_local()
     cache.reiniciar_estado_redis()
+    from app.middlewares import security_middleware
+
+    security_middleware._contadores_locales.clear()
     monkeypatch.setattr("app.middlewares.security_middleware.redis_client", falso)
     return falso
 
@@ -154,6 +158,16 @@ def crear_usuario(db):
         db.add(usuario)
         db.commit()
         db.refresh(usuario)
+        # Los roles quedan también en la BD (usuarios_roles): require_admin y
+        # require_empleado los verifican ahí, no solo en el token.
+        for nombre_rol in roles:
+            rol = db.query(Rol).filter(Rol.nombre_rol == nombre_rol).first()
+            if rol is None:
+                rol = Rol(nombre_rol=nombre_rol)
+                db.add(rol)
+                db.flush()
+            db.add(UsuarioRol(id_usuario=usuario.id_usuario, id_rol=rol.id_rol))
+        db.commit()
         token = create_access_token(data={"sub": str(usuario.id_usuario), "roles": list(roles)})
         return usuario, {"Authorization": f"Bearer {token}"}
 

@@ -2,6 +2,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ServicioCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_servicio: str = Field(..., min_length=1, max_length=100)
     descripcion: str | None = None
     id_categoria: int | None = None
@@ -12,6 +15,9 @@ class ServicioCreate(BaseModel):
 
 
 class ServicioUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_servicio: str | None = None
     descripcion: str | None = None
     id_categoria: int | None = None

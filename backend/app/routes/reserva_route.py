@@ -8,12 +8,13 @@ from datetime import date
 from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
-from app.core.deps import exigir_propietario_o_admin, get_current_usuario, usuario_es_staff
+from app.core.deps import exigir_propietario_o_admin, get_current_usuario, get_usuario_verificado, usuario_es_staff
 from app.core.exceptions import (
     BaseAPIException,
     CapacidadInsuficienteError,
@@ -76,7 +77,9 @@ from app.schemas.reserva_schema import (
     PaqueteUpdate,
     ReservaCreate,
     ReservaDetailAdminResponse,
+    ReservaPanelResponse,
     ReservaResponse,
+    ReservasPaginaResponse,
     ReservaUpdate,
     SalidaResponse,
     SeleccionProducto,
@@ -515,6 +518,66 @@ def get_reservas(
     return data
 
 
+@router.get("/reservas/buscar", response_model=ReservasPaginaResponse)
+def buscar_reservas(
+    q: str | None = Query(
+        None, max_length=100, description="Código, cliente, documento, correo, paquete, hotel o destino"
+    ),
+    estado: str | None = Query(None, pattern="^(pendiente|confirmada|cancelada|finalizada)$"),
+    estado_pago: str | None = Query(None, pattern="^(pendiente|procesando|pagado|rechazado|cancelado)$"),
+    canal: str | None = Query(None, pattern="^(web|empleado|telefono)$"),
+    tipo_producto: str | None = Query(None, pattern="^(hotel|paquete|vuelo)$"),
+    id_empleado: int | None = Query(None, ge=1),
+    sin_asesor: bool = False,
+    id_cliente: int | None = Query(None, ge=1),
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
+    orden: str = Query("id", pattern="^(id|fechas|creada)$"),
+    direccion: str = Query("desc", pattern="^(asc|desc)$"),
+    pagina: int = Query(1, ge=1, le=10000),
+    por_pagina: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    staff_id: int = Depends(require_empleado),
+):
+    """Listado del panel paginado y filtrado en la base de datos. Lo ven
+    admin y asesores: TODAS las reservas (no solo las asignadas); lo que
+    cada rol puede modificar lo controlan los endpoints de escritura."""
+    if fecha_desde and fecha_hasta and fecha_hasta < fecha_desde:
+        raise HTTPException(status_code=422, detail="fecha_hasta debe ser igual o posterior a fecha_desde")
+    items, total = ReservaRepository.buscar(
+        db,
+        q=q,
+        estado=estado,
+        estado_pago=estado_pago,
+        canal=canal,
+        tipo_producto=tipo_producto,
+        id_empleado=id_empleado,
+        sin_asesor=sin_asesor,
+        id_cliente=id_cliente,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        orden=orden,
+        direccion=direccion,
+        pagina=pagina,
+        por_pagina=por_pagina,
+    )
+    filas = []
+    for r in items:
+        fila = ReservaPanelResponse.model_validate(r)
+        if r.cliente:
+            fila.cliente_nombre = f"{r.cliente.nombre} {r.cliente.apellido}".strip()
+            fila.cliente_documento = r.cliente.cedula
+            fila.cliente_correo = r.cliente.correo
+        filas.append(fila)
+    return ReservasPaginaResponse(
+        items=filas,
+        total=total,
+        pagina=pagina,
+        por_pagina=por_pagina,
+        conteos=ReservaRepository.conteos_por_estado(db),
+    )
+
+
 @router.get("/reservas/cliente/{cliente_id}", response_model=list[ReservaResponse])
 def get_reservas_cliente(
     cliente_id: int,
@@ -597,7 +660,8 @@ def agregar_nota_reserva(
     reserva_id: int,
     data: NotaInternaCreate,
     db: Session = Depends(get_db),
-    admin_id: int = Depends(require_admin),
+    # Asesores y admin: la nota es trabajo diario del asesor (antes solo admin).
+    admin_id: int = Depends(require_empleado),
 ):
     """
     Nota interna del asesor sobre una reserva (ej. 'llamé al cliente,
@@ -621,7 +685,8 @@ def get_actividad_reciente(
     # endpoint, límite más alto en vez de duplicar la consulta.
     limit: int = Query(15, ge=1, le=300),
     db: Session = Depends(get_db),
-    admin_id: int = Depends(require_admin),
+    # Asesores también: alimenta "Actividad del equipo" de su dashboard.
+    admin_id: int = Depends(require_empleado),
 ):
     """
     Feed de 'Actividad reciente' para el Dashboard y el módulo de Actividad
@@ -828,7 +893,7 @@ _AVISO_ESTADO_RESERVA = {
 def create_reserva(
     reserva: ReservaCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_usuario),
+    current_user: Usuario = Depends(get_usuario_verificado),
     authorization: str | None = Header(None),
 ):
     """
@@ -908,7 +973,7 @@ def pagar_reserva(
     reserva_id: int,
     data: PagarRequest,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_usuario),
+    current_user: Usuario = Depends(get_usuario_verificado),
     authorization: str | None = Header(None),
 ):
     """
@@ -1062,7 +1127,7 @@ def pagar_reserva(
 def confirmar_pago(
     pago_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_usuario),
+    current_user: Usuario = Depends(get_usuario_verificado),
     authorization: str | None = Header(None),
 ):
     """
@@ -1400,12 +1465,41 @@ def delete_pago(pago_id: int, db: Session = Depends(get_db), admin_id: int = Dep
         raise HTTPException(status_code=500, detail="Error interno del servidor") from e
 
 
+@router.get("/pagos/{pago_id}/comprobante")
+def descargar_comprobante_pago(
+    pago_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_usuario),
+    authorization: str | None = Header(None),
+):
+    """Comprobante de pago SOLO para el dueño de la reserva o el equipo.
+    Antes el archivo quedaba público en /uploads/comprobantes/<archivo>
+    (cualquiera con el enlace podía verlo); ahora esa ruta pública está
+    bloqueada (ver main.py) y el archivo se sirve aquí, con sesión."""
+    pago = db.query(Pago).filter(Pago.id_pago == pago_id).first()
+    if not pago or not pago.comprobante_url:
+        raise HTTPException(status_code=404, detail="Comprobante no encontrado")
+    reserva_del_pago = ReservaRepository.get_by_id(db, pago.id_reserva)
+    exigir_propietario_o_admin(current_user, reserva_del_pago.id_cliente if reserva_del_pago else None, authorization)
+    if not pago.comprobante_url.startswith(f"{COMPROBANTES_PUBLIC_PREFIX}/"):
+        raise HTTPException(status_code=404, detail="Comprobante no encontrado")
+    nombre = os.path.basename(pago.comprobante_url)
+    ruta = os.path.realpath(os.path.join(COMPROBANTES_UPLOAD_DIR, nombre))
+    if not ruta.startswith(os.path.realpath(COMPROBANTES_UPLOAD_DIR) + os.sep) or not os.path.isfile(ruta):
+        raise HTTPException(status_code=404, detail="Comprobante no encontrado")
+    return FileResponse(
+        ruta,
+        filename=f"comprobante-pago-{pago_id}{os.path.splitext(nombre)[1]}",
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
+    )
+
+
 @router.post("/pagos/{pago_id}/comprobante", response_model=PagoResponse)
 async def subir_comprobante_pago(
     pago_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_usuario),
+    current_user: Usuario = Depends(get_usuario_verificado),
     authorization: str | None = Header(None),
 ):
     """Adjunta un comprobante externo (imagen o PDF) a un pago — por ejemplo

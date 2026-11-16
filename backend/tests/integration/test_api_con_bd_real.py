@@ -23,8 +23,26 @@ MARCA = "ApiPG"
 
 
 @pytest.fixture
-def admin():
-    token = create_access_token(data={"sub": "1", "roles": ["admin"]})
+def admin(db_real):
+    # Admin real en la BD de pruebas (dentro de la transacción del test): los
+    # roles se verifican en la base de datos, no solo en el token.
+    from sqlalchemy import text
+
+    usuario = Usuario(
+        username=f"{MARCA}-admin",
+        correo_electronico=f"{MARCA.lower()}-admin@test.com",
+        password_hash="no-se-usa",
+        activo=True,
+        verificado=True,
+    )
+    db_real.add(usuario)
+    db_real.flush()
+    id_rol = db_real.execute(text("SELECT id_rol FROM roles WHERE nombre_rol = 'admin'")).scalar()
+    db_real.execute(
+        text("INSERT INTO usuarios_roles (id_usuario, id_rol) VALUES (:u, :r)"), {"u": usuario.id_usuario, "r": id_rol}
+    )
+    db_real.flush()
+    token = create_access_token(data={"sub": str(usuario.id_usuario), "roles": ["admin"]})
     return {"Authorization": f"Bearer {token}"}
 
 

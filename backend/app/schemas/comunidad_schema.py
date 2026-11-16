@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class AutorComunidad(BaseModel):
@@ -47,6 +47,9 @@ class PublicacionesPaginadas(BaseModel):
 
 
 class ComentarioCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     contenido: str = Field(..., min_length=1, max_length=500)
     # Para responder a otro comentario del mismo hilo.
     id_padre: int | None = None
@@ -93,6 +96,9 @@ class VideoAgenciaResponse(BaseModel):
 
 
 class VideoAgenciaUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     titulo: str | None = Field(None, min_length=1, max_length=150)
     descripcion: str | None = Field(None, max_length=500)
     activo: bool | None = None

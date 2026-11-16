@@ -202,6 +202,18 @@ os.makedirs(os.path.join(_UPLOADS_DIR, "comprobantes"), exist_ok=True)
 # precrea aca igual que "perfiles"/"comprobantes" arriba, mismo criterio
 # defensivo.
 os.makedirs(os.path.join(_UPLOADS_DIR, "chat"), exist_ok=True)
+
+
+@app.middleware("http")
+async def bloquear_archivos_privados(request, call_next):
+    """Los comprobantes de pago son documentos privados: ya no se sirven
+    desde la carpeta pública /uploads (cualquiera con el enlace podía
+    abrirlos). Se descargan con sesión en GET /api/pagos/{id}/comprobante."""
+    if request.url.path.startswith("/uploads/comprobantes"):
+        return JSONResponse(status_code=404, content={"detail": "No encontrado"})
+    return await call_next(request)
+
+
 app.mount("/uploads", StaticFiles(directory=_UPLOADS_DIR), name="uploads")
 
 # ============================================================================

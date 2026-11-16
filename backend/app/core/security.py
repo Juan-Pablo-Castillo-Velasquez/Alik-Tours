@@ -7,11 +7,13 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 import jwt  # PyJWT (antes python-jose, sin mantenimiento y con avisos de seguridad)
-from fastapi import Header, HTTPException
+from fastapi import Depends, Header, HTTPException
 from jwt import PyJWTError as JWTError
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.database import get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -43,6 +45,69 @@ def decode_token(token: str) -> dict | None:
         return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except JWTError:
         return None
+
+
+def decode_access_token(token: str) -> dict | None:
+    """Como decode_token, pero SOLO acepta tokens de acceso. El refresh
+    token (7 días) y los de verificación/restablecimiento están firmados con
+    la misma clave: sin este chequeo, require_admin/require_empleado los
+    aceptaban como si fueran de acceso (un refresh token robado daba una
+    semana de acceso al panel)."""
+    payload = decode_token(token)
+    if payload is None or payload.get("type") != "access" or payload.get("sub") is None:
+        return None
+    return payload
+
+
+def _roles_vigentes(db, user_id: int) -> tuple[bool, list[str]] | None:
+    """(activo, roles) del usuario leídos de la base de datos en este
+    momento: si a alguien le quitan el rol de admin o desactivan su cuenta,
+    deja de tener acceso en la siguiente petición, no cuando expire su token."""
+    from sqlalchemy import text
+
+    fila = db.execute(text("SELECT activo FROM usuarios WHERE id_usuario = :uid"), {"uid": user_id}).first()
+    if fila is None:
+        return None
+    roles = [
+        r[0]
+        for r in db.execute(
+            text(
+                "SELECT r.nombre_rol FROM roles r JOIN usuarios_roles ur ON r.id_rol = ur.id_rol "
+                "WHERE ur.id_usuario = :uid"
+            ),
+            {"uid": user_id},
+        ).all()
+    ]
+    # NULL (cuentas antiguas) cuenta como activa; SQLite devuelve 0/1.
+    return (True if fila[0] is None else bool(fila[0])), roles
+
+
+def _exigir_rol(db, authorization: str | None, roles_validos: set[str], mensaje: str) -> int:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="No autenticado")
+    parts = authorization.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    payload = decode_access_token(parts[1])
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Token expirado o inválido")
+    try:
+        user_id = int(payload["sub"])
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Token inválido") from None
+
+    if not roles_validos & set(payload.get("roles") or []):
+        raise HTTPException(status_code=403, detail=mensaje)
+    estado = _roles_vigentes(db, user_id)
+    if estado is None:
+        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+    activo, roles = estado
+    if not activo:
+        raise HTTPException(status_code=403, detail="Esta cuenta está desactivada. Contacta al administrador.")
+    if not roles_validos & set(roles):
+        raise HTTPException(status_code=403, detail=mensaje)
+    return user_id
 
 
 def get_user_from_token(token: str) -> int | None:
@@ -188,52 +253,19 @@ def get_current_user(authorization: str | None = None) -> int | None:
     return user_id
 
 
-def require_admin(authorization: str | None = Header(None)) -> int:
+def require_admin(authorization: str | None = Header(None), db: Session = Depends(get_db)) -> int:
     """
-    Dependency reutilizable para endpoints exclusivos de administrador:
-    exige un JWT válido cuyo claim `roles` incluya "admin". Se usa como
-    `Depends(require_admin)` en las rutas de administración (usuarios/roles,
-    solicitudes de cancelación, etc).
+    Dependency para endpoints exclusivos de administrador: exige un token
+    de ACCESO válido y que el usuario, según la base de datos, siga activo
+    y con el rol "admin".
     """
-    if not authorization:
-        raise HTTPException(status_code=401, detail="No autenticado")
-    parts = authorization.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Token inválido")
-
-    payload = decode_token(parts[1])
-    if payload is None:
-        raise HTTPException(status_code=401, detail="Token expirado o inválido")
-
-    roles = payload.get("roles") or []
-    if "admin" not in roles:
-        raise HTTPException(status_code=403, detail="Requiere rol de administrador")
-
-    return int(payload["sub"])
+    return _exigir_rol(db, authorization, {"admin"}, "Requiere rol de administrador")
 
 
-def require_empleado(authorization: str | None = Header(None)) -> int:
+def require_empleado(authorization: str | None = Header(None), db: Session = Depends(get_db)) -> int:
     """
-    Dependency reutilizable para endpoints que debe poder usar tanto un
-    administrador como un empleado ("asesor") -- exige un JWT válido cuyo
-    claim `roles` incluya "admin" O "empleado". Se usa en las rutas que
-    alimentan el panel recortado del empleado (dashboard, reservas, pagos,
-    mensajes, solicitudes de cancelación) para que ese panel pueda
-    reutilizar exactamente los mismos endpoints que ya usa el admin, sin
-    duplicar rutas por rol.
+    Dependency para endpoints que pueden usar un administrador o un empleado
+    ("asesor"): mismas comprobaciones que require_admin con cualquiera de
+    los dos roles.
     """
-    if not authorization:
-        raise HTTPException(status_code=401, detail="No autenticado")
-    parts = authorization.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Token inválido")
-
-    payload = decode_token(parts[1])
-    if payload is None:
-        raise HTTPException(status_code=401, detail="Token expirado o inválido")
-
-    roles = payload.get("roles") or []
-    if "admin" not in roles and "empleado" not in roles:
-        raise HTTPException(status_code=403, detail="Requiere rol de administrador o empleado")
-
-    return int(payload["sub"])
+    return _exigir_rol(db, authorization, {"admin", "empleado"}, "Requiere rol de administrador o empleado")

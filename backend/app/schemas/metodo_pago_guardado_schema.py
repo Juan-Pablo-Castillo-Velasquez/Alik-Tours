@@ -4,6 +4,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class MetodoPagoGuardadoCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     alias: str = Field(..., min_length=1, max_length=50)
     tipo: str = Field(..., min_length=1, max_length=30)
     ultimos4: str | None = Field(None, min_length=4, max_length=4)
@@ -44,6 +47,9 @@ class MetodoPagoGuardadoUpdate(BaseModel):
     re-hashea) si el cliente la cambia; si no se envía, se conserva la
     actual. Nunca se guarda en texto plano."""
 
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     alias: str | None = Field(None, min_length=1, max_length=50)
     tipo: str | None = Field(None, min_length=1, max_length=30)
     ultimos4: str | None = Field(None, min_length=4, max_length=4)
@@ -66,6 +72,9 @@ class MetodoPagoGuardadoUpdate(BaseModel):
 
 
 class VerificarClaveRequest(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     clave: str = Field(..., min_length=4, max_length=6)
 
 

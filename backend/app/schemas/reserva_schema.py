@@ -29,6 +29,9 @@ CategoriaInclusion = Literal[
 
 
 class ItinerarioDiaInput(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     dia: int = Field(..., gt=0, le=60)
     titulo: str = Field(..., min_length=2, max_length=150)
     descripcion: str | None = Field(None, max_length=3000)
@@ -44,6 +47,9 @@ class ItinerarioDiaResponse(ItinerarioDiaInput):
 
 
 class InclusionInput(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     tipo: Literal["incluye", "no_incluye"]
     categoria: CategoriaInclusion
     descripcion: str = Field(..., min_length=2, max_length=500)
@@ -56,6 +62,9 @@ class InclusionResponse(InclusionInput):
 
 
 class SalidaInput(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     id_salida: int | None = None  # para conservar la salida al editar (tiene reservas)
     fecha_salida: FechaValida
     fecha_regreso: FechaValida | None = None
@@ -104,6 +113,9 @@ class PaqueteServicioInput(BaseModel):
 
 class _FichaPaquete(BaseModel):
     """Campos de la ficha comercial completa (todos opcionales)."""
+
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
 
     noches: int | None = Field(None, ge=0, le=60)
     destino_ciudad: str | None = Field(None, max_length=100)
@@ -254,6 +266,9 @@ class PaqueteDetalleResponse(PaqueteResponse):
 
 
 class MetodoPagoCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_metodo: str = Field(..., min_length=1, max_length=50)
 
 
@@ -266,6 +281,9 @@ class MetodoPagoResponse(BaseModel):
 
 
 class PagoCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     id_reserva: int
     id_metodo_pago: int
     monto: float = Field(..., ge=0)
@@ -273,6 +291,9 @@ class PagoCreate(BaseModel):
 
 
 class PagoUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     monto: float | None = Field(None, ge=0)
     referencia: str | None = None
     estado: str | None = None
@@ -329,6 +350,9 @@ class HabitacionReservaResponse(BaseModel):
 
 
 class ViajeroInput(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     tipo: Literal["adulto", "nino", "infante"]
     nombres: str = Field(..., min_length=1, max_length=100)
     apellidos: str = Field(..., min_length=1, max_length=100)
@@ -355,6 +379,9 @@ class ViajeroResponse(BaseModel):
 class DescuentoInput(BaseModel):
     """Descuento autorizado (solo administración) — queda en el desglose y
     en el historial con su motivo."""
+
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
 
     monto: float = Field(..., gt=0)
     motivo: str = Field(..., min_length=3, max_length=200)
@@ -420,6 +447,9 @@ class CotizacionResponse(BaseModel):
 
 
 class ReservaCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     id_cliente: int
     id_empleado: int | None = None
     id_paquete: int | None = None
@@ -483,6 +513,9 @@ class ReservaCreate(BaseModel):
 
 
 class ReservaUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     id_paquete: int | None = None
     fecha_inicio: FechaValida | None = None
     fecha_fin: FechaValida | None = None
@@ -569,6 +602,9 @@ class AsesorResponse(BaseModel):
 
 
 class PagarRequest(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     id_metodo_pago: int
     tipo_pago: str = "completo"
 
@@ -621,6 +657,9 @@ class ReservaDetailAdminResponse(ReservaDetailResponse):
 
 
 class NotasInternasUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     notas_internas: str | None = Field(None, max_length=4000)
 
 
@@ -628,6 +667,29 @@ class CotizacionVueloInput(BaseModel):
     """La agencia confirma el precio de un vuelo que estaba 'sujeto a
     cotización'. Queda como un concepto del desglose y en el historial."""
 
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     precio_total: float = Field(..., gt=0)
     descripcion: str = Field(..., min_length=3, max_length=200)
     id_oferta_vuelo: int | None = None
+
+
+class ReservaPanelResponse(ReservaResponse):
+    """Fila del listado del panel: la reserva + los datos del cliente con
+    los que se busca (así la tabla no depende de tener TODOS los clientes
+    descargados en el navegador)."""
+
+    cliente_nombre: str | None = None
+    cliente_documento: str | None = None
+    cliente_correo: str | None = None
+
+
+class ReservasPaginaResponse(BaseModel):
+    items: list[ReservaPanelResponse]
+    total: int
+    pagina: int
+    por_pagina: int
+    # Conteo de TODAS las reservas por estado (para las tarjetas del panel,
+    # no depende de los filtros aplicados).
+    conteos: dict[str, int]

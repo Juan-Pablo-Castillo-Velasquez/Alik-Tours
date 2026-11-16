@@ -15,10 +15,14 @@ cambio, lo que sí es código: límite de intentos sobre endpoints sensibles
 """
 
 import os
+import re
+import threading
+import time
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from app.core import cache
 from app.core.cache import redis_client
 
 # (ruta exacta o prefijo) -> (máximo de solicitudes, ventana en segundos)
@@ -56,55 +60,107 @@ RATE_LIMITED_PATHS = {
 RATE_LIMIT_MULTIPLIER = max(1, int(os.getenv("RATE_LIMIT_MULTIPLIER", "1") or "1"))
 
 
-def _rate_limit_config_for(path: str):
-    config = _rate_limit_base_config_for(path)
+def _rate_limit_config_for(path: str, method: str = "POST"):
+    config = _rate_limit_base_config_for(path, method)
     if config is None:
         return None
     bucket, limit, window = config
     return bucket, limit * RATE_LIMIT_MULTIPLIER, window
 
 
-def _rate_limit_base_config_for(path: str):
+# Escrituras públicas o costosas que también se limitan (auditoría de
+# producción, nov. 2026): spam en contacto/corporativo, publicaciones y
+# comentarios, reseñas, reservas y comprobantes. Solo cuentan los métodos
+# indicados: leer la comunidad o el catálogo (GET) nunca se limita aquí.
+# (método, expresión de ruta, bucket, límite, ventana en segundos)
+RATE_LIMIT_RULES: list[tuple[str, re.Pattern, str, int, int]] = [
+    ("POST", re.compile(r"^/api/reservas/\d+/pagar$"), "/pagar", 10, 60),
+    ("POST", re.compile(r"^/api/metodos-pago-guardados/\d+/verificar$"), "/verificar-metodo-pago", 5, 60),
+    ("POST", re.compile(r"^/api/contacto/?$"), "/contacto", 5, 600),
+    ("POST", re.compile(r"^/api/solicitudes-corporativas/?$"), "/corporativo", 5, 600),
+    ("POST", re.compile(r"^/api/reservas/?$"), "/crear-reserva", 10, 600),
+    ("POST", re.compile(r"^/api/reservas/cotizar$"), "/cotizar", 60, 60),
+    ("POST", re.compile(r"^/api/reservas/\d+/solicitud-cancelacion$"), "/cancelacion", 5, 600),
+    ("POST", re.compile(r"^/api/pagos/\d+/comprobante$"), "/comprobante", 10, 600),
+    ("POST", re.compile(r"^/api/comunidad/publicaciones/?$"), "/publicar", 5, 3600),
+    ("POST", re.compile(r"^/api/comunidad/(publicaciones|videos)/\d+/comentarios$"), "/comentar", 20, 600),
+    ("POST", re.compile(r"^/api/resenas/?$"), "/resena", 5, 3600),
+]
+
+
+def _rate_limit_base_config_for(path: str, method: str = "POST"):
     if path in RATE_LIMITED_PATHS:
         limit, window = RATE_LIMITED_PATHS[path]
         return path, limit, window
-    # /api/reservas/{id}/pagar es dinámica (el id varía) — se agrupa bajo
-    # una sola clave "/pagar" para que el límite sea real por IP, no por id.
-    if path.startswith("/api/reservas/") and path.endswith("/pagar"):
-        return "/pagar", 10, 60
-    # /api/metodos-pago-guardados/{id}/verificar valida un PIN de 4-6
-    # dígitos (solo 10,000-1,000,000 combinaciones) contra un hash bcrypt —
-    # sin límite de intentos, alguien con un token de sesión robado podía
-    # forzarlo por fuerza bruta para autorizar pagos con el método guardado
-    # de la víctima. Mismo agrupamiento por prefijo que "/pagar".
-    if path.startswith("/api/metodos-pago-guardados/") and path.endswith("/verificar"):
-        return "/verificar-metodo-pago", 5, 60
+    for metodo, patron, bucket, limit, window in RATE_LIMIT_RULES:
+        if method == metodo and patron.match(path):
+            return bucket, limit, window
     return None
 
 
+def ip_cliente(request: Request) -> str:
+    """IP real de quien hace la petición. En Render (y cualquier proxy) la
+    conexión llega desde el proxy: sin esto TODOS los usuarios compartían
+    el mismo contador y unos pocos intentos fallidos bloqueaban el login de
+    todo el mundo. Se usa la ÚLTIMA IP de X-Forwarded-For (la que agrega el
+    proxy de confianza; las anteriores las puede inventar el cliente).
+    CONFIAR_PROXY=false la desactiva (servidor expuesto directo)."""
+    if os.getenv("CONFIAR_PROXY", "true").lower() not in ("0", "false", "no"):
+        reenviado = request.headers.get("x-forwarded-for", "")
+        partes = [p.strip() for p in reenviado.split(",") if p.strip()]
+        if partes:
+            return partes[-1][:64]
+    return request.client.host if request.client else "desconocido"
+
+
+# Respaldo en memoria por si Redis no responde: antes, sin Redis, el límite
+# simplemente se apagaba (login sin protección contra fuerza bruta).
+_contadores_locales: dict[str, tuple[int, float]] = {}
+_contadores_lock = threading.Lock()
+
+
+def _incrementar_local(clave: str, ventana: int) -> int:
+    ahora = time.monotonic()
+    with _contadores_lock:
+        if len(_contadores_locales) > 10_000:
+            for k in [k for k, (_, vence) in _contadores_locales.items() if vence <= ahora]:
+                _contadores_locales.pop(k, None)
+        intentos, vence = _contadores_locales.get(clave, (0, ahora + ventana))
+        if vence <= ahora:
+            intentos, vence = 0, ahora + ventana
+        intentos += 1
+        _contadores_locales[clave] = (intentos, vence)
+        return intentos
+
+
+def _incrementar(clave: str, ventana: int) -> int:
+    if not cache._redis_disponible():
+        return _incrementar_local(clave, ventana)
+    try:
+        intentos = redis_client.incr(clave)
+        if intentos == 1:
+            redis_client.expire(clave, ventana)
+        return int(intentos)
+    except Exception:
+        cache._marcar_redis_caido("contar intentos de", clave)
+        return _incrementar_local(clave, ventana)
+
+
 async def seguridad_middleware(request: Request, call_next):
-    config = _rate_limit_config_for(request.url.path)
+    config = _rate_limit_config_for(request.url.path, request.method)
     if config:
         bucket, limit, window = config
-        ip = request.client.host if request.client else "desconocido"
-        key = f"ratelimit:{bucket}:{ip}"
-        try:
-            intentos = redis_client.incr(key)
-            if intentos == 1:
-                redis_client.expire(key, window)
-            if intentos > limit:
-                response = JSONResponse(
-                    status_code=429,
-                    content={"detail": "Demasiadas solicitudes. Intenta de nuevo en un momento."},
-                )
-                response.headers["X-Content-Type-Options"] = "nosniff"
-                response.headers["X-Frame-Options"] = "DENY"
-                return response
-        except Exception:
-            # Si Redis no responde, no se bloquea tráfico real (login,
-            # registro) por un problema de infraestructura ajeno al
-            # usuario — el rate limit es una capa extra, no la única.
-            pass
+        key = f"ratelimit:{bucket}:{ip_cliente(request)}"
+        intentos = _incrementar(key, window)
+        if intentos > limit:
+            response = JSONResponse(
+                status_code=429,
+                content={"detail": "Demasiadas solicitudes. Intenta de nuevo en un momento."},
+                headers={"Retry-After": str(window)},
+            )
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            return response
 
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"

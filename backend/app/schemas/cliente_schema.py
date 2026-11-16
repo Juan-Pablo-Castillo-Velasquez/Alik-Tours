@@ -6,6 +6,9 @@ from app.schemas.validadores import Celular, FechaValida
 
 
 class ClienteCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre: str = Field(..., min_length=1, max_length=100)
     apellido: str = Field(..., min_length=1, max_length=100)
     cedula: str = Field(..., min_length=1, max_length=20)
@@ -28,6 +31,9 @@ class ClienteCreate(BaseModel):
 
 
 class ClienteUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre: str | None = None
     apellido: str | None = None
     correo: EmailStr | None = None
@@ -76,6 +82,9 @@ class ClienteResponse(BaseModel):
 
 
 class EmpleadoCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre: str = Field(..., min_length=1, max_length=100)
     apellido: str = Field(..., min_length=1, max_length=100)
     cedula: str = Field(..., min_length=1, max_length=20)
@@ -89,6 +98,9 @@ class EmpleadoCreate(BaseModel):
 
 
 class EmpleadoUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre: str | None = None
     apellido: str | None = None
     correo_electronico: EmailStr | None = None

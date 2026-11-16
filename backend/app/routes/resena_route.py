@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
-from app.core.deps import get_current_usuario
+from app.core.deps import get_current_usuario, get_usuario_verificado
 from app.core.security import require_empleado
 from app.models.resena_model import Resena
 from app.models.reserva_model import Reserva
@@ -25,6 +25,7 @@ AVATAR_BG = "7B1E3A"
 
 
 class ResenaCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
     id_reserva: int
     calificacion: int = Field(..., ge=1, le=5)
     comentario: str = Field(..., min_length=10, max_length=1000)
@@ -32,11 +33,13 @@ class ResenaCreate(BaseModel):
 
 
 class ResenaUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
     calificacion: int | None = Field(None, ge=1, le=5)
     comentario: str | None = Field(None, min_length=10, max_length=1000)
 
 
 class RespuestaAgencia(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
     # Vacío o null = quitar la respuesta.
     respuesta: str | None = Field(None, max_length=1000)
 
@@ -162,7 +165,7 @@ def _resena_propia(db: Session, id_resena: int, usuario: Usuario) -> Resena:
 def crear_resena(
     data: ResenaCreate,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_current_usuario),
+    usuario: Usuario = Depends(get_usuario_verificado),
 ):
     if not usuario.cliente:
         raise HTTPException(status_code=403, detail="Solo los clientes pueden dejar reseñas")
@@ -222,7 +225,7 @@ def editar_resena(
     id_resena: int,
     data: ResenaUpdate,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_current_usuario),
+    usuario: Usuario = Depends(get_usuario_verificado),
 ):
     """El autor corrige su reseña (estrellas y/o texto). Queda marcada como editada."""
     r = _resena_propia(db, id_resena, usuario)

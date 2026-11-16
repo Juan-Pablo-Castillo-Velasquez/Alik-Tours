@@ -2,7 +2,7 @@ import asyncio
 import threading
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -13,6 +13,9 @@ router = APIRouter(prefix="/api/contacto", tags=["Contacto"])
 
 
 class ContactoRequest(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre: str = Field(..., min_length=2, max_length=100)
     correo: EmailStr
     asunto: str = Field(..., min_length=3, max_length=150)

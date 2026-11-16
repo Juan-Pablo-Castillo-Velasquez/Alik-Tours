@@ -5,6 +5,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CaracteristicaCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_caracteristica: str = Field(..., min_length=1, max_length=100)
 
 
@@ -16,6 +19,9 @@ class CaracteristicaResponse(BaseModel):
 
 
 class TipoHabitacionCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_tipo: str = Field(..., min_length=1, max_length=50)
     descripcion: str | None = Field(None, max_length=200)
     capacidad_personas: int = Field(..., gt=0)
@@ -56,6 +62,9 @@ SERVICIOS_HABITACION = frozenset(
 class DetallesHabitacion(BaseModel):
     """Ficha de la habitación (todo opcional). En un PUT, mandar null borra
     el dato; no mandarlo lo deja como estaba."""
+
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
 
     descripcion: str | None = Field(None, max_length=2000)
     tamano_m2: int | None = Field(None, gt=0, le=10000)
@@ -193,6 +202,9 @@ class ServicioHotelInput(BaseModel):
     """Un servicio/instalación del hotel con su estado real. Lo que no se
     envía queda como "no informado" (no se muestra)."""
 
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre: str = Field(..., min_length=2, max_length=100)
     estado: Literal["incluido", "de_pago", "no_disponible"]
     nota: str | None = Field(None, max_length=150)
@@ -228,6 +240,9 @@ class HabitacionNuevaEnHotel(BaseModel):
 
 
 class HotelCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_hotel: str = Field(..., min_length=1, max_length=100)
     calificacion: int | None = Field(None, ge=1, le=5)
     direccion: str | None = Field(None, max_length=255)
@@ -274,6 +289,9 @@ class HotelCreate(BaseModel):
 
 
 class HotelUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     # Mismos límites que HotelCreate (= tamaño de cada columna). Hallazgo de
     # la semana 6: al editar no había límites y PostgreSQL rechazaba un
     # nombre de 101 caracteres con un 500.
@@ -368,6 +386,9 @@ class ImagenHabitacionResponse(ImagenGaleriaResponse):
 
 class ImagenHabitacionUpdate(BaseModel):
     """Pie de foto y/o marcarla como portada (la primera de la galería)."""
+
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
 
     descripcion: str | None = Field(None, max_length=120)
     portada: bool = False

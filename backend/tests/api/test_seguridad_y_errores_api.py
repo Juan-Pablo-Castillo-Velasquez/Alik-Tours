@@ -85,8 +85,11 @@ class TestAutorizacion:
         assert r.json() == {"detail": "Requiere rol de administrador"}
 
     @pytest.mark.parametrize(("metodo", "ruta", "rol"), PROTEGIDOS)
-    def test_con_el_rol_correcto_pasa_la_proteccion(self, client, metodo, ruta, rol):
-        r = client.request(metodo, ruta, headers=_token([rol]), json={"nombre_caracteristica": "Piscina"})
+    def test_con_el_rol_correcto_pasa_la_proteccion(self, client, crear_usuario, metodo, ruta, rol):
+        # Usuario real con el rol en la BD: los permisos se verifican contra
+        # la base de datos, no solo contra el token.
+        _, headers = crear_usuario(roles=(rol,), con_cliente=False)
+        r = client.request(metodo, ruta, headers=headers, json={"nombre_caracteristica": "Piscina"})
 
         # Puede ser 200, 201 o 404 (el recurso 999 no existe), nunca 401/403.
         assert r.status_code not in (401, 403)
@@ -174,3 +177,132 @@ class TestContratoDeErrores:
 
         assert r.status_code == 500
         assert r.headers.get("access-control-allow-origin") != "https://sitio-malicioso.example"
+
+
+class TestTokensYRolesVigentes:
+    """Hallazgos de la auditoría de producción (nov. 2026)."""
+
+    def test_un_refresh_token_no_sirve_en_rutas_de_admin(self, client, crear_usuario):
+        from app.core.security import create_refresh_token
+
+        usuario, _ = crear_usuario(roles=("admin",), con_cliente=False)
+        refresh = create_refresh_token(data={"sub": str(usuario.id_usuario), "roles": ["admin"]})
+        r = client.get("/api/usuarios", headers={"Authorization": f"Bearer {refresh}"})
+        assert r.status_code == 401
+
+    def test_un_refresh_token_no_sirve_en_rutas_de_asesor(self, client, crear_usuario):
+        from app.core.security import create_refresh_token
+
+        usuario, _ = crear_usuario(roles=("empleado",), con_cliente=False)
+        refresh = create_refresh_token(data={"sub": str(usuario.id_usuario), "roles": ["empleado"]})
+        r = client.get("/api/reservas/buscar", headers={"Authorization": f"Bearer {refresh}"})
+        assert r.status_code == 401
+
+    def test_quitar_el_rol_de_admin_corta_el_acceso_de_inmediato(self, client, db, crear_usuario):
+        from app.models.auth_model import UsuarioRol
+
+        usuario, headers = crear_usuario(roles=("admin",), con_cliente=False)
+        assert client.get("/api/usuarios", headers=headers).status_code == 200
+        db.query(UsuarioRol).filter(UsuarioRol.id_usuario == usuario.id_usuario).delete()
+        db.commit()
+        r = client.get("/api/usuarios", headers=headers)
+        assert r.status_code == 403
+
+    def test_un_admin_desactivado_no_entra_al_panel(self, client, db, crear_usuario):
+        usuario, headers = crear_usuario(roles=("admin",), con_cliente=False)
+        usuario.activo = False
+        db.commit()
+        assert client.get("/api/usuarios", headers=headers).status_code == 403
+
+    def test_token_de_un_usuario_que_ya_no_existe(self, client):
+        assert client.get("/api/usuarios", headers=_token(["admin"])).status_code == 401
+
+
+class TestComprobantesPrivados:
+    """Los comprobantes de pago ya no se sirven por la carpeta pública."""
+
+    def _pago_con_comprobante(self, db, cliente):
+        import os
+        from datetime import date, timedelta
+
+        from app.models.reserva_model import MetodoPago, Pago, Reserva
+        from app.routes.reserva_route import COMPROBANTES_UPLOAD_DIR
+
+        metodo = MetodoPago(nombre_metodo="Nequi")
+        db.add(metodo)
+        db.commit()
+        reserva = Reserva(
+            id_cliente=cliente.id_cliente,
+            fecha_inicio=date.today() + timedelta(days=5),
+            fecha_fin=date.today() + timedelta(days=7),
+            numero_personas=1,
+            estado="pendiente",
+        )
+        db.add(reserva)
+        db.commit()
+        os.makedirs(COMPROBANTES_UPLOAD_DIR, exist_ok=True)
+        nombre = "prueba-comprobante-privado.pdf"
+        with open(os.path.join(COMPROBANTES_UPLOAD_DIR, nombre), "wb") as f:
+            f.write(b"%PDF-1.4 prueba")
+        pago = Pago(
+            id_reserva=reserva.id_reserva,
+            id_metodo_pago=metodo.id_metodo,
+            monto=100,
+            estado="pendiente",
+            comprobante_url=f"/uploads/comprobantes/{nombre}",
+        )
+        db.add(pago)
+        db.commit()
+        return pago, os.path.join(COMPROBANTES_UPLOAD_DIR, nombre)
+
+    def test_la_ruta_publica_ya_no_entrega_el_archivo(self, client, db, crear_usuario):
+        import os
+
+        usuario, _ = crear_usuario()
+        pago, ruta = self._pago_con_comprobante(db, usuario.cliente)
+        try:
+            assert client.get(pago.comprobante_url).status_code == 404
+        finally:
+            os.remove(ruta)
+
+    def test_solo_el_dueno_o_el_equipo_lo_descargan(self, client, db, crear_usuario):
+        import os
+
+        dueno, h_dueno = crear_usuario()
+        _, h_otro = crear_usuario()
+        _, h_asesor = crear_usuario(roles=("empleado",), con_cliente=False)
+        pago, ruta = self._pago_con_comprobante(db, dueno.cliente)
+        try:
+            url = f"/api/pagos/{pago.id_pago}/comprobante"
+            r = client.get(url, headers=h_dueno)
+            assert r.status_code == 200 and r.content.startswith(b"%PDF")
+            assert "no-store" in r.headers["cache-control"]
+            assert client.get(url, headers=h_asesor).status_code == 200
+            assert client.get(url, headers=h_otro).status_code == 403
+            assert client.get(url).status_code == 401
+        finally:
+            os.remove(ruta)
+
+
+class TestCuentaSinVerificar:
+    """El token provisional del registro no sirve para operaciones sensibles."""
+
+    @pytest.mark.parametrize(
+        ("metodo", "ruta"),
+        [
+            ("POST", "/api/reservas"),
+            ("POST", "/api/reservas/1/pagar"),
+            ("POST", "/api/resenas"),
+            ("POST", "/api/comunidad/publicaciones"),
+            ("POST", "/api/mensajes/me/enviar"),
+            ("POST", "/api/metodos-pago-guardados"),
+            ("POST", "/api/reservas/1/solicitud-cancelacion"),
+        ],
+    )
+    def test_sin_verificar_responde_403(self, client, db, crear_usuario, metodo, ruta):
+        usuario, headers = crear_usuario()
+        usuario.verificado = False
+        db.commit()
+        r = client.request(metodo, ruta, headers=headers, json={})
+        assert r.status_code == 403
+        assert "Verifica tu correo" in r.json()["detail"]

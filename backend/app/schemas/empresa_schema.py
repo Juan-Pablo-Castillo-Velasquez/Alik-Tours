@@ -6,6 +6,9 @@ ESTADOS_VALIDOS = ["nuevo", "contactado", "cerrado", "descartado"]
 
 
 class SolicitudCorporativaCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_empresa: str = Field(..., min_length=2, max_length=150)
     numero_empleados: str | None = None
     nombre_contacto: str = Field(..., min_length=2, max_length=100)
@@ -15,6 +18,9 @@ class SolicitudCorporativaCreate(BaseModel):
 
 
 class SolicitudCorporativaUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     estado: str
 
     @field_validator("estado")

@@ -28,7 +28,13 @@ from sqlalchemy.orm import Session, selectinload
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.core.database import get_db
-from app.core.deps import get_current_usuario, get_usuario_opcional, usuario_es_admin, usuario_es_staff
+from app.core.deps import (
+    get_current_usuario,
+    get_usuario_opcional,
+    get_usuario_verificado,
+    usuario_es_admin,
+    usuario_es_staff,
+)
 from app.core.file_validation import validar_y_leer_archivo
 from app.core.image_storage import CLOUDINARY_CONFIGURADO, borrar_imagen, guardar_imagen
 from app.core.security import require_admin, require_empleado
@@ -401,7 +407,7 @@ def comentar_video(
     id_video: int,
     data: ComentarioCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_usuario),
+    current_user: Usuario = Depends(get_usuario_verificado),
     authorization: str | None = Header(None),
 ):
     v = db.query(VideoAgencia).filter(VideoAgencia.id_video == id_video).first()
@@ -439,7 +445,7 @@ async def crear_publicacion(
     video_url: str | None = Form(None, description="URL ya subida a Cloudinary (subida directa)"),
     imagenes_urls: list[str] | None = Form(None, description="URLs ya subidas a Cloudinary (subida directa)"),
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_usuario),
+    current_user: Usuario = Depends(get_usuario_verificado),
 ):
     """Crea una publicación en estado 'pendiente' (la revisa el equipo antes
     de mostrarse). Lleva un video corto O hasta 4 fotos (o solo texto)."""
@@ -457,6 +463,13 @@ async def crear_publicacion(
 
     if (video or video_url_directo) and (imagenes or fotos_directas):
         raise HTTPException(status_code=422, detail="Sube un video o fotos, no ambos en la misma publicación.")
+    # Los Form no recortan espacios: "   " pasaba como título válido.
+    titulo, contenido = titulo.strip(), contenido.strip()
+    destino = destino.strip() if destino else None
+    if len(titulo) < 3:
+        raise HTTPException(status_code=422, detail="El título debe tener al menos 3 caracteres")
+    if len(contenido) < 10:
+        raise HTTPException(status_code=422, detail="Cuéntanos un poco más: mínimo 10 caracteres")
     if len(imagenes) + len(fotos_directas) > MAX_IMAGENES:
         raise HTTPException(status_code=422, detail=f"Máximo {MAX_IMAGENES} fotos por publicación.")
 
@@ -530,7 +543,7 @@ def comentar(
     id_publicacion: int,
     data: ComentarioCreate,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_usuario),
+    current_user: Usuario = Depends(get_usuario_verificado),
     authorization: str | None = Header(None),
 ):
     p = db.query(PublicacionComunidad).filter(PublicacionComunidad.id_publicacion == id_publicacion).first()

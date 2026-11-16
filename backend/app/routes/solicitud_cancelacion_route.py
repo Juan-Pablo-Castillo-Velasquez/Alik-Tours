@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.cache import delete_pattern
 from app.core.database import get_db
-from app.core.deps import exigir_propietario_o_admin, get_current_usuario
+from app.core.deps import exigir_propietario_o_admin, get_current_usuario, get_usuario_verificado
 from app.core.mail import send_cancellation_email, send_email
 from app.core.security import require_admin, require_empleado
 from app.models.reserva_model import HistorialReserva, Reserva
@@ -67,7 +67,7 @@ async def crear_solicitud_cancelacion(
     reserva_id: int,
     data: SolicitudCancelacionCreate,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_current_usuario),
+    usuario: Usuario = Depends(get_usuario_verificado),
     authorization: str | None = Header(None),
 ):
     """

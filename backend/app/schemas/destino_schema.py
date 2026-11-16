@@ -6,6 +6,9 @@ from app.schemas.validadores import FechaValida
 
 
 class DestinoCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_destino: str = Field(..., min_length=1, max_length=100)
     descripcion: str | None = None
     ciudad: str | None = Field(None, max_length=100)
@@ -15,6 +18,9 @@ class DestinoCreate(BaseModel):
 
 
 class DestinoUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_destino: str | None = None
     descripcion: str | None = None
     ciudad: str | None = None

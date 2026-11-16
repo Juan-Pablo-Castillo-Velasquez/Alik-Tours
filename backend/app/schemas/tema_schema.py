@@ -36,6 +36,9 @@ def _validar_hex(valor: str) -> str:
 
 
 class TemaBase(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre: str
     color_primario_claro: str
     color_primario_oscuro: str

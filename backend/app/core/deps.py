@@ -10,10 +10,10 @@ aquí — ver Fase 0 del plan de mejora (docs/referencia-tecnica/).
 """
 
 from fastapi import Depends, Header, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app.core.database import get_db
-from app.core.security import decode_token, get_user_from_token
+from app.core.security import _roles_vigentes, decode_access_token, get_user_from_token
 from app.models.auth_model import Permiso, Rol, RolPermiso
 from app.models.user_model import Usuario
 
@@ -57,6 +57,18 @@ def get_current_usuario(
     return usuario
 
 
+def get_usuario_verificado(usuario: Usuario = Depends(get_current_usuario)) -> Usuario:
+    """Para operaciones sensibles (reservar, pagar, subir comprobantes,
+    escribir reseñas, publicar o comentar, chatear, guardar métodos de pago,
+    pedir cancelaciones): exige el correo verificado. El registro entrega un
+    token provisional antes de la verificación (lo usa el propio formulario
+    para crear el perfil de cliente); con este chequeo ese token ya no sirve
+    para nada más."""
+    if usuario.verificado is False:
+        raise HTTPException(status_code=403, detail="Verifica tu correo electrónico para continuar.")
+    return usuario
+
+
 def get_usuario_opcional(
     authorization: str | None = Header(None),
     db: Session = Depends(get_db),
@@ -81,7 +93,7 @@ def usuario_es_admin(authorization: str | None) -> bool:
     parts = authorization.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
         return False
-    payload = decode_token(parts[1])
+    payload = decode_access_token(parts[1])
     if not payload:
         return False
     return "admin" in (payload.get("roles") or [])
@@ -99,7 +111,7 @@ def usuario_es_staff(authorization: str | None) -> bool:
     parts = authorization.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
         return False
-    payload = decode_token(parts[1])
+    payload = decode_access_token(parts[1])
     if not payload:
         return False
     roles = payload.get("roles") or []
@@ -120,7 +132,12 @@ def exigir_propietario_o_admin(
     if id_cliente_recurso is not None and current_user.id_cliente == id_cliente_recurso:
         return
     if usuario_es_staff(authorization):
-        return
+        # El token dice staff: se confirma con los roles VIGENTES en la BD
+        # (a alguien le pudieron quitar el rol después de emitir el token).
+        sesion = object_session(current_user)
+        estado = _roles_vigentes(sesion, current_user.id_usuario) if sesion is not None else None
+        if estado and estado[0] and {"admin", "empleado"} & set(estado[1]):
+            return
     raise HTTPException(status_code=403, detail="No tienes permiso para acceder a estos datos")
 
 
@@ -158,13 +175,24 @@ def require_permission(*claves: str):
         if len(parts) != 2 or parts[0].lower() != "bearer":
             raise HTTPException(status_code=401, detail="Token inválido")
 
-        payload = decode_token(parts[1])
+        payload = decode_access_token(parts[1])
         if payload is None:
             raise HTTPException(status_code=401, detail="Token expirado o inválido")
+        try:
+            user_id = int(payload["sub"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=401, detail="Token inválido") from None
 
-        roles = payload.get("roles") or []
+        # Roles y estado de la cuenta según la BD AHORA, no según el token
+        # (que pudo emitirse antes de quitar un rol o desactivar la cuenta).
+        estado = _roles_vigentes(db, user_id)
+        if estado is None:
+            raise HTTPException(status_code=401, detail="Usuario no encontrado")
+        activo, roles = estado
+        if not activo:
+            raise HTTPException(status_code=403, detail="Esta cuenta está desactivada. Contacta al administrador.")
         if "admin" in roles:
-            return int(payload["sub"])
+            return user_id
 
         if roles and claves:
             tiene_permiso = (
@@ -175,7 +203,7 @@ def require_permission(*claves: str):
                 .first()
             )
             if tiene_permiso:
-                return int(payload["sub"])
+                return user_id
 
         raise HTTPException(
             status_code=403,

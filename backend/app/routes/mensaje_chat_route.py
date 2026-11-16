@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.core.cache import reservar_clave_unica
 from app.core.database import get_db
-from app.core.deps import get_current_usuario, usuario_es_staff
+from app.core.deps import get_current_usuario, get_usuario_verificado, usuario_es_staff
 from app.core.file_validation import validar_y_leer_archivo
 from app.core.image_storage import guardar_imagen
 from app.core.security import require_empleado
@@ -216,7 +216,7 @@ async def enviar_como_cliente(
     id_reserva: int | None = Form(None, description="Reserva de la que se está hablando, opcional"),
     client_msg_id: str | None = Form(None, max_length=64, description="Id de idempotencia generado por el frontend"),
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_usuario),
+    current_user: Usuario = Depends(get_usuario_verificado),
 ):
     id_cliente = _exigir_cliente(current_user)
     _exigir_mensaje_no_repetido(current_user.id_usuario, client_msg_id)

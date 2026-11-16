@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.deps import get_current_usuario
+from app.core.deps import get_current_usuario, get_usuario_verificado
 from app.core.security import hash_password, verify_password
 from app.models.user_model import Usuario
 from app.repositories.metodo_pago_guardado_repository import MetodoPagoGuardadoRepository
@@ -36,7 +36,7 @@ def listar_metodos_guardados(
 def guardar_metodo_pago(
     data: MetodoPagoGuardadoCreate,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_current_usuario),
+    usuario: Usuario = Depends(get_usuario_verificado),
 ):
     id_cliente = _require_cliente(usuario)
     clave_hash = hash_password(data.clave)
@@ -56,7 +56,7 @@ def actualizar_metodo_guardado(
     id_metodo_guardado: int,
     data: MetodoPagoGuardadoUpdate,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_current_usuario),
+    usuario: Usuario = Depends(get_usuario_verificado),
 ):
     """
     Edita un método guardado (lápiz en el perfil): alias, tipo, últimos 4,
@@ -82,7 +82,7 @@ def verificar_clave_metodo(
     id_metodo_guardado: int,
     data: VerificarClaveRequest,
     db: Session = Depends(get_db),
-    usuario: Usuario = Depends(get_current_usuario),
+    usuario: Usuario = Depends(get_usuario_verificado),
 ):
     """
     Verifica la clave de confirmación de un método guardado antes de usarlo

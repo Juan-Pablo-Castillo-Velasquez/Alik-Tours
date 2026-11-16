@@ -44,6 +44,9 @@ class RolResponse(BaseModel):
 
 
 class RolCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     nombre_rol: str = Field(..., min_length=2, max_length=50)
 
 

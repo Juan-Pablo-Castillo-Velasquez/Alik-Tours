@@ -21,6 +21,9 @@ def _iata(v: str | None) -> str | None:
 
 
 class _CamposOferta(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     titulo: str | None = Field(None, min_length=3, max_length=150)
     descripcion: str | None = Field(None, max_length=5000)
     estado: EstadoOferta | None = None

@@ -4,12 +4,18 @@ from pydantic import BaseModel, ConfigDict
 
 
 class ConfiguracionCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     clave: str
     valor: str | None = None
     descripcion: str | None = None
 
 
 class ConfiguracionUpdate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     valor: str | None = None
     descripcion: str | None = None
 

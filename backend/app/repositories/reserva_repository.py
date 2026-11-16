@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -377,6 +377,170 @@ class PaqueteRepository:
 
 
 class ReservaRepository:
+    # Relaciones que serializa ReservaResponse (precio, destino, hotel,
+    # pagos, última actualización...) precargadas para no hacer N+1.
+    @staticmethod
+    def _opciones_listado():
+        return (
+            joinedload(Reserva.paquete).joinedload(Paquete.paquete_hotel).joinedload(PaqueteHotel.hotel),
+            selectinload(Reserva.reserva_habitaciones)
+            .joinedload(ReservaHabitacion.habitacion)
+            .joinedload(Habitacion.hotel),
+            selectinload(Reserva.reserva_servicios),
+            selectinload(Reserva.historial_reservas),
+            selectinload(Reserva.conceptos),
+            selectinload(Reserva.pagos).joinedload(Pago.metodo_pago),
+            joinedload(Reserva.oferta_vuelo),
+            joinedload(Reserva.cliente),
+        )
+
+    ORDENES_BUSQUEDA = {
+        "id": Reserva.id_reserva,
+        "fechas": Reserva.fecha_inicio,
+        "creada": Reserva.fecha_reserva,
+    }
+
+    @staticmethod
+    def buscar(
+        db: Session,
+        *,
+        q: str | None = None,
+        estado: str | None = None,
+        estado_pago: str | None = None,
+        canal: str | None = None,
+        tipo_producto: str | None = None,
+        id_empleado: int | None = None,
+        sin_asesor: bool = False,
+        id_cliente: int | None = None,
+        fecha_desde=None,
+        fecha_hasta=None,
+        orden: str = "id",
+        direccion: str = "desc",
+        pagina: int = 1,
+        por_pagina: int = 20,
+    ) -> tuple[list[Reserva], int]:
+        """Búsqueda paginada EN LA BASE DE DATOS para el panel (antes el
+        panel descargaba todas las reservas y filtraba en el navegador).
+
+        q busca por código (#25 o 25), nombre, apellido, documento o correo
+        del cliente, nombre del paquete, hotel o ciudad de destino (hotel
+        reservado, hotel del paquete, destino del paquete o del vuelo).
+        Las fechas filtran por fecha de inicio del viaje."""
+        from app.models.cliente_model import Cliente
+        from app.models.vuelo_model import OfertaVuelo
+
+        consulta = db.query(Reserva).join(Cliente, Cliente.id_cliente == Reserva.id_cliente)
+        if estado:
+            consulta = consulta.filter(Reserva.estado == estado)
+        if canal:
+            consulta = consulta.filter(func.coalesce(Reserva.canal_origen, "web") == canal)
+        if tipo_producto:
+            if tipo_producto == "hotel":
+                # Reservas antiguas sin tipo: si no tienen paquete ni vuelo son de hotel.
+                consulta = consulta.filter(
+                    or_(
+                        Reserva.tipo_producto == "hotel",
+                        and_(
+                            Reserva.tipo_producto.is_(None),
+                            Reserva.id_paquete.is_(None),
+                            Reserva.id_oferta_vuelo.is_(None),
+                        ),
+                    )
+                )
+            elif tipo_producto == "paquete":
+                consulta = consulta.filter(
+                    or_(
+                        Reserva.tipo_producto == "paquete",
+                        and_(Reserva.tipo_producto.is_(None), Reserva.id_paquete.isnot(None)),
+                    )
+                )
+            else:
+                consulta = consulta.filter(Reserva.tipo_producto == tipo_producto)
+        if sin_asesor:
+            consulta = consulta.filter(Reserva.id_empleado.is_(None))
+        elif id_empleado is not None:
+            consulta = consulta.filter(Reserva.id_empleado == id_empleado)
+        if id_cliente is not None:
+            consulta = consulta.filter(Reserva.id_cliente == id_cliente)
+        if fecha_desde:
+            consulta = consulta.filter(Reserva.fecha_inicio >= fecha_desde)
+        if fecha_hasta:
+            consulta = consulta.filter(Reserva.fecha_inicio <= fecha_hasta)
+        if estado_pago:
+            consulta = consulta.filter(
+                db.query(Pago.id_pago)
+                .filter(Pago.id_reserva == Reserva.id_reserva, Pago.estado == estado_pago)
+                .exists()
+            )
+        texto = (q or "").strip()
+        if texto:
+            numero = texto.lstrip("#").strip()
+            patron = f"%{texto}%"
+            hotel_reservado = (
+                db.query(ReservaHabitacion.id_reserva)
+                .join(Habitacion, Habitacion.id_habitacion == ReservaHabitacion.id_habitacion)
+                .join(Hotel, Hotel.id_hotel == Habitacion.id_hotel)
+                .filter(
+                    ReservaHabitacion.id_reserva == Reserva.id_reserva,
+                    or_(Hotel.nombre_hotel.ilike(patron), Hotel.ciudad.ilike(patron)),
+                )
+                .exists()
+            )
+            paquete = (
+                db.query(Paquete.id_paquete)
+                .filter(
+                    Paquete.id_paquete == Reserva.id_paquete,
+                    or_(Paquete.nombre_paquete.ilike(patron), Paquete.destino_ciudad.ilike(patron)),
+                )
+                .exists()
+            )
+            hotel_paquete = (
+                db.query(PaqueteHotel.id_paquete)
+                .join(Hotel, Hotel.id_hotel == PaqueteHotel.id_hotel)
+                .filter(
+                    PaqueteHotel.id_paquete == Reserva.id_paquete,
+                    or_(Hotel.nombre_hotel.ilike(patron), Hotel.ciudad.ilike(patron)),
+                )
+                .exists()
+            )
+            vuelo = (
+                db.query(OfertaVuelo.id_oferta)
+                .filter(
+                    OfertaVuelo.id_oferta == Reserva.id_oferta_vuelo,
+                    or_(OfertaVuelo.destino_ciudad.ilike(patron), OfertaVuelo.titulo.ilike(patron)),
+                )
+                .exists()
+            )
+            condiciones = [
+                func.concat(Cliente.nombre, " ", Cliente.apellido).ilike(patron),
+                Cliente.cedula.ilike(patron),
+                Cliente.correo.ilike(patron),
+                hotel_reservado,
+                paquete,
+                hotel_paquete,
+                vuelo,
+            ]
+            if numero.isdigit() and len(numero) <= 9:
+                condiciones.append(Reserva.id_reserva == int(numero))
+            consulta = consulta.filter(or_(*condiciones))
+
+        total = consulta.with_entities(func.count(Reserva.id_reserva)).scalar() or 0
+        columna = ReservaRepository.ORDENES_BUSQUEDA.get(orden, Reserva.id_reserva)
+        orden_sql = columna.asc() if direccion == "asc" else columna.desc()
+        items = (
+            consulta.options(*ReservaRepository._opciones_listado())
+            .order_by(orden_sql, Reserva.id_reserva.desc())
+            .offset((pagina - 1) * por_pagina)
+            .limit(por_pagina)
+            .all()
+        )
+        return items, total
+
+    @staticmethod
+    def conteos_por_estado(db: Session) -> dict[str, int]:
+        filas = db.query(Reserva.estado, func.count(Reserva.id_reserva)).group_by(Reserva.estado).all()
+        return {str(estado): int(total) for estado, total in filas if estado}
+
     @staticmethod
     def get_all(db: Session, skip: int = 0, limit: int = 10):
         # joinedload evita N+1 al resolver Reserva.precio_total / .nombre_paquete
@@ -397,6 +561,9 @@ class ReservaRepository:
                 joinedload(Reserva.historial_reservas),
                 selectinload(Reserva.pagos).joinedload(Pago.metodo_pago),
             )
+            # Sin ORDER BY, Postgres no garantiza el orden y la paginación
+            # por skip/limit podía repetir u omitir reservas entre páginas.
+            .order_by(Reserva.id_reserva.desc())
             .offset(skip)
             .limit(limit)
             .all()

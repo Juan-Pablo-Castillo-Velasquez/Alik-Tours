@@ -16,6 +16,9 @@ MOTIVOS_VALIDOS = [
 
 
 class SolicitudCancelacionCreate(BaseModel):
+    # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     motivo: str = Field(..., min_length=1, max_length=100)
     # Solo obligatorio cuando motivo == "Otro motivo" (se valida en el service)
     motivo_detalle: str | None = Field(None, max_length=1000)
