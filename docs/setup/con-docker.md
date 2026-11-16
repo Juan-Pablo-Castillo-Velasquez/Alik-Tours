@@ -228,3 +228,14 @@ docker system prune -f
 docker compose up --build -d
 # Las migraciones y los datos semilla se vuelven a aplicar solos al arrancar el backend.
 ```
+
+## Datos de prueba para reseñas y comunidad (opcional)
+
+Para probar las reseñas, los testimonios del inicio y la comunidad con contenido, con los contenedores levantados:
+
+```bash
+docker compose exec backend python scripts/seed_demo_comunidad.py          # crea 24 reseñas y 22 publicaciones con fotos
+docker compose exec backend python scripts/seed_demo_comunidad.py --borrar # las quita
+```
+
+Usa los clientes que ya existan en tu base local. **No corre contra producción** (se niega si `DATABASE_URL` es de Neon o `ENTORNO=produccion`): en el sitio real, las reseñas y publicaciones solo pueden venir de clientes reales.

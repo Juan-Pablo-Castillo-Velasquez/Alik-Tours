@@ -811,6 +811,8 @@ docs/
 
 Documentos principales:
 
+* [`docs/manual-usuario/README.md`](docs/manual-usuario/README.md): **manual de usuario** (clientes y equipo de la agencia).
+* [`docs/historias-usuario/README.md`](docs/historias-usuario/README.md): **historias de usuario** del sistema, una por archivo y en el orden del recorrido del cliente (HU-01 a HU-35).
 * [`CONTRIBUTING.md`](CONTRIBUTING.md)
 * [`SECURITY.md`](SECURITY.md)
 * [`db_schema.sql`](db_schema.sql)
