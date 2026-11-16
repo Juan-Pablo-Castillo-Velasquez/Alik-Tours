@@ -23,7 +23,12 @@ test('el admin crea una oferta aérea y la ve en el listado', async ({ page, req
   await modal.getByRole('button', { name: 'Siguiente →' }).click();
   await modal.getByLabel(/Precio por adulto/).fill('520000');
   await modal.getByRole('button', { name: 'Crear oferta' }).click();
+  await expect(modal).toBeHidden();
 
+  // El listado está paginado (12 por página, ordenado por fecha de salida):
+  // con el catálogo de ofertas cargado, la nueva puede quedar en otra
+  // página. Se busca por su título, como lo haría el admin.
+  await page.getByRole('textbox', { name: 'Buscar ofertas' }).fill(titulo);
   const tarjeta = page.getByRole('article').filter({ has: page.getByRole('heading', { name: titulo }) });
   await expect(tarjeta).toBeVisible();
   await expect(tarjeta).toContainText('$520.000');
