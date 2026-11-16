@@ -36,7 +36,10 @@ class PaqueteRepository:
         # original, sin cambios) — incluir_inactivos=True es un opt-in nuevo
         # para el panel de admin, que sí necesita ver/gestionar los paquetes
         # desactivados (delete_paquete solo los desactiva, nunca los borra).
-        query = db.query(Paquete)
+        # paquete_hotel -> hotel precargado: PaqueteResponse expone
+        # ciudad_destino (propiedad que recorre esos hoteles) y sin esto era
+        # una consulta perezosa por paquete del listado (N+1).
+        query = db.query(Paquete).options(selectinload(Paquete.paquete_hotel).joinedload(PaqueteHotel.hotel))
         if not incluir_inactivos:
             query = query.filter(Paquete.activo)
         return query.order_by(Paquete.id_paquete).offset(skip).limit(limit).all()

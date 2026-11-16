@@ -43,7 +43,7 @@ router = APIRouter(prefix="/api/hoteles", tags=["Hoteles"])
 
 logger = logging.getLogger(__name__)
 
-HOTELES_CACHE_PATTERN = "hoteles:list:*"
+HOTELES_CACHE_PATTERN = "hoteles:*"  # listados y fichas (hoteles:detalle:*)
 
 HOTEL_IMAGEN_TIPOS_PERMITIDOS = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 HOTEL_IMAGEN_TAMANO_MAXIMO_BYTES = 5 * 1024 * 1024  # 5MB
@@ -176,11 +176,21 @@ def _vista_publica(detalle: HotelDetailResponse, staff: bool) -> HotelDetailResp
 @router.get("/{hotel_id}", response_model=HotelDetailResponse)
 def get_hotel(hotel_id: int, db: Session = Depends(get_db), authorization: str | None = Header(None)):
     """Obtiene detalles completos de un hotel con sus habitaciones y características"""
-    hotel = HotelRepository.get_by_id(db, hotel_id)
     staff = usuario_es_staff(authorization)
+    # Solo se cachea la vista pública (la del panel debe verse siempre al
+    # día). Se invalida con HOTELES_CACHE_PATTERN en cualquier escritura.
+    cache_key = f"hoteles:detalle:{hotel_id}"
+    if not staff:
+        cached = get_cached(cache_key)
+        if cached is not None:
+            return cached
+    hotel = HotelRepository.get_by_id_completo(db, hotel_id)
     if not hotel or (not hotel.publicado and not staff):
         raise HTTPException(status_code=404, detail="Hotel no encontrado")
-    return _vista_publica(HotelDetailResponse.model_validate(hotel), staff)
+    data = _vista_publica(HotelDetailResponse.model_validate(hotel), staff).model_dump(mode="json")
+    if not staff:
+        set_cached(cache_key, data, ttl_seconds=300)
+    return data
 
 
 @router.get("/{hotel_id}/fechas-ocupadas", response_model=list[HabitacionFechasOcupadas])

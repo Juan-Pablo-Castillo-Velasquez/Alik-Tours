@@ -59,7 +59,7 @@ class RedisEnMemoria:
     def keys(self, patron="*"):
         return [c for c in list(self._datos) if self._vivo(c) and fnmatch.fnmatchcase(c, patron)]
 
-    def scan_iter(self, match="*"):
+    def scan_iter(self, match="*", count=None):
         yield from self.keys(match)
 
 

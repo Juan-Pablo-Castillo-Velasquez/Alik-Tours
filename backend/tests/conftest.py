@@ -98,12 +98,17 @@ def client(db):
 @pytest.fixture(autouse=True)
 def redis_falso(monkeypatch):
     """Cada test usa un Redis en memoria vacío (ver tests/fakes.py), nunca
-    el Redis real del CI o de docker compose. Se reemplaza en los tres
+    el Redis real del CI o de docker compose. Se reemplaza en los
     módulos que guardan su propia referencia a redis_client."""
     falso = RedisEnMemoria()
     monkeypatch.setattr("app.core.cache.redis_client", falso)
+    # El caché local (L1, ver app/core/cache.py) vive en memoria del proceso:
+    # se vacía en cada test para que nada se cuele de un test a otro.
+    from app.core import cache
+
+    cache.limpiar_cache_local()
+    cache.reiniciar_estado_redis()
     monkeypatch.setattr("app.middlewares.security_middleware.redis_client", falso)
-    monkeypatch.setattr("app.routes.resena_route.redis_client", falso)
     return falso
 
 

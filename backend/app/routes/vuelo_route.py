@@ -10,10 +10,12 @@ import logging
 from datetime import date
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile
+from fastapi.encoders import jsonable_encoder
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
 from app.core.deps import usuario_es_staff
 from app.core.file_validation import validar_y_leer_archivo
@@ -102,7 +104,16 @@ def listar_ofertas_publicas(
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    """Ofertas publicadas y vigentes (salida desde hoy)."""
+    """Ofertas publicadas y vigentes (salida desde hoy). Cacheado 60 s
+    (cada oferta calcula sus sillas usadas: sin caché eran 1 + N consultas
+    por visita a /vuelos). Se invalida al crear/editar/borrar ofertas."""
+    cache_key = (
+        f"vuelos:publicas:{(origen or '').lower()}:{(destino or '').lower()}:{fecha_desde}:{fecha_hasta}:"
+        f"{(aerolinea or '').lower()}:{int(solo_independientes)}:{skip}:{limit}"
+    )
+    cached = get_cached(cache_key)
+    if cached is not None:
+        return cached
     hoy = date.today()
     q = db.query(OfertaVuelo).filter(
         OfertaVuelo.estado == "publicada",
@@ -115,7 +126,15 @@ def listar_ofertas_publicas(
         q, origen=origen, destino=destino, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta, aerolinea=aerolinea
     )
     ofertas = q.order_by(OfertaVuelo.fecha_salida, OfertaVuelo.id_oferta).offset(skip).limit(limit).all()
-    return [_enriquecer(db, o) for o in ofertas]
+    data = jsonable_encoder([_enriquecer(db, o) for o in ofertas])
+    set_cached(cache_key, data, ttl_seconds=60)
+    return data
+
+
+def _invalidar_cache() -> None:
+    """Las ofertas salen en /vuelos y dentro de la ficha de cada paquete."""
+    delete_pattern("vuelos:*")
+    delete_pattern("paquetes:*")
 
 
 # ----------------------------- Admin -----------------------------
@@ -189,6 +208,7 @@ def crear_oferta(datos: OfertaVueloCreate, db: Session = Depends(get_db), admin_
     oferta = OfertaVuelo(**datos.model_dump())
     db.add(oferta)
     db.commit()
+    _invalidar_cache()
     db.refresh(oferta)
     return _enriquecer(db, oferta, admin=True)
 
@@ -215,6 +235,7 @@ def editar_oferta(
             )
     _validar_completa(oferta)
     db.commit()
+    _invalidar_cache()
     db.refresh(oferta)
     return _enriquecer(db, oferta, admin=True)
 
@@ -230,6 +251,7 @@ def cambiar_estado_oferta(
         raise HTTPException(status_code=409, detail="Una oferta finalizada no se puede reabrir: crea una nueva")
     oferta.estado = datos.estado
     db.commit()
+    _invalidar_cache()
     db.refresh(oferta)
     return _enriquecer(db, oferta, admin=True)
 
@@ -254,6 +276,7 @@ def eliminar_oferta(id_oferta: int, db: Session = Depends(get_db), admin_id: int
     borrar_imagen(oferta.imagen_url, carpeta="vuelos", public_path_prefix=IMAGEN_PREFIX)
     db.delete(oferta)
     db.commit()
+    _invalidar_cache()
     return {"message": "Oferta aérea eliminada"}
 
 
@@ -277,6 +300,7 @@ async def subir_imagen_oferta(
     borrar_imagen(oferta.imagen_url, carpeta="vuelos", public_path_prefix=IMAGEN_PREFIX)
     oferta.imagen_url = nueva
     db.commit()
+    _invalidar_cache()
     db.refresh(oferta)
     return _enriquecer(db, oferta, admin=True)
 

@@ -8,6 +8,7 @@ import "@testing-library/jest-dom/vitest";
 process.env.TZ = "America/Bogota";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
+import { limpiarCacheApi } from "../app/api/v1/api";
 
 // Desmonta lo renderizado y limpia el almacenamiento entre tests: cada
 // test arranca desde cero (FIRST: Independent).
@@ -15,4 +16,5 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
   sessionStorage.clear();
+  limpiarCacheApi();
 });

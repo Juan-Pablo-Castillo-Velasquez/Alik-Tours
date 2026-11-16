@@ -40,8 +40,82 @@ export async function apiLogin(username: string, password: string) {
   return data;
 }
 
+// ─── Caché de lecturas públicas (catálogo) ───────────────────────────────────
+// El catálogo (hoteles, paquetes, vuelos, banners, reseñas destacadas) es lo
+// mismo para todos y casi no cambia: se guarda 60 s en memoria de la pestaña
+// para que ir y volver entre páginas sea instantáneo, y dos componentes que
+// piden lo mismo a la vez comparten UNA sola petición. Cualquier escritura
+// (POST/PUT/PATCH/DELETE) vacía el caché, así el panel siempre ve lo último.
+export const API_CACHE_TTL_MS = 60_000;
+const RUTAS_CACHEABLES = [
+  /^\/hoteles(\/\d+)?\/?(\?|$)/,
+  /^\/hoteles\/(caracteristicas|tipos-habitacion|destinos-sugeridos)/,
+  /^\/paquetes(\/\d+(\/detalle)?)?\/?(\?|$)/,
+  /^\/(hoteles|paquetes)\/\d+\/similares/,
+  /^\/vuelos\/?(\?|$)/,
+  /^\/resenas\/destacadas/,
+  /^\/promociones/,
+  /^\/banners/,
+];
+// Vistas del panel: nunca desde caché.
+const PARAMETROS_SIN_CACHE = /(todos=true|incluir_inactivos=true)/;
+
+const cacheLecturas = new Map<string, { vence: number; datos: unknown }>();
+const lecturasEnCurso = new Map<string, Promise<unknown>>();
+
+/** Vacía el caché de lecturas (tras una escritura, al cerrar sesión, en tests). */
+export function limpiarCacheApi(): void {
+  cacheLecturas.clear();
+  lecturasEnCurso.clear();
+}
+
+export function esLecturaCacheable(endpoint: string, method = "GET"): boolean {
+  return (
+    method.toUpperCase() === "GET" &&
+    !PARAMETROS_SIN_CACHE.test(endpoint) &&
+    RUTAS_CACHEABLES.some((ruta) => ruta.test(endpoint))
+  );
+}
+
+const copiar = <T,>(datos: T): T =>
+  typeof structuredClone === "function" ? structuredClone(datos) : JSON.parse(JSON.stringify(datos));
+
 // ─── Cliente general para todos los demás endpoints ──────────────────────────
 export async function apiFetch<T>(
+  endpoint: string,
+  options: FetchOptions = {},
+): Promise<T> {
+  // Prevenir doble prefijo /api antes de decidir si se cachea.
+  const ruta = endpoint.startsWith("/api/") ? endpoint.replace(/^\/api/, "") : endpoint;
+  const metodo = (options.method || "GET").toUpperCase();
+  if (metodo !== "GET") {
+    limpiarCacheApi();
+    return apiFetchRed<T>(endpoint, options);
+  }
+  if (!esLecturaCacheable(ruta, metodo)) {
+    return apiFetchRed<T>(endpoint, options);
+  }
+  // El token va en la clave: un asesor logueado ve datos distintos (ej.
+  // habitaciones ocultas) que un visitante.
+  const clave = `${localStorage.getItem("token") ?? ""}|${ruta}`;
+  const guardado = cacheLecturas.get(clave);
+  if (guardado && guardado.vence > Date.now()) {
+    return copiar(guardado.datos as T);
+  }
+  let enCurso = lecturasEnCurso.get(clave) as Promise<T> | undefined;
+  if (!enCurso) {
+    enCurso = apiFetchRed<T>(endpoint, options)
+      .then((datos) => {
+        cacheLecturas.set(clave, { vence: Date.now() + API_CACHE_TTL_MS, datos });
+        return datos;
+      })
+      .finally(() => lecturasEnCurso.delete(clave));
+    lecturasEnCurso.set(clave, enCurso);
+  }
+  return copiar(await enCurso);
+}
+
+async function apiFetchRed<T>(
   endpoint: string,
   options: FetchOptions = {},
 ): Promise<T> {

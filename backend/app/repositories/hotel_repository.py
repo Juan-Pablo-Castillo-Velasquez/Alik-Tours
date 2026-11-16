@@ -199,6 +199,25 @@ class HotelRepository:
         return db.query(Hotel).filter(Hotel.id_hotel == hotel_id).first()
 
     @staticmethod
+    def get_by_id_completo(db: Session, hotel_id: int):
+        """Como get_by_id pero con las mismas relaciones precargadas que
+        get_all: la ficha pública serializa habitaciones (con tipo y fotos),
+        características, reseñas y galería, y sin esto eran ~15 consultas
+        perezosas -- cada una un viaje de red hasta la base de datos (Neon)."""
+        return (
+            db.query(Hotel)
+            .options(
+                selectinload(Hotel.habitaciones).joinedload(Habitacion.tipo_habitacion),
+                selectinload(Hotel.habitaciones).selectinload(Habitacion.imagenes),
+                selectinload(Hotel.hotel_caracteristicas).joinedload(HotelCaracteristica.caracteristica),
+                selectinload(Hotel.resenas),
+                selectinload(Hotel.imagenes),
+            )
+            .filter(Hotel.id_hotel == hotel_id)
+            .first()
+        )
+
+    @staticmethod
     def get_similares(db: Session, hotel_id: int, limit: int = 6):
         """Hoteles de la misma ciudad (excluyendo el propio) para la sección
         "también te puede interesar" de la ficha de hotel -- antes esa

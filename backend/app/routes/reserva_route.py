@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile
 from sqlalchemy import text
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
@@ -42,6 +42,7 @@ from app.models.reserva_model import (
 )
 from app.models.servicio_model import Servicio
 from app.models.user_model import Usuario
+from app.models.vuelo_model import PaqueteVuelo
 from app.repositories.reserva_repository import (
     MetodoPagoRepository,
     PagoRepository,
@@ -91,7 +92,7 @@ router = APIRouter(prefix="/api", tags=["Reservas, Paquetes y Pagos"])
 
 logger = logging.getLogger(__name__)
 
-PAQUETES_CACHE_PATTERN = "paquetes:list:*"
+PAQUETES_CACHE_PATTERN = "paquetes:*"  # listados y fichas (paquetes:detalle:*)
 
 # Imágenes de paquete (portada + galería) -- mismo patrón que hotel_route.py,
 # con carpetas propias para no mezclarlas con las de hoteles en Cloudinary/disco.
@@ -101,6 +102,16 @@ PAQUETE_IMAGEN_PUBLIC_PREFIX = "/uploads/paquetes"
 PAQUETE_GALERIA_PUBLIC_PREFIX = "/uploads/paquetes-galeria"
 RESERVAS_CACHE_PATTERN = "reservas:list:*"
 PAGOS_CACHE_PATTERN = "pagos:list:*"
+
+
+def _invalidar_reservas() -> None:
+    """Una reserva nueva o un cambio de estado cambia la tabla de reservas
+    y los cupos que muestran las fichas de paquetes y las ofertas aéreas."""
+    delete_pattern(RESERVAS_CACHE_PATTERN)
+    delete_pattern("paquetes:detalle:*")
+    delete_pattern("vuelos:*")
+
+
 # Los métodos de pago casi nunca cambian (se crean una vez al configurar el
 # sistema), así que van con TTL largo y una sola clave fija en vez de
 # parametrizada — no hay skip/limit en este endpoint.
@@ -232,6 +243,14 @@ def get_paquete_detalle(paquete_id: int, db: Session = Depends(get_db)):
     de ejemplo hardcodeados (vuelos, horarios y hoteles inventados) desde
     data/packages.ts en vez de la información real de la base de datos.
     """
+    # Cacheado 60 s (los cupos que muestra son informativos: al reservar
+    # se vuelven a validar contra la base de datos). Se invalida con
+    # PAQUETES_CACHE_PATTERN cuando el admin cambia el paquete.
+    cache_key = f"paquetes:detalle:{paquete_id}"
+    cached = get_cached(cache_key)
+    if cached is not None:
+        return cached
+
     paquete = (
         db.query(Paquete)
         .options(
@@ -241,6 +260,13 @@ def get_paquete_detalle(paquete_id: int, db: Session = Depends(get_db)):
             .joinedload(PaqueteHotel.hotel)
             .joinedload(Hotel.hotel_caracteristicas)
             .joinedload(HotelCaracteristica.caracteristica),
+            # Colecciones de la ficha en consultas aparte (selectinload) en
+            # vez de una consulta perezosa por cada una.
+            selectinload(Paquete.imagenes),
+            selectinload(Paquete.itinerario),
+            selectinload(Paquete.inclusiones),
+            selectinload(Paquete.salidas),
+            selectinload(Paquete.paquete_vuelos).joinedload(PaqueteVuelo.oferta),
         )
         .filter(Paquete.id_paquete == paquete_id)
         .first()
@@ -312,7 +338,7 @@ def get_paquete_detalle(paquete_id: int, db: Session = Depends(get_db)):
         vuelos.append(datos)
 
     base = PaqueteResponse.model_validate(paquete).model_dump()
-    return PaqueteDetalleResponse(
+    data = PaqueteDetalleResponse(
         **base,
         destinos=destinos,
         hoteles=hoteles,
@@ -322,7 +348,9 @@ def get_paquete_detalle(paquete_id: int, db: Session = Depends(get_db)):
         inclusiones=paquete.inclusiones,
         salidas=salidas,
         vuelos=vuelos,
-    )
+    ).model_dump(mode="json")
+    set_cached(cache_key, data, ttl_seconds=60)
+    return data
 
 
 @router.post("/paquetes", response_model=PaqueteResponse, status_code=201)
@@ -741,7 +769,7 @@ def confirmar_cotizacion_vuelo(
         )
     except Exception as e:  # el aviso no debe deshacer la cotización
         logger.error(f"No se pudo avisar la cotización de vuelo de la reserva {reserva.id_reserva}: {e}")
-    delete_pattern(RESERVAS_CACHE_PATTERN)
+    _invalidar_reservas()
     delete_pattern("kpi:dashboard:resumen")
     return reserva
 
@@ -835,7 +863,7 @@ def create_reserva(
             raise HTTPException(status_code=500, detail="Error interno del servidor") from e
         if getattr(nueva, "_recien_creada", False):
             _avisar_reserva_creada(db, nueva)
-        delete_pattern(RESERVAS_CACHE_PATTERN)
+        _invalidar_reservas()
         delete_pattern("kpi:dashboard:resumen")
         return nueva
     try:
@@ -857,7 +885,7 @@ def create_reserva(
         )
         if getattr(nueva, "_recien_creada", False):
             _avisar_reserva_creada(db, nueva)
-        delete_pattern(RESERVAS_CACHE_PATTERN)
+        _invalidar_reservas()
         # KPIs del dashboard dependen de reservas/pagos — invalida también su
         # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
         delete_pattern("kpi:dashboard:resumen")
@@ -1016,7 +1044,7 @@ def pagar_reserva(
     db.commit()
     db.refresh(pago)
     db.refresh(reserva)
-    delete_pattern(RESERVAS_CACHE_PATTERN)
+    _invalidar_reservas()
     delete_pattern(PAGOS_CACHE_PATTERN)
     # KPIs del dashboard dependen de reservas/pagos — invalida también su
     # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
@@ -1093,7 +1121,7 @@ def confirmar_pago(
     db.commit()
     db.refresh(pago)
     db.refresh(reserva)
-    delete_pattern(RESERVAS_CACHE_PATTERN)
+    _invalidar_reservas()
     delete_pattern(PAGOS_CACHE_PATTERN)
     delete_pattern("kpi:dashboard:resumen")
 
@@ -1157,7 +1185,7 @@ def update_reserva(
             id_referencia=actualizada.id_reserva,
             id_cliente=actualizada.id_cliente,
         )
-    delete_pattern(RESERVAS_CACHE_PATTERN)
+    _invalidar_reservas()
     # KPIs del dashboard dependen de reservas/pagos — invalida también su
     # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
     delete_pattern("kpi:dashboard:resumen")
@@ -1169,7 +1197,7 @@ def delete_reserva(reserva_id: int, db: Session = Depends(get_db), admin_id: int
     """Elimina una reserva"""
     try:
         ReservaRepository.delete(db, reserva_id)
-        delete_pattern(RESERVAS_CACHE_PATTERN)
+        _invalidar_reservas()
         # KPIs del dashboard dependen de reservas/pagos — invalida también su
         # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
         delete_pattern("kpi:dashboard:resumen")
@@ -1339,7 +1367,7 @@ def update_pago(
     db.commit()
     db.refresh(db_pago)
     delete_pattern(PAGOS_CACHE_PATTERN)
-    delete_pattern(RESERVAS_CACHE_PATTERN)  # el estado de pago se ve en la tabla de Reservas
+    _invalidar_reservas()  # el estado de pago se ve en la tabla de Reservas
     delete_pattern("kpi:dashboard:resumen")
     if reserva is not None and estado_reserva_antes != "confirmada" and reserva.estado == "confirmada":
         _notificar_confirmacion(reserva)
@@ -1360,7 +1388,7 @@ def delete_pago(pago_id: int, db: Session = Depends(get_db), admin_id: int = Dep
     try:
         PagoRepository.delete(db, pago_id)
         delete_pattern(PAGOS_CACHE_PATTERN)
-        delete_pattern(RESERVAS_CACHE_PATTERN)
+        _invalidar_reservas()
         # KPIs del dashboard dependen de reservas/pagos — invalida también su
         # caché corto (60s) para no mostrar cifras desactualizadas tras escribir.
         delete_pattern("kpi:dashboard:resumen")

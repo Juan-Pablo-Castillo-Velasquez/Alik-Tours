@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.cache import delete_pattern, get_cached, redis_client, set_cached
+from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
 from app.core.deps import get_current_usuario
 from app.core.security import require_empleado
@@ -142,9 +142,11 @@ def _response(r: Resena, nombre_cliente: str | None = None) -> ResenaResponse:
 def _invalidar_caches(id_hotel: int) -> None:
     """Lo que cambia cuando se crea, edita, oculta o responde una reseña: el
     listado del hotel, los testimonios del home y los hoteles (promedio)."""
-    redis_client.delete(f"hotel:{id_hotel}:resenas")
-    redis_client.delete(HOME_CACHE_KEY)
-    delete_pattern("hoteles:list:*")
+    # delete_pattern (no redis_client.delete) para limpiar también el caché
+    # local en memoria (L1, ver app/core/cache.py).
+    delete_pattern(f"hotel:{id_hotel}:resenas")
+    delete_pattern(HOME_CACHE_KEY)
+    delete_pattern("hoteles:*")
 
 
 def _resena_propia(db: Session, id_resena: int, usuario: Usuario) -> Resena:

@@ -3,6 +3,7 @@ import os
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -150,6 +151,10 @@ app.add_middleware(
 # app/core/error_handlers.py) -- acá solo se registran, en el mismo orden
 # en el que se registraban cuando vivían embebidos en este archivo:
 # seguridad (rate limiting + headers) -> manejador de errores -> logging.
+
+# Comprime las respuestas JSON grandes (listado de hoteles con habitaciones,
+# paquetes, vuelos): de cientos de KB a decenas, mucho más rápido en celular.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.middleware("http")(seguridad_middleware)
 app.exception_handler(Exception)(global_exception_handler)

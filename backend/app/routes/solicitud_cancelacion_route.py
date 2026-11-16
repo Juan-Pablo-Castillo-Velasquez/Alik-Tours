@@ -282,6 +282,8 @@ def admin_resolver_solicitud(
         # listado de Reservas del admin (reserva_route.py) queda cacheado
         # hasta 60s si no se invalida acá.
         delete_pattern("reservas:list:*")
+        delete_pattern("paquetes:detalle:*")  # cupos liberados
+        delete_pattern("vuelos:*")
         # Los KPIs del dashboard (tasa de cancelación, tendencia de
         # cancelaciones, etc.) también deben reflejar esta cancelación real.
         delete_pattern("kpi:dashboard:resumen")

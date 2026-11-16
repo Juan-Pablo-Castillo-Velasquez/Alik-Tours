@@ -93,6 +93,23 @@ Render construye la imagen directo desde `backend/Dockerfile`, usando el stage `
 7. Deploy. Render te da una URL tipo `https://alectours-backend.onrender.com` — ese es tu `VITE_API_BASE_URL` para el Paso 4.
 8. Sobre las fotos/comprobantes/banners subidos en runtime: el plan free de Render no tiene disco persistente, así que cualquier archivo guardado en `app/static/uploads` se perdería si el contenedor se reinicia. Como ya tienes `CLOUDINARY_URL` soportado en el código (`backend/app/core/config.py`), en este escenario SÍ te conviene definirlo — así las imágenes se van a Cloudinary en vez de al disco del contenedor.
 
+### Rendimiento: caché y servicio despierto
+
+- **Servicio despierto:** el flujo `.github/workflows/mantener-backend-activo.yml` consulta `/health` cada 10 minutos para que Render no duerma el backend (y la conexión a Neon quede caliente). Un solo servicio despierto todo el mes (~744 h) cabe en las 750 horas gratis de Render. Si la URL del backend cambia, defínela en GitHub › Settings › Secrets and variables › Actions › **Variables** como `BACKEND_URL`.
+- **Caché de dos niveles** (`backend/app/core/cache.py`): memoria del proceso (L1, 20 s) + Redis/Upstash (L2, TTL de cada endpoint). Si Upstash falla, se deja de intentar por 30 s y el sitio sigue funcionando con la base de datos. Variables opcionales:
+
+  | Variable | Por defecto | Para qué |
+  | --- | --- | --- |
+  | `CACHE_ENABLED` | `true` | `false` apaga todo el caché (depurar). |
+  | `CACHE_LOCAL_TTL` | `20` | Segundos máximos en memoria local (0 = sin L1). |
+  | `CACHE_LOCAL_MAX` | `500` | Claves máximas en memoria por worker. |
+  | `CACHE_TTL_FACTOR` | `1.0` | Multiplica todos los TTL (ej. `2` = el doble de tiempo en caché). |
+  | `REDIS_REINTENTO_SEGUNDOS` | `30` | Pausa antes de volver a intentar Redis tras un fallo. |
+  | `DB_POOL_SIZE` / `DB_MAX_OVERFLOW` | `5` / `5` | Conexiones a Neon por worker. |
+  | `DB_POOL_RECYCLE` | `280` | Segundos antes de renovar una conexión (Neon corta las inactivas). |
+
+- **Respuestas comprimidas** con GZip y **caché de 60 s en el navegador** para el catálogo (`apiFetch` en `alecktourfrondend/src/app/api/v1/api.ts`): volver a una página ya vista es instantáneo y cualquier guardado desde el panel lo vacía.
+
 ### Alternativa: Railway (sin "dormir", ~$5/mes)
 
 Mismo Dockerfile, mismo target `prod`, mismas variables de entorno. La diferencia es que Railway sí ofrece disco persistente si lo necesitas, y el servicio no se duerme por inactividad. El plan Hobby da $5 de uso incluido al mes — para una app con tráfico bajo/moderado normalmente no pasas de eso. Ventaja adicional sobre Render Free: Railway no bloquea los puertos SMTP salientes, así que `BREVO_API_KEY` es opcional aquí (podés quedarte solo con las variables `MAIL_*` de SMTP tal cual, aunque dejar `BREVO_API_KEY` puesta tampoco hace daño).
