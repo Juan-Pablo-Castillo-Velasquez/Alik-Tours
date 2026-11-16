@@ -46,8 +46,6 @@ export default function DestinationsGrid() {
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 bg-background transition-colors duration-300 overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-
-                {/* --- SECCIÓN IZQUIERDA: Promoción y Modelo --- */}
                 <div className="lg:col-span-5 flex flex-col justify-center h-full relative">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -74,35 +72,21 @@ export default function DestinationsGrid() {
                         </p>
                     </motion.div>
 
-                    {/* Espacio para la Mujer PNG + Badge */}
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, delay: 0.2 }}
-                        className="relative mt-auto flex justify-center lg:justify-center"
+                        className="relative mt-auto flex h-[320px] w-full justify-center sm:h-[380px] lg:h-[450px]"
                     >
-                        {/* Brillo decorativo de fondo */}
-                        <div className="absolute bottom-10 w-64 h-64 bg-[var(--chart-2)]/15 rounded-full blur-3xl -z-10" />
+                        <div className="absolute bottom-10 h-64 w-64 rounded-full bg-[var(--chart-2)]/15 blur-3xl -z-10" />
 
-                        {/* Recorte con transparencia real -- en temporada de
-                            Halloween es el trío de personajes que compartió
-                            el usuario (se le quitó el fondo con un modelo de
-                            segmentación porque el archivo que llegó era un
-                            JPG con el patrón de cuadros pintado como
-                            píxeles, no transparencia de verdad). Mismo
-                            tratamiento que la viajera de siempre: ambos son
-                            recortes reales, así que comparten máscara,
-                            sombra y el badge flotante sin ningún caso
-                            especial. */}
                         <img
                             src={esHalloween ? "/img/imagenpromocional-halloween.png" : "/img/imagenpromocional-removebg-preview.png"}
                             alt={esHalloween ? "Personajes de Halloween de Alik Tours" : "Viajera promocional"}
-                            className="w-full h-full object-contain object-bottom drop-shadow-2xl [mask-image:linear-gradient(to_top,transparent_0%,black_15%)]"
-                            style={{ maxHeight: "450px" }}
+                            className="block h-full w-full object-contain object-bottom drop-shadow-2xl mix-blend-multiply"
                         />
 
-                        {/* Badge Flotante Animado */}
                         <motion.div
                             animate={{ y: [0, -12, 0] }}
                             transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
@@ -119,7 +103,6 @@ export default function DestinationsGrid() {
                     </motion.div>
                 </div>
 
-                {/* --- SECCIÓN DERECHA: Cuadrícula de Tarjetas (2x2) --- */}
                 <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 mt-10 lg:mt-0">
                     {loading ? (
                         [0, 1, 2, 3].map((i) => (
@@ -149,14 +132,11 @@ export default function DestinationsGrid() {
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-                                        {/* Esquina superior izquierda libre (la derecha ya la usa
-                                            el botón "Ver más" en hover y la inferior izquierda el
-                                            rating) -- un solo acento por tarjeta. */}
                                         {esHalloween && (
                                             <HalloweenAccentDiscreto variante="calabaza" posicion="top-left" tamano="sm" />
                                         )}
 
-                                        <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-sm">
+                                        <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                             <ArrowUpRight className="w-4 h-4 text-primary" />
                                         </div>
 
@@ -188,7 +168,6 @@ export default function DestinationsGrid() {
                         ))
                     )}
                 </div>
-
             </div>
         </section>
     );
