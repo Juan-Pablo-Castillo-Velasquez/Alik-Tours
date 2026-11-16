@@ -1,6 +1,17 @@
 import { CheckCircle2, Clock, MapPin, MessageSquare, Send, User } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { FormEvent, useEffect, useState } from "react";
+import ErrorCampo from "../components/shared/ErrorCampo";
+import { mensajeErrorEnvio, validarFormulario, type Reglas } from "../utils/validacionFormulario";
+
+type CampoContacto = "nombre" | "correo" | "asunto" | "mensaje";
+// Mismos límites que ContactoRequest en el backend (contacto_route.py).
+const REGLAS_CONTACTO: Reglas<CampoContacto> = {
+  nombre: { etiqueta: "El nombre", obligatorio: true, min: 2, max: 100 },
+  correo: { etiqueta: "El correo", obligatorio: true, tipo: "correo", max: 100 },
+  asunto: { etiqueta: "El asunto", obligatorio: true, min: 3, max: 150 },
+  mensaje: { etiqueta: "El mensaje", obligatorio: true, min: 10, max: 2000 },
+};
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
@@ -16,6 +27,7 @@ export default function Contact() {
   const [enviado, setEnviado] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errores, setErrores] = useState<Partial<Record<CampoContacto, string>>>({});
   // Si el cliente está logueado, se autocompletan nombre/correo con los
   // datos reales del perfil (GET /clientes/{id}) — nunca se inventan.
   const [cliente, setCliente] = useState<ClienteResponse | null>(null);
@@ -55,11 +67,18 @@ export default function Contact() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (loading) return; // evita el doble envío
+    const { errores: nuevos, limpios, valido } = validarFormulario({ nombre, correo, asunto, mensaje }, REGLAS_CONTACTO);
+    setErrores(nuevos);
+    if (!valido) {
+      document.getElementById(`contacto-${Object.keys(nuevos)[0]}`)?.focus();
+      return;
+    }
     setLoading(true);
     setError(null);
 
     try {
-      await contactoService.enviar({ nombre, correo, asunto, mensaje });
+      await contactoService.enviar(limpios);
       setEnviado(true);
       // Limpiar formulario
       setNombre("");
@@ -68,9 +87,7 @@ export default function Contact() {
       setMensaje("");
     } catch (err) {
       console.error("Error enviando contacto:", err);
-      setError(
-        "No pudimos enviar tu mensaje. Intenta de nuevo en unos minutos.",
-      );
+      setError(mensajeErrorEnvio(err, "No pudimos enviar tu mensaje. Intenta de nuevo en unos minutos."));
     } finally {
       setLoading(false);
     }
@@ -169,6 +186,7 @@ export default function Contact() {
                     <motion.form
                       key="contact-form"
                       aria-label="Formulario de contacto"
+                      noValidate
                       onSubmit={handleSubmit}
                       className="space-y-6"
                       exit={{ opacity: 0, scale: 0.95 }}
@@ -176,34 +194,42 @@ export default function Contact() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label htmlFor="contacto-nombre" className="text-sm font-semibold text-card-foreground">
-                            Tu nombre completo
+                            Tu nombre completo <span className="text-destructive" aria-hidden>*</span>
                           </label>
                           <input
                             id="contacto-nombre"
                             type="text"
                             required
                             value={nombre}
-                            onChange={(e) => setNombre(e.target.value)}
+                            onChange={(e) => { setNombre(e.target.value); if (errores.nombre) setErrores((x) => ({ ...x, nombre: undefined })); }}
+                            maxLength={100}
+                            aria-invalid={!!errores.nombre}
+                            aria-describedby={errores.nombre ? "contacto-nombre-error" : undefined}
                             disabled={!!cliente || autocompletando}
                             placeholder="Ej. Alejandro Pérez"
                             className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-foreground placeholder:text-muted-foreground/60 disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-muted/40"
                           />
+                          <ErrorCampo id="contacto-nombre-error" mensaje={errores.nombre} />
                         </div>
 
                         <div className="space-y-2">
                           <label htmlFor="contacto-correo" className="text-sm font-semibold text-card-foreground">
-                            Correo electrónico
+                            Correo electrónico <span className="text-destructive" aria-hidden>*</span>
                           </label>
                           <input
                             id="contacto-correo"
                             type="email"
                             required
                             value={correo}
-                            onChange={(e) => setCorreo(e.target.value)}
+                            onChange={(e) => { setCorreo(e.target.value); if (errores.correo) setErrores((x) => ({ ...x, correo: undefined })); }}
+                            maxLength={100}
+                            aria-invalid={!!errores.correo}
+                            aria-describedby={errores.correo ? "contacto-correo-error" : undefined}
                             disabled={!!cliente || autocompletando}
                             placeholder="ejemplo@correo.com"
                             className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-foreground placeholder:text-muted-foreground/60 disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-muted/40"
                           />
+                          <ErrorCampo id="contacto-correo-error" mensaje={errores.correo} />
                         </div>
                       </div>
 
@@ -227,32 +253,43 @@ export default function Contact() {
 
                       <div className="space-y-2">
                         <label htmlFor="contacto-asunto" className="text-sm font-semibold text-card-foreground">
-                          Asunto del mensaje
+                          Asunto del mensaje <span className="text-destructive" aria-hidden>*</span>
                         </label>
                         <input
                           id="contacto-asunto"
                           type="text"
                           required
                           value={asunto}
-                          onChange={(e) => setAsunto(e.target.value)}
+                          onChange={(e) => { setAsunto(e.target.value); if (errores.asunto) setErrores((x) => ({ ...x, asunto: undefined })); }}
+                            maxLength={150}
+                            aria-invalid={!!errores.asunto}
+                            aria-describedby={errores.asunto ? "contacto-asunto-error" : undefined}
                           placeholder="Ej. Cotización paquete Cancún / Problema con mi reserva"
                           className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-foreground placeholder:text-muted-foreground/60"
                         />
+                          <ErrorCampo id="contacto-asunto-error" mensaje={errores.asunto} />
                       </div>
 
                       <div className="space-y-2">
                         <label htmlFor="contacto-mensaje" className="text-sm font-semibold text-card-foreground">
-                          ¿En qué podemos ayudarte?
+                          ¿En qué podemos ayudarte? <span className="text-destructive" aria-hidden>*</span>
                         </label>
                         <textarea
                           id="contacto-mensaje"
                           rows={5}
                           required
                           value={mensaje}
-                          onChange={(e) => setMensaje(e.target.value)}
+                          onChange={(e) => { setMensaje(e.target.value); if (errores.mensaje) setErrores((x) => ({ ...x, mensaje: undefined })); }}
+                            maxLength={2000}
+                            aria-invalid={!!errores.mensaje}
+                            aria-describedby={errores.mensaje ? "contacto-mensaje-error" : undefined}
                           placeholder="Escribe detalladamente tus dudas, fechas tentativas o requerimientos especiales..."
                           className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-foreground resize-none placeholder:text-muted-foreground/60"
                         />
+                          <div className="flex justify-between gap-2">
+                          <ErrorCampo id="contacto-mensaje-error" mensaje={errores.mensaje} />
+                          <span className="ml-auto text-[11px] text-muted-foreground">{mensaje.trim().length}/2000 · mínimo 10</span>
+                        </div>
                       </div>
 
                       {error && (

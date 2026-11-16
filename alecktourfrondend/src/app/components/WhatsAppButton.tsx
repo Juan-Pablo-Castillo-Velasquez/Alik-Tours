@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Mail, MessageCircle, UserPlus, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useAuthModal } from "../context/AuthModalContext";
@@ -21,6 +21,7 @@ export default function WhatsAppButton() {
   const { openRegister } = useAuthModal();
   const navigate = useNavigate();
 
+  const { pathname } = useLocation();
   const puedeChatear = isAuthenticated && usuario?.id_cliente != null;
 
   const handleClick = () => {
@@ -30,6 +31,10 @@ export default function WhatsAppButton() {
       setMenuAbierto((v) => !v);
     }
   };
+
+  // En el panel de administración este botón (chat del CLIENTE) no aplica:
+  // el equipo atiende desde el módulo Mensajes.
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <>

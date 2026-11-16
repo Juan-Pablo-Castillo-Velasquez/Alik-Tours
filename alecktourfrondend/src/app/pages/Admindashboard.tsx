@@ -799,12 +799,11 @@ export default function AdminDashboard() {
         { label: "Ver clientes",     icon: Users,      onClick: () => setActiveModule("clientes") },
       ];
 
-  // Un empleado solo ve las reservas que gestiona el mismo -- comparar
-  // contra usuario.id_empleado (vinculo real Usuario -> Empleado, ver
-  // login_user en auth_service.py), nunca contra usuario.user_id.
-  const reservasVisibles = soloEmpleado
-    ? reservas.filter(r => r.id_empleado != null && r.id_empleado === usuario?.id_empleado)
-    : reservas;
+  // Admin y asesores consultan TODAS las reservas (antes un asesor solo
+  // veía las asignadas a él, así que el enlace de una reserva desde el chat
+  // abría una tabla vacía). El filtro "Asesor" del módulo permite ver solo
+  // las propias; lo que cada rol puede MODIFICAR lo valida el backend.
+  const reservasVisibles = reservas;
 
   const MODULES: Record<Module, React.ReactNode> = {
     dashboard: (
@@ -826,6 +825,7 @@ export default function AdminDashboard() {
         estadoInicial={estadoReservaInicial}
         clienteIdFiltro={clienteIdFiltroReservas}
         onVerPagos={verPagosDeReserva}
+        soloEmpleado={soloEmpleado}
       />
     ),
     "crear-reserva": (

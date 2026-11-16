@@ -1,3 +1,5 @@
+import Pagination from "../ui/pagination";
+import { usePagination } from "../../hooks/usePagination";
 import {
   ArrowDown,
   ArrowUp,
@@ -52,6 +54,7 @@ export default function ModuleComunidad() {
   const [pestana, setPestana] = useState<Pestana>("moderacion");
   const [estado, setEstado] = useState<EstadoPublicacion>("pendiente");
   const [items, setItems] = useState<PublicacionComunidad[]>([]);
+  const pagItems = usePagination(items, 10);
   const [cargando, setCargando] = useState(true);
   const [motivos, setMotivos] = useState<Record<number, string>>({});
   const [ocupado, setOcupado] = useState<number | null>(null);
@@ -268,8 +271,9 @@ export default function ModuleComunidad() {
           ) : items.length === 0 ? (
             <EmptyState icon={Users} title="Nada por aquí" description="No hay publicaciones en este estado." />
           ) : (
+          <>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {items.map((p) => (
+              {pagItems.slice.map((p) => (
                 <article key={p.id_publicacion} className="bg-card border border-border rounded-2xl overflow-hidden">
                   {p.video_url && (
                     <video src={resolveMediaComunidad(p.video_url)} controls preload="metadata" className="w-full max-h-80 bg-black" />
@@ -349,6 +353,8 @@ export default function ModuleComunidad() {
                 </article>
               ))}
             </div>
+            <Pagination page={pagItems.page} pageCount={pagItems.pageCount} onPageChange={pagItems.setPage} className="mt-4" />
+          </>
           )}
         </>
       ) : (

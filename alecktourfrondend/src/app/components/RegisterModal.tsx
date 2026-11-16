@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { cloneElement, isValidElement, useEffect, useId, useMemo, useRef, useState } from "react";
+import { borradorRegistro } from "../utils/borradorAuth";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { apiFetch } from "../api/v1/api";
@@ -225,7 +226,8 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
     const [resendCooldown, setResendCooldown] = useState(0);
     const autoSubmitted = useRef(false);
 
-    const [formData, setFormData] = useState(initialFormData);
+    // Lo escrito sobrevive a cerrar el modal (ver utils/borradorAuth.ts).
+    const [formData, setFormData] = useState(() => borradorRegistro.leer(initialFormData));
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -308,7 +310,37 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
         autoSubmitted.current = false;
     };
 
-    const handleClose = () => { resetState(); onClose(); };
+    // Cerrar SIN perder lo escrito: al volver, la persona sigue donde iba
+    // (mismo paso, mismos datos; si ya creó la cuenta, en el paso del código).
+    const handleClose = () => {
+        setFormError("");
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+        onClose();
+    };
+
+    // Registro terminado (correo verificado): se descarta el borrador.
+    const cerrarTrasRegistro = () => {
+        borradorRegistro.borrar();
+        resetState();
+        onClose();
+    };
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const b = borradorRegistro.leer({ ...initialFormData, paso: 1, cuenta: "", terminos: false });
+        const { paso, cuenta, terminos, ...datos } = b;
+        setFormData(datos);
+        setAcceptedTerms(terminos);
+        setAccountEmail(cuenta);
+        if (paso >= 1 && paso <= 4) setStep(paso as Step);
+        // Solo al abrir: después manda el estado del formulario.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
+
+    useEffect(() => {
+        borradorRegistro.guardar({ ...formData, paso: step, cuenta: accountEmail, terminos: acceptedTerms });
+    }, [formData, step, accountEmail, acceptedTerms]);
 
     const goToStep = (next: Step) => {
         setDirection(next > step ? 1 : -1);
@@ -419,7 +451,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                 activo: tokens.activo,
             });
             toast.success("¡Cuenta verificada! Bienvenido a Alik Tours.");
-            handleClose();
+            cerrarTrasRegistro();
             navigate("/profile");
         } catch (err: any) {
             const message = err?.message || "Código incorrecto";

@@ -1,5 +1,7 @@
 import DateRangeFilter, { dentroDeRango } from "../shared/DateRangeFilter";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { abrirArchivoProtegido } from "../../api/v1/api";
 import {
   Search, Trash2, Wallet, CheckCircle, Clock, XCircle, CreditCard,
   Pencil, AlertCircle, Save, FileText, Paperclip, Upload,
@@ -605,15 +607,14 @@ export default function ModulePagos({
               <label className={labelCls}>Comprobante externo</label>
               {editing.comprobante_url ? (
                 <div className="mt-1.5 flex items-center gap-2">
-                  <a
-                    href={resolveFotoUrl(editing.comprobante_url)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => abrirArchivoProtegido(`/pagos/${editing.id_pago}/comprobante`).catch((e) => toast.error(e.message))}
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border text-xs font-medium text-foreground hover:border-primary/40 hover:text-primary transition-all"
                   >
                     <Paperclip className="w-3.5 h-3.5" />
                     Ver comprobante
-                  </a>
+                  </button>
                   <button
                     onClick={handleDeleteComprobante}
                     disabled={comprobanteLoading}

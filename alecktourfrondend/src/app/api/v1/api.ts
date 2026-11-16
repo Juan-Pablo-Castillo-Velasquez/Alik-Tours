@@ -206,6 +206,29 @@ async function apiFetchRed<T>(
   return response.json() as Promise<T>;
 }
 
+// ─── Archivos privados (comprobantes de pago) ─────────────────────────────────
+// Un <a href> no puede mandar el token: se descarga con fetch autenticado y se
+// abre como blob en otra pestaña (el archivo nunca queda en una URL pública).
+export async function abrirArchivoProtegido(endpoint: string): Promise<void> {
+  const ventana = window.open("", "_blank");
+  try {
+    const token = localStorage.getItem("token");
+    const respuesta = await fetch(`${BASE_URL}${API_PREFIX}${endpoint}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!respuesta.ok) {
+      throw new Error(respuesta.status === 404 ? "El archivo ya no está disponible" : "No tienes acceso a este archivo");
+    }
+    const url = URL.createObjectURL(await respuesta.blob());
+    if (ventana) ventana.location.href = url;
+    else window.location.assign(url);
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch (e) {
+    ventana?.close();
+    throw e;
+  }
+}
+
 // ─── Reseñas ───────────────────────────────────────────────────────────────
 export interface ResenaDestacada {
   id: number;

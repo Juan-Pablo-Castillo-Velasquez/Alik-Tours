@@ -1,4 +1,6 @@
 import { useState } from "react";
+import Pagination from "../ui/pagination";
+import { usePagination } from "../../hooks/usePagination";
 import { ShieldCheck, PlusCircle, Trash2, KeyRound, Layers } from "lucide-react";
 import { Rol, inputCls, labelCls, primaryBtnCls } from "./types";
 import type { PermisoResponse, RolConPermisosResponse } from "../../services/usuarioAdmin.service";
@@ -50,6 +52,7 @@ export default function ModuleRoles({
   const [cargandoPermisos, setCargandoPermisos] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
+  const pagRoles = usePagination(roles, 9);
   const categorias = Array.from(new Set(permisos.map((p) => p.categoria)));
   const esAdmin = rolEditando?.nombre_rol === "admin";
 
@@ -125,8 +128,9 @@ export default function ModuleRoles({
       </div>
 
       {roles.length > 0 ? (
+      <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {roles.map((rol) => {
+          {pagRoles.slice.map((rol) => {
             const protegido = ROLES_PROTEGIDOS.has(rol.nombre_rol);
             return (
               <div key={rol.id_rol} className="bg-card rounded-2xl p-4 shadow-sm border border-border flex flex-col gap-3">
@@ -158,6 +162,8 @@ export default function ModuleRoles({
             );
           })}
         </div>
+        <Pagination page={pagRoles.page} pageCount={pagRoles.pageCount} onPageChange={pagRoles.setPage} className="mt-4" />
+      </>
       ) : (
         <EmptyState
           icon={ShieldCheck}

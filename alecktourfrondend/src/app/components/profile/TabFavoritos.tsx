@@ -1,6 +1,8 @@
 import { Heart, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
+import Pagination from "../ui/pagination";
+import { usePagination } from "../../hooks/usePagination";
 import { Link } from "react-router";
 import HotelCard from "../HotelCard";
 import { favoritoService, FavoritoResponse } from "../../services/favorito.service";
@@ -17,6 +19,11 @@ export default function TabFavoritos() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const pagFavoritos = usePagination(
+    favoritos.filter((f) => f.hotel),
+    6,
+  );
 
   return (
     <div>
@@ -59,8 +66,7 @@ export default function TabFavoritos() {
           />
           <div className="flex flex-col gap-5">
             <AnimatePresence mode="popLayout">
-              {favoritos
-                .filter((f) => f.hotel)
+              {pagFavoritos.slice
                 .map((f) => (
                   <motion.div
                     key={f.id_favorito}
@@ -75,6 +81,7 @@ export default function TabFavoritos() {
                 ))}
             </AnimatePresence>
           </div>
+          <Pagination page={pagFavoritos.page} pageCount={pagFavoritos.pageCount} onPageChange={pagFavoritos.setPage} className="mt-5" />
         </section>
       )}
     </div>

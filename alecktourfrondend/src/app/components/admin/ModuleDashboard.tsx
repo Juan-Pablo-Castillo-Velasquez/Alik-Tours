@@ -12,6 +12,7 @@ import {
 import { dashboardService, type DashboardResumen, type ResumenEmpleado, type TendenciaValor } from "../../services/dashboard.service";
 import { reservaDetailService, type ActividadRecienteItem } from "../../services/reserva.service";
 import StatusBadge from "./ui/StatusBadge";
+import DashboardEmpleado from "./DashboardEmpleado";
 import {
   Tooltip as InfoTooltip,
   TooltipTrigger as InfoTooltipTrigger,
@@ -119,7 +120,7 @@ export default function ModuleDashboard({ setActiveModule, onVerReserva, onFiltr
     dashboardService.getResumen()
       .then((r) => { setResumen(r); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });
-    reservaDetailService.getActividadReciente(12).then(setActividad).catch(() => {});
+    reservaDetailService.getActividadReciente(soloEmpleado ? 15 : 12).then(setActividad).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -169,6 +170,24 @@ export default function ModuleDashboard({ setActiveModule, onVerReserva, onFiltr
       tono: "medio",
       texto: `${n} pago${n > 1 ? "s" : ""} pendiente${n > 1 ? "s" : ""} de confirmar`,
       onClick: () => setActiveModule("pagos"),
+    });
+  }
+  // Reservas que entraron hoy (último punto de la serie diaria del backend).
+  const hoyISO = new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+  const nuevasHoy = resumen.reservas_ultimos_14d.find((p) => p.fecha === hoyISO)?.total ?? 0;
+  if (nuevasHoy > 0) {
+    alertas.push({
+      tono: "info",
+      texto: `${nuevasHoy} reserva${nuevasHoy > 1 ? "s" : ""} nueva${nuevasHoy > 1 ? "s" : ""} hoy`,
+      onClick: () => onFiltrarModulo("reservas"),
+    });
+  }
+  if (resumen.reservas_pendientes > 0) {
+    const n = resumen.reservas_pendientes;
+    alertas.push({
+      tono: "medio",
+      texto: `${n} reserva${n > 1 ? "s" : ""} pendiente${n > 1 ? "s" : ""} de atención`,
+      onClick: () => onFiltrarModulo("reservas", "pendiente"),
     });
   }
   if (resumen.contactos_empresariales_pendientes != null && resumen.contactos_empresariales_pendientes > 0) {
@@ -255,6 +274,15 @@ export default function ModuleDashboard({ setActiveModule, onVerReserva, onFiltr
           </div>
         )}
       </div>
+
+      {soloEmpleado && (
+        <DashboardEmpleado
+          resumen={resumen}
+          actividad={actividad}
+          onVerReserva={onVerReserva}
+          onFiltrarModulo={onFiltrarModulo}
+        />
+      )}
 
       {/* Mis KPIs -- solo panel recortado del empleado */}
       {soloEmpleado && resumenEmpleado && (

@@ -1,4 +1,16 @@
 import { useState } from "react";
+import ErrorCampo from "../components/shared/ErrorCampo";
+import { limpiarTelefono, mensajeErrorEnvio, validarFormulario, type Reglas } from "../utils/validacionFormulario";
+
+type CampoCorporativo = "nombreEmpresa" | "nombreContacto" | "email" | "telefono" | "mensaje";
+// Mismos límites que SolicitudCorporativaCreate en el backend (empresa_schema.py).
+const REGLAS_CORPORATIVO: Reglas<CampoCorporativo> = {
+  nombreEmpresa: { etiqueta: "El nombre de la empresa", obligatorio: true, min: 2, max: 150 },
+  nombreContacto: { etiqueta: "El nombre de contacto", obligatorio: true, min: 2, max: 100 },
+  email: { etiqueta: "El correo", obligatorio: true, tipo: "correo", max: 100 },
+  telefono: { etiqueta: "El teléfono", obligatorio: true, tipo: "telefono", max: 30 },
+  mensaje: { etiqueta: "El mensaje", max: 2000 },
+};
 import { Building2, Calendar, Check, Headphones, Shield, Sparkles, TrendingDown, AlertCircle, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import Footer from "../components/Footer";
@@ -18,23 +30,39 @@ export default function Corporate() {
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState("");
+  const [errores, setErrores] = useState<Partial<Record<CampoCorporativo, string>>>({});
+
+  const cambiar = (campo: CampoCorporativo | "numeroEmpleados", valor: string) => {
+    setForm((f) => ({ ...f, [campo]: valor }));
+    if (campo !== "numeroEmpleados" && errores[campo]) setErrores((x) => ({ ...x, [campo]: undefined }));
+  };
 
   async function handleSubmitCorporativo(e: React.FormEvent) {
     e.preventDefault();
+    if (enviando) return; // evita el doble envío
+    const { errores: nuevos, limpios, valido } = validarFormulario(
+      { nombreEmpresa: form.nombreEmpresa, nombreContacto: form.nombreContacto, email: form.email, telefono: form.telefono, mensaje: form.mensaje },
+      REGLAS_CORPORATIVO,
+    );
+    setErrores(nuevos);
+    if (!valido) {
+      document.getElementById(`corp-${Object.keys(nuevos)[0]}`)?.focus();
+      return;
+    }
     setEnviando(true);
     setError("");
     try {
       await empresaService.crear({
-        nombre_empresa: form.nombreEmpresa,
+        nombre_empresa: limpios.nombreEmpresa,
         numero_empleados: form.numeroEmpleados,
-        nombre_contacto: form.nombreContacto,
-        email_corporativo: form.email,
-        telefono: form.telefono,
-        mensaje: form.mensaje.trim() || undefined,
+        nombre_contacto: limpios.nombreContacto,
+        email_corporativo: limpios.email,
+        telefono: limpiarTelefono(limpios.telefono),
+        mensaje: limpios.mensaje || undefined,
       });
       setEnviado(true);
-    } catch (err: any) {
-      setError(err?.message || "No pudimos enviar tu solicitud. Intenta de nuevo.");
+    } catch (err: unknown) {
+      setError(mensajeErrorEnvio(err, "No pudimos enviar tu solicitud. Intenta de nuevo."));
     } finally {
       setEnviando(false);
     }
@@ -311,20 +339,25 @@ export default function Corporate() {
                   <p className="text-muted-foreground">Nuestro equipo se pondrá en contacto contigo en menos de 24 horas.</p>
                 </div>
               ) : (
-                <form className="space-y-6" onSubmit={handleSubmitCorporativo}>
+                <form className="space-y-6" noValidate onSubmit={handleSubmitCorporativo}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-semibold text-card-foreground mb-2">
-                        Nombre empresa
+                      <label htmlFor="corp-nombreEmpresa" className="block text-sm font-semibold text-card-foreground mb-2">
+                        Nombre empresa <span className="text-destructive" aria-hidden>*</span>
                       </label>
                       <input
                         type="text"
                         required
                         value={form.nombreEmpresa}
-                        onChange={e => setForm({ ...form, nombreEmpresa: e.target.value })}
+                        id="corp-nombreEmpresa"
+                        onChange={e => cambiar("nombreEmpresa", e.target.value)}
+                        maxLength={150}
+                        aria-invalid={!!errores.nombreEmpresa}
+                        aria-describedby={errores.nombreEmpresa ? "corp-nombreEmpresa-error" : undefined}
                         className="w-full px-4 py-4 bg-background text-foreground border-2 border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all placeholder:text-muted-foreground/60"
                         placeholder="Tu Empresa S.A.S"
                       />
+                      <div className="mt-1"><ErrorCampo id="corp-nombreEmpresa-error" mensaje={errores.nombreEmpresa} /></div>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-card-foreground mb-2">
@@ -332,7 +365,8 @@ export default function Corporate() {
                       </label>
                       <select
                         value={form.numeroEmpleados}
-                        onChange={e => setForm({ ...form, numeroEmpleados: e.target.value })}
+                        onChange={e => cambiar("numeroEmpleados", e.target.value)}
+                        aria-label="Número de empleados"
                         className="w-full px-4 py-4 bg-background text-foreground border-2 border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                       >
                         <option>1 - 50</option>
@@ -344,55 +378,75 @@ export default function Corporate() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-semibold text-card-foreground mb-2">
-                        Nombre contacto
+                      <label htmlFor="corp-nombreContacto" className="block text-sm font-semibold text-card-foreground mb-2">
+                        Nombre contacto <span className="text-destructive" aria-hidden>*</span>
                       </label>
                       <input
                         type="text"
                         required
                         value={form.nombreContacto}
-                        onChange={e => setForm({ ...form, nombreContacto: e.target.value })}
+                        id="corp-nombreContacto"
+                        onChange={e => cambiar("nombreContacto", e.target.value)}
+                        maxLength={100}
+                        aria-invalid={!!errores.nombreContacto}
+                        aria-describedby={errores.nombreContacto ? "corp-nombreContacto-error" : undefined}
                         className="w-full px-4 py-4 bg-background text-foreground border-2 border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                       />
+                      <div className="mt-1"><ErrorCampo id="corp-nombreContacto-error" mensaje={errores.nombreContacto} /></div>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-card-foreground mb-2">
-                        Email corporativo
+                      <label htmlFor="corp-email" className="block text-sm font-semibold text-card-foreground mb-2">
+                        Email corporativo <span className="text-destructive" aria-hidden>*</span>
                       </label>
                       <input
                         type="email"
                         required
                         value={form.email}
-                        onChange={e => setForm({ ...form, email: e.target.value })}
+                        id="corp-email"
+                        onChange={e => cambiar("email", e.target.value)}
+                        maxLength={100}
+                        aria-invalid={!!errores.email}
+                        aria-describedby={errores.email ? "corp-email-error" : undefined}
                         className="w-full px-4 py-4 bg-background text-foreground border-2 border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                       />
+                      <div className="mt-1"><ErrorCampo id="corp-email-error" mensaje={errores.email} /></div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-card-foreground mb-2">
-                      Teléfono
+                    <label htmlFor="corp-telefono" className="block text-sm font-semibold text-card-foreground mb-2">
+                      Teléfono <span className="text-destructive" aria-hidden>*</span>
                     </label>
                     <input
                       type="tel"
                       required
                       value={form.telefono}
-                      onChange={e => setForm({ ...form, telefono: e.target.value })}
+                      id="corp-telefono"
+                        onChange={e => cambiar("telefono", e.target.value)}
+                        maxLength={30}
+                        aria-invalid={!!errores.telefono}
+                        aria-describedby={errores.telefono ? "corp-telefono-error" : undefined}
                       className="w-full px-4 py-4 bg-background text-foreground border-2 border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                     />
+                      <div className="mt-1"><ErrorCampo id="corp-telefono-error" mensaje={errores.telefono} /></div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-card-foreground mb-2">
+                    <label htmlFor="corp-mensaje" className="block text-sm font-semibold text-card-foreground mb-2">
                       Mensaje (opcional)
                     </label>
                     <textarea
                       rows={4}
                       value={form.mensaje}
-                      onChange={e => setForm({ ...form, mensaje: e.target.value })}
+                      id="corp-mensaje"
+                        onChange={e => cambiar("mensaje", e.target.value)}
+                        maxLength={2000}
+                        aria-invalid={!!errores.mensaje}
+                        aria-describedby={errores.mensaje ? "corp-mensaje-error" : undefined}
                       className="w-full px-4 py-4 bg-background text-foreground border-2 border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-none placeholder:text-muted-foreground/60"
                       placeholder="Cuéntanos más sobre tus necesidades..."
                     />
+                      <div className="mt-1"><ErrorCampo id="corp-mensaje-error" mensaje={errores.mensaje} /></div>
                   </div>
 
                   {error && (

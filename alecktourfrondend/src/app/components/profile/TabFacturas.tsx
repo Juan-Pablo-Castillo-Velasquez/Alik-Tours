@@ -1,4 +1,6 @@
 import { Download, FileText, Receipt } from "lucide-react";
+import Pagination from "../ui/pagination";
+import { usePagination } from "../../hooks/usePagination";
 import { useMemo, useState } from "react";
 import { ClienteResponse } from "../../services/cliente.service";
 import { PagoResponse } from "../../services/reserva.service";
@@ -56,6 +58,7 @@ export default function TabFacturas({ reservas, clienteData }: Props) {
     });
   }, [comprobantes, busqueda, rango]);
 
+  const pagFacturas = usePagination(filtrados, 8);
   const hayFiltros = busqueda.trim() !== "" || rango.desde !== "" || rango.hasta !== "";
 
   return (
@@ -110,8 +113,9 @@ export default function TabFacturas({ reservas, clienteData }: Props) {
             )}
           </div>
         ) : (
+        <>
           <div className="space-y-3">
-            {filtrados.map(({ pago, reserva }) => {
+            {pagFacturas.slice.map(({ pago, reserva }) => {
               const concepto =
                 reserva.nombre_paquete ?? reserva.hotel_nombre ?? reserva.destino ?? `Reserva #${reserva.id_reserva}`;
               return (
@@ -147,6 +151,8 @@ export default function TabFacturas({ reservas, clienteData }: Props) {
               );
             })}
           </div>
+          <Pagination page={pagFacturas.page} pageCount={pagFacturas.pageCount} onPageChange={pagFacturas.setPage} className="mt-4" />
+        </>
         )}
       </div>
     </div>

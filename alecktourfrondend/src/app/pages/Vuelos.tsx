@@ -1,4 +1,4 @@
-import { ArrowRight, CalendarDays, Info, Loader2, Luggage, Plane, Search, X } from "lucide-react";
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Info, Loader2, Luggage, Plane, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import Footer from "../components/Footer";
@@ -79,6 +79,8 @@ export function TarjetaVuelo({ o }: { o: OfertaVuelo }) {
   );
 }
 
+const VUELOS_POR_PAGINA = 10;
+
 export default function Vuelos() {
   const [params, setParams] = useSearchParams();
   const [origen, setOrigen] = useState(params.get("origen") ?? "");
@@ -100,17 +102,32 @@ export default function Vuelos() {
     fecha_desde: params.get("desde") || undefined,
     fecha_hasta: params.get("hasta") || undefined,
   };
-  const clave = JSON.stringify(filtros);
+  const pagina = Math.max(1, Number(params.get("pagina")) || 1);
+  const [hayMas, setHayMas] = useState(false);
+  const clave = JSON.stringify(filtros) + pagina;
 
   useEffect(() => {
     setOfertas(null);
     setError(null);
+    // Paginación en el servidor: se pide una de más para saber si hay
+    // página siguiente sin contar todo el catálogo.
     vueloService
-      .listarPublicas({ ...filtros, solo_independientes: true })
-      .then(setOfertas)
+      .listarPublicas({ ...filtros, solo_independientes: true, skip: (pagina - 1) * VUELOS_POR_PAGINA, limit: VUELOS_POR_PAGINA + 1 })
+      .then((lista) => {
+        setHayMas(lista.length > VUELOS_POR_PAGINA);
+        setOfertas(lista.slice(0, VUELOS_POR_PAGINA));
+      })
       .catch((e: any) => setError(e?.message || "No pudimos cargar los vuelos"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave]);
+
+  function irAPagina(n: number) {
+    const p = new URLSearchParams(params);
+    if (n <= 1) p.delete("pagina");
+    else p.set("pagina", String(n));
+    setParams(p);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   function buscar(e: React.FormEvent) {
     e.preventDefault();
@@ -158,7 +175,9 @@ export default function Vuelos() {
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground" aria-live="polite">
-            {ofertas === null ? "Buscando vuelos..." : `${ofertas.length} vuelo(s) disponibles`}
+            {ofertas === null
+              ? "Buscando vuelos..."
+              : `${ofertas.length} vuelo(s) en esta página${pagina > 1 || hayMas ? ` · página ${pagina}` : ""}`}
           </p>
           {hayFiltros && (
             <button type="button" onClick={() => { setOrigen(""); setDestino(""); setDesde(""); setHasta(""); setParams({}); }} className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
@@ -180,9 +199,32 @@ export default function Vuelos() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {ofertas.map((o) => <TarjetaVuelo key={o.id_oferta} o={o} />)}
-          </div>
+          <>
+            <div className="space-y-3">
+              {ofertas.map((o) => <TarjetaVuelo key={o.id_oferta} o={o} />)}
+            </div>
+            {(pagina > 1 || hayMas) && (
+              <nav aria-label="Páginas de vuelos" className="mt-6 flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  disabled={pagina <= 1}
+                  onClick={() => irAPagina(pagina - 1)}
+                  className="inline-flex items-center gap-1 rounded-full border border-border px-4 py-2 text-sm font-medium disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4" /> Anterior
+                </button>
+                <span className="text-sm text-muted-foreground">Página {pagina}</span>
+                <button
+                  type="button"
+                  disabled={!hayMas}
+                  onClick={() => irAPagina(pagina + 1)}
+                  className="inline-flex items-center gap-1 rounded-full border border-border px-4 py-2 text-sm font-medium disabled:opacity-40"
+                >
+                  Siguiente <ChevronRight className="h-4 w-4" />
+                </button>
+              </nav>
+            )}
+          </>
         )}
 
         <p className="mt-8 flex items-start gap-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">

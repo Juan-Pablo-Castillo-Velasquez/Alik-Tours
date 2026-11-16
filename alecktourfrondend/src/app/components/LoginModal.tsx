@@ -1,6 +1,7 @@
 import { AlertCircle, Eye, EyeOff, Lock, Mail, Plane, RefreshCw, Shield, User, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
+import { borradorLogin } from "../utils/borradorAuth";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import ModalBackdrop from "./ui/ModalBackdrop";
@@ -31,7 +32,8 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     const { login } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [formData, setFormData] = useState({ username: "", password: "" });
+    // Lo escrito sobrevive a cerrar el modal (ver utils/borradorAuth.ts).
+    const [formData, setFormData] = useState(() => borradorLogin.leer({ username: "", password: "" }));
     const [formError, setFormError] = useState("");
     const [emailTouched, setEmailTouched] = useState(false);
 
@@ -69,7 +71,30 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // Al abrir, retoma lo que la persona dejó escrito (también si lo escribió
+    // en la otra instancia del modal, la del menú o la del contexto).
+    useEffect(() => {
+        if (isOpen) setFormData(borradorLogin.leer({ username: "", password: "" }));
+    }, [isOpen]);
+
+    useEffect(() => {
+        borradorLogin.guardar(formData);
+    }, [formData]);
+
+    // Cerrar SIN borrar lo escrito (clic afuera, la X, pasar a registro).
+    const cerrarConservando = () => {
+        setFormError("");
+        setShowPassword(false);
+        setShowForgot(false);
+        setForgotMsg("");
+        setWelcomeInfo(null);
+        setVerifyError("");
+        onClose();
+    };
+
+    // Solo tras un ingreso exitoso: se descarta el borrador.
     const resetAndClose = () => {
+        borradorLogin.borrar();
         setFormData({ username: "", password: "" });
         setFormError("");
         setShowPassword(false);
@@ -204,7 +229,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     return (
         <AnimatePresence>
             {isOpen && (
-                <ModalBackdrop zIndex={100} onClick={resetAndClose}>
+                <ModalBackdrop zIndex={100} onClick={cerrarConservando}>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.94, y: 24 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -223,7 +248,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                         <div className="relative bg-primary text-primary-foreground px-8 pt-8 pb-12 overflow-hidden">
                             <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5 blur-xl" />
                             <button
-                                onClick={resetAndClose}
+                                onClick={cerrarConservando}
                                 aria-label="Cerrar"
                                 className="absolute top-5 right-5 p-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10 rounded-lg transition-colors"
                             >
@@ -442,7 +467,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            resetAndClose();
+                                            cerrarConservando();
                                             onSwitchToRegister?.();
                                         }}
                                         className="text-primary hover:underline font-semibold"

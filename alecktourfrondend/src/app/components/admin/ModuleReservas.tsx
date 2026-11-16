@@ -15,7 +15,6 @@ import EmptyState from "./ui/EmptyState";
 import Avatar from "./ui/Avatar";
 import Timeline, { type TimelineItem } from "./ui/Timeline";
 import Pagination from "../ui/pagination";
-import { usePagination } from "../../hooks/usePagination";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -34,7 +33,8 @@ import {
 import { enlaceWhatsApp } from "../../utils/whatsapp";
 import BotonExportarCsv from "./ui/BotonExportarCsv";
 import DetalleComercialReserva from "./DetalleComercialReserva";
-import { EncabezadoOrdenable, useOrden } from "./ui/useOrden";
+import { EncabezadoOrdenable, type DireccionOrden } from "./ui/useOrden";
+import { abrirArchivoProtegido, apiFetch } from "../../api/v1/api";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
 
@@ -64,7 +64,29 @@ export type CanalOrigen = "web" | "empleado" | "telefono";
 export interface ReservaExtended extends Reserva {
   id_empleado?: number;
   canal_origen?: CanalOrigen;
+  /** Solo en GET /reservas/buscar (listado paginado del panel). */
+  cliente_nombre?: string | null;
+  cliente_documento?: string | null;
+  cliente_correo?: string | null;
+  pagos?: Pago[];
+  tipo_producto?: string | null;
 }
+
+interface PaginaReservas {
+  items: ReservaExtended[];
+  total: number;
+  pagina: number;
+  por_pagina: number;
+  conteos: Record<string, number>;
+}
+
+const POR_PAGINA_RESERVAS = 15;
+const TIPOS_PRODUCTO = [
+  { valor: "todos", texto: "Tipo: todos" },
+  { valor: "hotel", texto: "Hotel" },
+  { valor: "paquete", texto: "Paquete" },
+  { valor: "vuelo", texto: "Vuelo" },
+] as const;
 
 type EstadoReserva = "pendiente" | "confirmada" | "cancelada" | "finalizada";
 
@@ -257,9 +279,12 @@ interface SidePanelProps {
    * ver sus pagos" en Admindashboard.tsx. Opcional: sin él, el enlace
    * "Ver en Pagos" simplemente no aparece. */
   onVerPagos?: (id: number) => void;
+  /** Asesor (no admin): puede ver todo y dejar notas, pero cambiar el estado
+   * o eliminar es solo del administrador (lo valida también el backend). */
+  soloLectura?: boolean;
 }
 
-function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReserva = [], reservasClienteCount, onClose, onDelete, onUpdateEstado, onVerPagos }: SidePanelProps) {
+function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReserva = [], reservasClienteCount, onClose, onDelete, onUpdateEstado, onVerPagos, soloLectura = false }: SidePanelProps) {
   const solicitudPendiente = solicitudesReserva.find(s => s.estado === "pendiente");
 
   // reserva.precio_total ya viene calculado real desde el backend
@@ -424,7 +449,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
       title={<span className="inline-flex items-center gap-2">Reserva #{reserva.id_reserva} <EstadoBadge estado={estadoLocal} /></span>}
       description={cliente ? `${cliente.nombre} ${cliente.apellido}` : `Cliente #${reserva.id_cliente}`}
       maxWidth="sm:max-w-4xl"
-      footer={
+      footer={soloLectura ? undefined : (
         <div className="flex items-center gap-2 w-full">
           <button
             onClick={() => onDelete(reserva.id_reserva)}
@@ -433,7 +458,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
             <Trash2 className="w-3.5 h-3.5" /> Eliminar
           </button>
         </div>
-      }
+      )}
     >
       {solicitudPendiente && (
         <div className="flex items-center gap-2.5 p-3 mb-5 rounded-xl bg-[#f5e6e6] border border-[#c62828]/20">
@@ -671,14 +696,13 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
                             icon={Paperclip}
                             label="Comprobante"
                             value={
-                              <a
-                                href={resolveFotoUrl(p.comprobante_url)}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                type="button"
+                                onClick={() => abrirArchivoProtegido(`/pagos/${p.id_pago}/comprobante`).catch(() => {})}
                                 className="text-primary hover:underline"
                               >
                                 Ver comprobante
-                              </a>
+                              </button>
                             }
                           />
                         )}
@@ -744,7 +768,14 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
                   Última actualización: {tiempoRelativo(reserva.fecha_ultima_actualizacion)}
                 </p>
               )}
+              {soloLectura ? (
+                <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+                  Estado actual: <b className="capitalize text-foreground">{estadoLocal}</b>. Solo un administrador puede
+                  cambiarlo; deja una nota interna abajo si hace falta un cambio.
+                </p>
+              ) : (
               <EstadoPicker current={estadoLocal} onChange={setEstadoLocal} />
+              )}
               {saveError && (
                 <p className="text-xs text-destructive flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" /> {saveError}
@@ -755,6 +786,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
                   <CheckCircle className="w-3 h-3" /> Estado actualizado correctamente
                 </p>
               )}
+              {!soloLectura && (
               <button
                 onClick={handleSaveEstado}
                 disabled={!hasChanges || savingEstado}
@@ -767,6 +799,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
                 <Save className="w-3.5 h-3.5" />
                 {savingEstado ? "Guardando..." : "Guardar cambio de estado"}
               </button>
+              )}
             </div>
           </section>
 
@@ -906,14 +939,16 @@ interface Props {
   clienteIdFiltro?: number | null;
   /** "Ver en Pagos" del detalle de una reserva -- ver SidePanelProps.onVerPagos. */
   onVerPagos?: (id: number) => void;
+  /** Asesor: ve todas las reservas pero no cambia estados ni elimina. */
+  soloEmpleado?: boolean;
 }
 
-type CampoOrden = "id" | "fechas" | "total" | "actualizado";
+type CampoOrden = "id" | "fechas" | "creada";
 
 export default function ModuleReservas({
   reservas, clientes = [], empleados = [], paquetes = [], pagos = [], solicitudes = [],
   onDelete, onNueva, onUpdateEstado, reservaIdInicial = null, estadoInicial = null,
-  clienteIdFiltro = null, onVerPagos,
+  clienteIdFiltro = null, onVerPagos, soloEmpleado = false,
 }: Props) {
   const [search,       setSearch]       = useState("");
   const [estadoFilter, setEstadoFilter] = useState<EstadoFilter>("todos");
@@ -921,6 +956,18 @@ export default function ModuleReservas({
   const [canalFilter,  setCanalFilter]  = useState<CanalFilter>("todos");
   const [asesorFilter, setAsesorFilter] = useState("todos");
   const [selectedId,   setSelectedId]   = useState<number | null>(null);
+  const [tipoFilter,   setTipoFilter]   = useState<string>("todos");
+  const [fechaDesde,   setFechaDesde]   = useState("");
+  const [fechaHasta,   setFechaHasta]   = useState("");
+  const [busquedaServidor, setBusquedaServidor] = useState("");
+  const [page, setPage] = useState(0);
+  const [orden, setOrden] = useState<{ campo: CampoOrden; dir: DireccionOrden }>({ campo: "id", dir: "desc" });
+  const [datos, setDatos] = useState<PaginaReservas | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
+  // Reserva abierta desde otro módulo (chat, dashboard) que no está en la
+  // página actual: se trae del backend por su código.
+  const [reservaSuelta, setReservaSuelta] = useState<ReservaExtended | null>(null);
 
   // Ver comentario de `reservaIdInicial` en Props — solo reacciona cuando
   // el valor realmente cambia (ej. un nuevo click en "Ver reserva" desde
@@ -985,60 +1032,114 @@ export default function ModuleReservas({
     else if (prioNuevo === prioActual && (p.fecha_pago ?? "") > (actual.fecha_pago ?? "")) { pagoMap[p.id_reserva] = p; }
   }
 
-  const selectedReserva = reservas.find(r => r.id_reserva === selectedId) ?? null;
-
   const hasActiveFilters = estadoFilter !== "todos" || pagoFilter !== "todos"
     || canalFilter !== "todos" || asesorFilter !== "todos" || search.trim() !== ""
-    || clienteFiltroActivo != null;
+    || clienteFiltroActivo != null || tipoFilter !== "todos" || fechaDesde !== "" || fechaHasta !== "";
 
   function clearFilters() {
     setSearch(""); setEstadoFilter("todos"); setPagoFilter("todos");
     setCanalFilter("todos"); setAsesorFilter("todos"); setClienteFiltroActivo(null);
+    setTipoFilter("todos"); setFechaDesde(""); setFechaHasta("");
   }
 
-  const filtered = reservas.filter(r => {
-    const cl = clienteMap[r.id_cliente];
-    const pk = paqueteMap[r.id_paquete];
-    const pg = pagoMap[r.id_reserva];
-    const q  = search.toLowerCase();
-    const matchEstado = estadoFilter === "todos" || r.estado === estadoFilter;
-    const matchPago   = pagoFilter === "todos" || (pg?.estado ?? "") === pagoFilter;
-    const matchCanal  = canalFilter === "todos" || (r.canal_origen ?? "web") === canalFilter;
-    const matchAsesor = asesorFilter === "todos"
-      ? true
-      : asesorFilter === "sin_asesor"
-        ? r.id_empleado == null
-        : String(r.id_empleado) === asesorFilter;
-    const matchCliente = clienteFiltroActivo == null || r.id_cliente === clienteFiltroActivo;
-    const matchSearch = !q
-      || String(r.id_reserva).includes(q)
-      || (cl && `${cl.nombre} ${cl.apellido}`.toLowerCase().includes(q))
-      || (pk && pk.nombre_paquete.toLowerCase().includes(q))
-      || r.estado.includes(q);
-    return matchEstado && matchPago && matchCanal && matchAsesor && matchCliente && matchSearch;
-  });
+  // Búsqueda con espera corta: no se pide al servidor en cada tecla.
+  useEffect(() => {
+    const t = setTimeout(() => setBusquedaServidor(search.trim()), 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  // Orden por columna (clic en el encabezado; segundo clic invierte). Por
-  // defecto, lo más reciente primero (id descendente).
-  const { ordenadas, orden, ordenarPor } = useOrden<Reserva, CampoOrden>(
-    filtered,
-    (r, campo) =>
-      campo === "fechas" ? r.fecha_inicio
-      : campo === "total" ? r.precio_total
-      : campo === "actualizado" ? r.fecha_ultima_actualizacion
-      : r.id_reserva,
-    { campo: "id", dir: "desc" },
-  );
+  // Cualquier cambio de filtro u orden vuelve a la primera página.
+  useEffect(() => {
+    setPage(0);
+  }, [busquedaServidor, estadoFilter, pagoFilter, canalFilter, asesorFilter, tipoFilter, fechaDesde, fechaHasta, clienteFiltroActivo, orden]);
+
+  // Listado paginado y filtrado EN EL BACKEND (GET /reservas/buscar). Se
+  // vuelve a pedir cuando cambian los filtros, la página o la lista del
+  // panel (el padre la refresca al crear, editar o borrar una reserva).
+  useEffect(() => {
+    let vigente = true;
+    const params = new URLSearchParams({
+      pagina: String(page + 1),
+      por_pagina: String(POR_PAGINA_RESERVAS),
+      orden: orden.campo,
+      direccion: orden.dir,
+    });
+    if (busquedaServidor) params.set("q", busquedaServidor);
+    if (estadoFilter !== "todos") params.set("estado", estadoFilter);
+    if (pagoFilter !== "todos") params.set("estado_pago", pagoFilter);
+    if (canalFilter !== "todos") params.set("canal", canalFilter);
+    if (tipoFilter !== "todos") params.set("tipo_producto", tipoFilter);
+    if (asesorFilter === "sin_asesor") params.set("sin_asesor", "true");
+    else if (asesorFilter !== "todos") params.set("id_empleado", asesorFilter);
+    if (clienteFiltroActivo != null) params.set("id_cliente", String(clienteFiltroActivo));
+    if (fechaDesde) params.set("fecha_desde", fechaDesde);
+    if (fechaHasta) params.set("fecha_hasta", fechaHasta);
+    setCargando(true);
+    apiFetch<PaginaReservas>(`/reservas/buscar?${params.toString()}`)
+      .then((d) => {
+        if (!vigente) return;
+        setDatos(d);
+        setErrorCarga(null);
+      })
+      .catch((e: Error) => {
+        if (vigente) setErrorCarga(e.message || "No se pudieron cargar las reservas");
+      })
+      .finally(() => {
+        if (vigente) setCargando(false);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [page, orden, busquedaServidor, estadoFilter, pagoFilter, canalFilter, asesorFilter, tipoFilter, fechaDesde, fechaHasta, clienteFiltroActivo, reservas]);
+
+  const filtered: ReservaExtended[] = datos?.items ?? [];
+  const totalFiltrado = datos?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalFiltrado / POR_PAGINA_RESERVAS));
+  const slice = filtered;
+  const ordenarPor = (campo: CampoOrden) =>
+    setOrden((o) => ({ campo, dir: o.campo === campo && o.dir === "desc" ? "asc" : "desc" }));
   const thOrdenable = (campo: CampoOrden, texto: string) => (
     <EncabezadoOrdenable campo={campo} texto={texto} orden={orden} onOrdenar={ordenarPor} className={thCls} />
   );
 
-  const { page, pageCount, slice, setPage } = usePagination(ordenadas, 10);
+  const counts: Record<string, number> = datos?.conteos ?? {};
+  const totalReservas = Object.values(counts).reduce((a, b) => a + b, 0);
 
-  const counts = reservas.reduce((acc, r) => {
-    acc[r.estado] = (acc[r.estado] ?? 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Pagos de las reservas de la página (vienen en cada fila) + los del panel.
+  for (const r of filtered) {
+    for (const p of r.pagos ?? []) {
+      const actual = pagoMap[p.id_reserva];
+      if (!actual || (PAGO_PRIORIDAD[p.estado] ?? 99) < (PAGO_PRIORIDAD[actual.estado] ?? 99)) pagoMap[p.id_reserva] = p;
+    }
+  }
+
+  const selectedReserva: ReservaExtended | null = selectedId == null
+    ? null
+    : (filtered.find(r => r.id_reserva === selectedId)
+      ?? reservas.find(r => r.id_reserva === selectedId)
+      ?? (reservaSuelta?.id_reserva === selectedId ? reservaSuelta : null));
+
+  // Abrir una reserva pedida desde otro módulo aunque no esté en la página.
+  useEffect(() => {
+    if (selectedId == null) {
+      setReservaSuelta(null);
+      return;
+    }
+    if (filtered.some((r) => r.id_reserva === selectedId) || reservas.some((r) => r.id_reserva === selectedId)) return;
+    let vigente = true;
+    apiFetch<PaginaReservas>(`/reservas/buscar?q=${selectedId}&por_pagina=20`)
+      .then((d) => {
+        if (vigente) setReservaSuelta(d.items.find((r) => r.id_reserva === selectedId) ?? null);
+      })
+      .catch(() => {
+        if (vigente) setReservaSuelta(null);
+      });
+    return () => {
+      vigente = false;
+    };
+    // filtered/reservas: solo importa si ya contienen la reserva.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   // Ingresos = lo COBRADO: suma de los pagos aprobados. Antes se sumaba el
   // precio_total de TODAS las reservas, incluidas las canceladas y las que
@@ -1061,7 +1162,7 @@ export default function ModuleReservas({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Reservas</h2>
-          <p className="text-muted-foreground text-sm">{reservas.length} reservas en total</p>
+          <p className="text-muted-foreground text-sm">{totalReservas} reservas en total{hasActiveFilters ? ` · ${totalFiltrado} con los filtros` : ""}</p>
         </div>
         <button
           onClick={onNueva}
@@ -1073,7 +1174,7 @@ export default function ModuleReservas({
 
       {/* Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <MetricCard label="Total"       value={reservas.length}        />
+        <MetricCard label="Total"       value={totalReservas}        />
         <MetricCard label="Confirmadas" value={counts.confirmada ?? 0} color="green" />
         <MetricCard label="Pendientes"  value={counts.pendiente  ?? 0} color="amber" />
         <MetricCard label="Canceladas"  value={counts.cancelada  ?? 0} color="red"   />
@@ -1087,7 +1188,8 @@ export default function ModuleReservas({
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por cliente, paquete o ID..."
+            placeholder="Buscar por código, cliente, documento, correo o destino..."
+            aria-label="Buscar reservas"
             className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl text-sm outline-none
               bg-card
               text-foreground
@@ -1166,6 +1268,28 @@ export default function ModuleReservas({
           </SelectContent>
         </Select>
 
+        <Select value={tipoFilter} onValueChange={setTipoFilter}>
+          <SelectTrigger className={selectTriggerCls} aria-label="Tipo de viaje">
+            <SelectValue placeholder="Tipo" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover border-border">
+            {TIPOS_PRODUCTO.map(t => (
+              <SelectItem key={t.valor} value={t.valor}>{t.texto}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          Viaje desde
+          <input type="date" value={fechaDesde} max={fechaHasta || undefined} onChange={e => setFechaDesde(e.target.value)}
+            className="px-2 py-1.5 border border-border rounded-lg bg-card text-foreground text-xs" />
+        </label>
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          hasta
+          <input type="date" value={fechaHasta} min={fechaDesde || undefined} onChange={e => setFechaHasta(e.target.value)}
+            className="px-2 py-1.5 border border-border rounded-lg bg-card text-foreground text-xs" />
+        </label>
+
         <Select value={asesorFilter} onValueChange={setAsesorFilter}>
           <SelectTrigger className={selectTriggerCls}>
             <SelectValue placeholder="Asesor" />
@@ -1236,9 +1360,19 @@ export default function ModuleReservas({
       </div>
 
       {/* Table */}
-      {filtered.length > 0 ? (
+      {errorCarga ? (
+        <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {errorCarga}
+        </div>
+      ) : cargando && !datos ? (
+        <div className="space-y-2" aria-busy="true" aria-label="Cargando reservas">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-12 rounded-xl bg-muted animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length > 0 ? (
         <>
-        <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden overflow-x-auto">
+        <div className={`bg-card rounded-2xl shadow-sm border border-border overflow-hidden overflow-x-auto transition-opacity ${cargando ? "opacity-60" : ""}`} aria-busy={cargando}>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 border-b border-border">
               <tr>
@@ -1247,13 +1381,13 @@ export default function ModuleReservas({
                 {isVisible("paquete")    && <th className={thCls}>{COLUMN_LABELS.paquete}</th>}
                 {isVisible("fechas")     && thOrdenable("fechas", COLUMN_LABELS.fechas)}
                 {isVisible("pax")        && <th className={thCls}>{COLUMN_LABELS.pax}</th>}
-                {isVisible("total")      && thOrdenable("total", COLUMN_LABELS.total)}
+                {isVisible("total")      && <th className={thCls}>{COLUMN_LABELS.total}</th>}
                 {isVisible("metodoPago") && <th className={thCls}>{COLUMN_LABELS.metodoPago}</th>}
                 {isVisible("estadoPago") && <th className={thCls}>{COLUMN_LABELS.estadoPago}</th>}
                 {isVisible("estado")     && <th className={thCls}>{COLUMN_LABELS.estado}</th>}
                 {isVisible("canal")      && <th className={thCls}>{COLUMN_LABELS.canal}</th>}
                 {isVisible("asesor")     && <th className={thCls}>{COLUMN_LABELS.asesor}</th>}
-                {isVisible("actualizado")&& thOrdenable("actualizado", COLUMN_LABELS.actualizado)}
+                {isVisible("actualizado")&& <th className={thCls}>{COLUMN_LABELS.actualizado}</th>}
                 <th className={thCls}></th>
               </tr>
             </thead>
@@ -1286,6 +1420,11 @@ export default function ModuleReservas({
                                 <p className="text-[11px] text-muted-foreground truncate">{cl.correo}</p>
                               </div>
                             </>
+                          ) : r.cliente_nombre ? (
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-foreground truncate">{r.cliente_nombre}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{r.cliente_correo ?? r.cliente_documento}</p>
+                            </div>
                           ) : (
                             <span className="text-muted-foreground text-xs">#{r.id_cliente}</span>
                           )}
@@ -1377,12 +1516,15 @@ export default function ModuleReservas({
                     )}
 
                     <td className="px-4 py-3">
+                      {!soloEmpleado && (
                       <button
+                        aria-label={`Eliminar reserva #${r.id_reserva}`}
                         onClick={e => { e.stopPropagation(); onDelete(r.id_reserva); }}
                         className="p-1.5 text-destructive/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -1390,7 +1532,12 @@ export default function ModuleReservas({
             </tbody>
           </table>
         </div>
-        <Pagination page={page} pageCount={pageCount} onPageChange={setPage} className="mt-4" />
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">
+            Mostrando {page * POR_PAGINA_RESERVAS + 1}–{Math.min((page + 1) * POR_PAGINA_RESERVAS, totalFiltrado)} de {totalFiltrado}
+          </p>
+          <Pagination page={page} pageCount={pageCount} onPageChange={setPage} />
+        </div>
         </>
       ) : (
         <EmptyState
@@ -1417,11 +1564,12 @@ export default function ModuleReservas({
           paquete={paqueteMap[selectedReserva.id_paquete]}
           pago={pagoMap[selectedReserva.id_reserva]}
           solicitudesReserva={solicitudes.filter(sc => sc.id_reserva === selectedReserva.id_reserva)}
-          reservasClienteCount={reservas.filter(r => r.id_cliente === selectedReserva.id_cliente).length}
+          reservasClienteCount={Math.max(reservas.filter(r => r.id_cliente === selectedReserva.id_cliente).length, 1)}
           onClose={() => setSelectedId(null)}
           onVerPagos={onVerPagos}
           onDelete={(id) => { onDelete(id); setSelectedId(null); }}
           onUpdateEstado={onUpdateEstado}
+          soloLectura={soloEmpleado}
         />
       )}
     </div>

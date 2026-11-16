@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import Pagination from "../ui/pagination";
+import { usePagination } from "../../hooks/usePagination";
 import { Palette, Plus, Pencil, Trash2, CheckCircle2, ShieldCheck, ImagePlus, FileVideo, X, Loader2 } from "lucide-react";
 import { resolveImagenTema, resolveVideoTema, Tema, TemaFormData } from "../../services/tema.service";
 import { getTemaIcono, TEMA_ICONOS_OPCIONES } from "../../utils/temaIconos";
@@ -128,6 +130,7 @@ export default function ModuleTemas({
   temas, onSubmit, onDelete, onActivar, onSubirImagen, onBorrarImagen, onSubirVideo, onBorrarVideo, loading,
 }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
+  const pagTemas = usePagination(temas, 9);
   const [editing, setEditing] = useState<Tema | null>(null);
   const [form, setForm] = useState<TemaFormData>(FORM_VACIO);
   const [saving, setSaving] = useState(false);
@@ -283,8 +286,9 @@ export default function ModuleTemas({
           description="Crea el primero -- necesitas al menos un tema activo para que el sitio tenga colores."
         />
       ) : (
+      <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {temas.map((tema) => {
+          {pagTemas.slice.map((tema) => {
             const bloqueadoParaBorrar = tema.es_predeterminado || tema.activo;
             return (
               <div key={tema.id_tema} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col">
@@ -369,6 +373,8 @@ export default function ModuleTemas({
             );
           })}
         </div>
+        <Pagination page={pagTemas.page} pageCount={pagTemas.pageCount} onPageChange={pagTemas.setPage} className="mt-4" />
+      </>
       )}
 
       <AdminModal

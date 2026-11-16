@@ -122,3 +122,42 @@ describe("apiFetch con caché", () => {
     expect(contador.llamadas).toBe(2);
   });
 });
+
+describe("abrirArchivoProtegido", () => {
+  it("descarga con el token y abre el archivo como blob", async () => {
+    localStorage.setItem("token", "tok-1");
+    let auth: string | null = null;
+    server.use(
+      http.get(`${API}/api/pagos/5/comprobante`, ({ request }) => {
+        auth = request.headers.get("Authorization");
+        return new HttpResponse("%PDF", { headers: { "Content-Type": "application/pdf" } });
+      }),
+    );
+    const ventana = { location: { href: "" }, close: vi.fn() };
+    vi.spyOn(window, "open").mockReturnValue(ventana as unknown as Window);
+    const crear = vi.fn(() => "blob:archivo");
+    Object.assign(URL, { createObjectURL: crear, revokeObjectURL: vi.fn() });
+
+    const { abrirArchivoProtegido } = await import("./api");
+    await abrirArchivoProtegido("/pagos/5/comprobante");
+
+    expect(auth).toBe("Bearer tok-1");
+    expect(ventana.location.href).toBe("blob:archivo");
+  });
+
+  it("si no hay acceso cierra la pestaña y avisa", async () => {
+    server.use(http.get(`${API}/api/pagos/6/comprobante`, () => new HttpResponse(null, { status: 403 })));
+    const ventana = { location: { href: "" }, close: vi.fn() };
+    vi.spyOn(window, "open").mockReturnValue(ventana as unknown as Window);
+    const { abrirArchivoProtegido } = await import("./api");
+    await expect(abrirArchivoProtegido("/pagos/6/comprobante")).rejects.toThrow("No tienes acceso");
+    expect(ventana.close).toHaveBeenCalled();
+  });
+
+  it("un 404 dice que el archivo ya no está", async () => {
+    server.use(http.get(`${API}/api/pagos/7/comprobante`, () => new HttpResponse(null, { status: 404 })));
+    vi.spyOn(window, "open").mockReturnValue(null);
+    const { abrirArchivoProtegido } = await import("./api");
+    await expect(abrirArchivoProtegido("/pagos/7/comprobante")).rejects.toThrow("ya no está disponible");
+  });
+});
