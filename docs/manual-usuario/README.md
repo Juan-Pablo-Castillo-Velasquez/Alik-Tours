@@ -160,6 +160,8 @@ En **Comunidad** puedes publicar hasta 4 fotos o un video corto con un título, 
 
 Se entra en `/admin` con un usuario del equipo. Cada persona ve los módulos que permite su rol.
 
+**Asesores:** el dashboard muestra los indicadores de toda la agencia (reservas por estado, pagos pendientes, ingresos), las reservas recientes, la actividad del equipo y los viajes próximos. En Reservas ven **todas** las reservas, con búsqueda por código, cliente, documento o destino y filtros por estado, pago, canal, tipo de viaje, asesor y fechas. Pueden dejar notas internas; cambiar el estado o eliminar una reserva lo hace un administrador. Los comprobantes de pago solo se abren con sesión iniciada.
+
 | Grupo | Módulo | Qué se hace | HU |
 | --- | --- | --- | --- |
 | General | Dashboard | Indicadores de reservas, ingresos y cancelaciones; accesos rápidos. | HU-32 |

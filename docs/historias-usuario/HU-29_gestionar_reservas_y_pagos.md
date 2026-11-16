@@ -18,10 +18,10 @@
 
 ## Criterios de aceptación
 
-### CA-29.1 — Listado
-- **Dado** que abro Reservas,
-- **cuando** filtro por estado,
-- **entonces** veo las reservas con cliente, producto, total y saldo.
+### CA-29.1 — Listado de TODAS las reservas
+- **Dado** que soy admin o asesor y abro Reservas,
+- **cuando** busco por código, cliente, documento, correo o destino, o filtro por estado, pago, canal, tipo de viaje, asesor o fechas,
+- **entonces** veo todas las reservas que coinciden (no solo las mías), paginadas desde el servidor, con cliente, producto, total y saldo.
 
 ### CA-29.2 — Reserva asistida
 - **Dado** que un cliente reserva por teléfono,
@@ -37,6 +37,10 @@
 - **Dado** que escribo una nota interna,
 - **cuando** la guardo,
 - **entonces** solo la ve el equipo, nunca el cliente.
+
+## Notas
+
+Un asesor ve todo y puede dejar notas internas; cambiar el estado o eliminar una reserva es solo del administrador (lo valida el backend). API: `GET /api/reservas/buscar`.
 
 ---
 
