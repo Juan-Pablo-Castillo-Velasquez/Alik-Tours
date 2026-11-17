@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Link } from "react-router";
 import { resolveFotoUrl } from "./admin/types";
 import { PaqueteResponse } from "../services/paquete.service";
+import AdornoTarjeta from "./temporada/AdornoTarjeta";
 import { getCityImage, getDefaultImage } from "../utils/cityImages";
 
 interface PackageResultCardProps {
@@ -56,6 +57,7 @@ export default function PackageResultCard({ pkg, index = 0 }: PackageResultCardP
             <PackageIcon className="h-3 w-3" />
             Paquete
           </span>
+          <AdornoTarjeta insignia />
         </div>
 
         <div className="p-4">

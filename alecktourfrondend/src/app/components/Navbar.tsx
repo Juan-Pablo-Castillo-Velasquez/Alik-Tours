@@ -1,4 +1,5 @@
 import BotonWhatsApp from "./BotonWhatsApp";
+import GuirnaldaLuces from "./temporada/GuirnaldaLuces";
 import BrandLogo from "./BrandLogo";
 import { BRAND } from "../config/brand";
 import {
@@ -101,6 +102,7 @@ export default function Navbar() {
           text-foreground
         "
       >
+        <GuirnaldaLuces />
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Grid de 3 columnas (no flex justify-between) a propósito: con
               justify-between el grupo del centro no queda realmente

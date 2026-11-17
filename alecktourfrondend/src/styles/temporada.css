@@ -1,0 +1,187 @@
+/* Decoración ambiental de temporada (ver app/components/temporada/).
+   Todo lo que se mueve anima SOLO transform u opacity para quedarse en el
+   compositor: nada de top/left ni sombras animadas. */
+
+:root {
+  --temporada-copo: #ffffff;
+  --temporada-copo-borde: rgba(84, 122, 163, 0.55);
+  --temporada-copo-linea: #a9c3dc;
+  --temporada-nieve: #ffffff;
+  --temporada-nieve-sombra: #dbe7f3;
+}
+.dark {
+  --temporada-copo-borde: rgba(255, 255, 255, 0);
+  --temporada-copo-linea: #ffffff;
+  --temporada-nieve: #f4f8fc;
+  --temporada-nieve-sombra: #b9cbdd;
+}
+
+/* ── Partículas que caen por toda la página ─────────────────────────── */
+.temporada-ambiente {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+.temporada-particula {
+  position: absolute;
+  top: 0;
+  left: var(--x);
+  width: var(--tam);
+  height: var(--tam);
+  opacity: var(--op);
+  animation: temporada-caer var(--dur) linear var(--retraso) infinite;
+  will-change: transform;
+}
+.temporada-particula > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: temporada-vaiven var(--vaiven) ease-in-out var(--retraso) infinite alternate;
+}
+.temporada-particula svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@keyframes temporada-caer {
+  from { transform: translate3d(0, -8vh, 0); }
+  to { transform: translate3d(0, 108vh, 0); }
+}
+@keyframes temporada-vaiven {
+  from { transform: translate3d(calc(var(--amp) * -1), 0, 0) rotate(0deg); }
+  to { transform: translate3d(var(--amp), 0, 0) rotate(var(--giro)); }
+}
+
+/* ── Guirnalda de luces bajo el navbar ──────────────────────────────── */
+.temporada-guirnalda {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 26px;
+  display: flex;
+  pointer-events: none;
+  overflow: hidden;
+}
+.temporada-guirnalda__tramo {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.temporada-guirnalda__tramo svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 16px;
+  color: rgba(40, 60, 50, 0.55);
+}
+.dark .temporada-guirnalda__tramo svg { color: rgba(255, 255, 255, 0.35); }
+.temporada-guirnalda__foco {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 9px;
+  height: 13px;
+  margin-left: -4.5px;
+  border-radius: 50% 50% 50% 50% / 38% 38% 62% 62%;
+  background: var(--foco);
+  box-shadow: 0 0 10px 2px var(--foco);
+  animation: temporada-titilar 2.4s ease-in-out var(--retraso) infinite;
+}
+.temporada-guirnalda__foco::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 2px;
+  width: 5px;
+  height: 4px;
+  border-radius: 1px;
+  background: #3a3f45;
+}
+@keyframes temporada-titilar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+/* En pantallas angostas sobran focos: se ocultan tramos para que no se apiñen. */
+@media (max-width: 640px) {
+  .temporada-guirnalda__tramo:nth-child(n + 11) { display: none; }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .temporada-guirnalda__tramo:nth-child(n + 19) { display: none; }
+}
+
+/* ── Adornos sobre fotos de tarjetas ────────────────────────────────── */
+.temporada-nieve-borde {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  pointer-events: none;
+  color: var(--temporada-nieve);
+  filter: drop-shadow(0 2px 2px rgba(20, 40, 70, 0.22));
+}
+.temporada-nieve-borde svg { display: block; width: 100%; height: 100%; }
+
+.temporada-copos-tarjeta {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+}
+.group:hover .temporada-copos-tarjeta,
+.group:focus-visible .temporada-copos-tarjeta,
+.temporada-copos-tarjeta[data-siempre="true"] { opacity: 1; }
+.temporada-copos-tarjeta i {
+  position: absolute;
+  top: -8px;
+  left: var(--x);
+  width: var(--tam);
+  height: var(--tam);
+  border-radius: 9999px;
+  background: #fff;
+  opacity: 0.9;
+  animation: temporada-caer-tarjeta var(--dur) linear var(--retraso) infinite;
+  animation-play-state: paused;
+}
+.group:hover .temporada-copos-tarjeta i,
+.temporada-copos-tarjeta[data-siempre="true"] i { animation-play-state: running; }
+@keyframes temporada-caer-tarjeta {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(var(--deriva), 520px, 0); }
+}
+
+.temporada-mecer {
+  transform-origin: 50% 0%;
+  animation: temporada-mecer 4.5s ease-in-out infinite alternate;
+}
+@keyframes temporada-mecer {
+  from { transform: rotate(-5deg); }
+  to { transform: rotate(5deg); }
+}
+.temporada-girar-lento { animation: temporada-girar 40s linear infinite; }
+@keyframes temporada-girar { to { transform: rotate(360deg); } }
+
+/* ── Sin movimiento: quien lo pidió al sistema o lo pausó en el footer ─ */
+[data-animacion-temporada="off"] .temporada-guirnalda__foco,
+[data-animacion-temporada="off"] .temporada-mecer,
+[data-animacion-temporada="off"] .temporada-girar-lento,
+[data-animacion-temporada="off"] .temporada-copos-tarjeta i {
+  animation: none;
+}
+[data-animacion-temporada="off"] .temporada-copos-tarjeta { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .temporada-guirnalda__foco,
+  .temporada-mecer,
+  .temporada-girar-lento,
+  .temporada-particula,
+  .temporada-particula > span,
+  .temporada-copos-tarjeta i { animation: none; }
+  .temporada-copos-tarjeta { display: none; }
+}

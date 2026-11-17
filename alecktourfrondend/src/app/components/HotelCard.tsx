@@ -17,6 +17,7 @@ import {
   Waves,
   Wine,
 } from "lucide-react";
+import AdornoTarjeta from "./temporada/AdornoTarjeta";
 import { motion } from "motion/react";
 import { Link, useSearchParams } from "react-router";
 import { HotelDetailResponse } from "../services/hotel.service";
@@ -226,6 +227,7 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
             (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
           }}
         />
+        <AdornoTarjeta />
 
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
           <span className="rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary shadow-sm backdrop-blur">

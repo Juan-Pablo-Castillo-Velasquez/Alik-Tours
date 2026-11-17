@@ -6,6 +6,8 @@ import { useTema } from "../context/TemaContext";
 import { HotelDetailResponse, hotelService } from "../services/hotel.service";
 import { resolveVideoTema } from "../services/tema.service";
 import HalloweenAccents from "./HalloweenAccents";
+import AcentosNavidad from "./temporada/AcentosNavidad";
+import { decoracionDeTema } from "./temporada/temporadas";
 import SearchBar from "./SearchBar";
 
 // Clip aéreo de playa, libre de derechos (Mixkit — uso comercial y personal
@@ -158,6 +160,7 @@ export default function Hero() {
           activo, ver TemaContext.tsx. Puramente decorativo y sin
           interacción (pointer-events-none), sombras mínimas. */}
       {esHalloween && <HalloweenAccents />}
+      {decoracionDeTema(temaActivo).efecto === "nieve" && <AcentosNavidad />}
 
       {/* Contenido principal */}
       <div

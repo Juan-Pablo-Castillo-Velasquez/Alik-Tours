@@ -6,6 +6,7 @@ import { AuthModalProvider } from "../context/AuthModalContext";
 import WhatsAppButton from "../components/WhatsAppButton";
 import CookieConsent from "../components/CookieConsent";
 import GuiaUso from "../components/GuiaUso";
+import AmbienteTemporada from "../components/temporada/AmbienteTemporada";
 
 // Fallback mientras se descarga el bundle de la página que se está
 // navegando (ver el comentario en routes.tsx -- cada página ahora carga
@@ -27,6 +28,7 @@ export default function RootLayout() {
             <Suspense fallback={<RouteFallback />}>
                 <Outlet />
             </Suspense>
+            <AmbienteTemporada />
             <GuiaUso />
             <WhatsAppButton />
             <CookieConsent />

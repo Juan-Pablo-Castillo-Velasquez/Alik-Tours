@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useTema } from "../context/TemaContext";
 import HalloweenAccentDiscreto from "./HalloweenAccentDiscreto";
+import AdornoTarjeta from "./temporada/AdornoTarjeta";
 import { DestinoSeleccion, destinoService } from "../services/destino.service";
 
 const cardVariants = {
@@ -135,6 +136,7 @@ export default function DestinationsGrid() {
                                         {esHalloween && (
                                             <HalloweenAccentDiscreto variante="calabaza" posicion="top-left" tamano="sm" />
                                         )}
+                                        <AdornoTarjeta />
 
                                         <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/90 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                             <ArrowUpRight className="w-4 h-4 text-primary" />

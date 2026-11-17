@@ -1,4 +1,5 @@
 import { ArrowRight, Calendar, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import AdornoTarjeta from "./temporada/AdornoTarjeta";
 import { motion } from "motion/react";
 import { useRef } from "react";
 import { Link } from "react-router";
@@ -105,6 +106,7 @@ export default function PaquetesDestacadosCarousel({ paquetes }: PaquetesDestaca
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/0" />
+                <AdornoTarjeta />
 
                 <span className="absolute top-3 left-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-bold text-primary shadow-sm">
                   <MapPin className="h-3 w-3 shrink-0" />

@@ -3,6 +3,7 @@ import { BRAND } from "../config/brand";
 import { Link } from "react-router";
 import BotonWhatsApp from "./BotonWhatsApp";
 import HalloweenAccentDiscreto from "./HalloweenAccentDiscreto";
+import { BotonAnimacionTemporada, NieveFooter } from "./temporada/NieveFooter";
 import { useTema } from "../context/TemaContext";
 
 export default function Footer() {
@@ -40,6 +41,7 @@ export default function Footer() {
       {esHalloween && (
         <HalloweenAccentDiscreto variante="telarana" posicion="top-left" tamano="lg" />
       )}
+      <NieveFooter />
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
           {/* Brand + Newsletter Column */}
@@ -127,7 +129,8 @@ export default function Footer() {
             © {currentYear} {BRAND.name}. Todos los derechos reservados. · RNT {BRAND.rnt}
             <span className="block mt-1">Agencia fundada por Juan Pablo Castillo Velásquez</span>
           </p>
-          <div className="flex gap-6 text-sm">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+            <BotonAnimacionTemporada />
             <Link to="/terms" className="footer-link">
               Términos y Condiciones
             </Link>
