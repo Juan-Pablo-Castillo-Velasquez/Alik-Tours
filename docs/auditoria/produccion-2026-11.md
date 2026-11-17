@@ -39,19 +39,26 @@ Revisión de seguridad, formularios, panel de asesores y paginación. Este docum
 
 Nuevas pruebas: `test_busqueda_reservas_panel_api.py` (acceso entre roles, búsqueda, filtros, paginación, permisos del asesor), `test_rate_limit_api.py` (límites, IP real, falsificación de `X-Forwarded-For`, Redis caído, espacios), `TestTokensYRolesVigentes`, `TestComprobantesPrivados` y `TestCuentaSinVerificar` en `test_seguridad_y_errores_api.py`, `test_concurrencia_reservas_pg.py`, y en el frontend `api.cache.test.ts`, `borradorAuth.test.ts`, `validacionFormulario.test.ts` y `ErrorCampo.test.tsx`.
 
-## 4. Pendientes (no resueltos en esta ronda)
+## 4. Segunda ronda (16 nov. 2026)
 
-- **Archivos del chat** (`/uploads/chat` en local, Cloudinary público en producción): siguen accesibles por URL (nombres aleatorios UUID, no listables). Hacerlos privados exige Cloudinary `type=authenticated` con URLs firmadas y cambiar cómo el chat muestra imágenes en línea.
-- **Comprobantes en Render Free**: se guardan en el disco del contenedor, que se borra en cada despliegue. Conviene moverlos a almacenamiento persistente privado (Cloudinary autenticado o S3).
-- **Formularios**: se aplicó la validación reutilizable a contacto y corporativo (el registro ya validaba campo por campo). Falta revisar el checkout y aplicarla con el mismo patrón a: cuenta del perfil, cancelación, reseña, publicar en la comunidad y los formularios del panel (hoteles, paquetes, vuelos, usuarios).
-- **Dashboard del admin**: no se rediseñó (ya tenía tendencias, gráficas y actividad); el rediseño completo se hizo en el del asesor.
-- **Exportar CSV** en Reservas exporta la página visible, no todas las reservas filtradas.
+- **Comprobantes privados y persistentes:** con Cloudinary se suben como recurso `authenticated` (sin URL pública) y el backend los entrega con sesión; ya no se pierden cuando Render reinicia el contenedor. En local siguen en disco, fuera de la ruta pública.
+- **Exportar CSV** en Reservas descarga **todas** las reservas que coinciden con los filtros, recorriendo las páginas del backend, con documento y saldo del cliente.
+- **Formularios:** cancelación (mínimo 10 caracteres si el motivo es «Otro», también validado en el backend), reseña (contador 10–1000), comunidad (mensaje claro para el 429) y Mi Cuenta (errores bajo cada campo, teléfono y correo validados, límites iguales a la BD; el backend ahora limita longitudes en `ClienteUpdate`, que antes podían provocar 500).
+- **Servicio despierto:** el cron de GitHub corre con horas de retraso y encontró el backend dormido; quedó como respaldo con más margen de espera. Lo que hay que configurar es un monitor externo (ver despliegue).
 
-## 5. Desplegar en producción
+## 5. Pendientes
+
+- **Archivos del chat:** siguen accesibles por URL (nombres aleatorios, no listables). Pasarlos al mismo almacenamiento privado obliga a cambiar cómo el chat muestra imágenes en línea.
+- **Formularios del panel** (hoteles, paquetes, vuelos, usuarios): el backend valida y limita, pero el frontend aún no usa el patrón de errores bajo cada campo.
+- **Dashboard del admin:** no se rediseñó (el rediseño completo se hizo en el del asesor).
+- **Comprobantes antiguos:** los que se subieron antes de este cambio estaban en el disco de Render y no se pueden recuperar si ya hubo un despliegue.
+
+## 6. Desplegar en producción
 
 1. Hacer merge a `main`: Vercel despliega el frontend y Render el backend. Render ejecuta `alembic upgrade head` al arrancar (migración de índices `f2a7c4e9b1d8`, solo agrega índices).
-2. Variables nuevas, todas opcionales: `CONFIAR_PROXY` (por defecto `true`, correcto en Render), `CACHE_*`, `DB_POOL_*` y `RATE_LIMIT_MULTIPLIER` (por defecto `1`; solo para E2E).
-3. Después de desplegar, verificar:
+2. Configurar el monitor externo de `/health` (UptimeRobot o cron-job.org, cada 5 min).
+3. Variables nuevas, todas opcionales: `CONFIAR_PROXY` (por defecto `true`, correcto en Render), `CACHE_*`, `DB_POOL_*` y `RATE_LIMIT_MULTIPLIER` (por defecto `1`; solo para E2E).
+4. Después de desplegar, verificar:
    - Iniciar sesión como asesor: el módulo Reservas muestra todas las reservas y el enlace de una reserva en el chat abre su detalle.
    - `https://<backend>/uploads/comprobantes/cualquiera.pdf` responde 404.
    - El login sigue funcionando (si alguien quedó con una sesión vieja de refresh token, debe volver a iniciar sesión: es lo esperado).

@@ -95,7 +95,8 @@ Render construye la imagen directo desde `backend/Dockerfile`, usando el stage `
 
 ### Rendimiento: caché y servicio despierto
 
-- **Servicio despierto:** el flujo `.github/workflows/mantener-backend-activo.yml` consulta `/health` cada 10 minutos para que Render no duerma el backend (y la conexión a Neon quede caliente). Un solo servicio despierto todo el mes (~744 h) cabe en las 750 horas gratis de Render. Si la URL del backend cambia, defínela en GitHub › Settings › Secrets and variables › Actions › **Variables** como `BACKEND_URL`.
+- **Servicio despierto (configurar una vez):** crea un monitor gratuito en [UptimeRobot](https://uptimerobot.com) o [cron-job.org](https://cron-job.org) que haga `GET https://<tu-backend>.onrender.com/health` cada 5 minutos. Es lo que de verdad evita el arranque en frío: los cron gratuitos de GitHub se ejecutan con retrasos de horas (en noviembre de 2026 corrió 2 veces en un día y encontró el backend dormido). El monitor además te avisa por correo si el backend se cae.
+- **Respaldo:** el flujo `.github/workflows/mantener-backend-activo.yml` consulta `/health` cada 10 minutos para que Render no duerma el backend (y la conexión a Neon quede caliente). Un solo servicio despierto todo el mes (~744 h) cabe en las 750 horas gratis de Render. Si la URL del backend cambia, defínela en GitHub › Settings › Secrets and variables › Actions › **Variables** como `BACKEND_URL`.
 - **Caché de dos niveles** (`backend/app/core/cache.py`): memoria del proceso (L1, 20 s) + Redis/Upstash (L2, TTL de cada endpoint). Si Upstash falla, se deja de intentar por 30 s y el sitio sigue funcionando con la base de datos. Variables opcionales:
 
   | Variable | Por defecto | Para qué |

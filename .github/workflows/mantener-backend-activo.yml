@@ -6,6 +6,12 @@
 # en mostrar la información la primera vez. Este flujo consulta /health
 # cada 10 minutos (lo que además mantiene caliente la conexión a Neon).
 #
+# OJO: GitHub ejecuta los cron gratuitos "cuando puede" (en la práctica,
+# a veces solo unas pocas veces al día), así que esto es un RESPALDO. Lo
+# que de verdad mantiene despierto el backend es un monitor externo cada
+# 5-10 min (UptimeRobot o cron-job.org, gratis) apuntando a /health; ver
+# docs/referencia-tecnica/despliegue-produccion-servicios-gestionados.md.
+#
 # URL: variable de repositorio BACKEND_URL (Settings > Secrets and variables
 # > Actions > Variables). Si no existe se usa la URL publicada en el README.
 name: mantener backend activo
@@ -21,16 +27,17 @@ permissions:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    # Un arranque en frío de Render tarda 1-2 min: margen para esperarlo.
+    timeout-minutes: 6
     steps:
       - name: Consultar /health
         env:
           BACKEND_URL: ${{ vars.BACKEND_URL || 'https://proyectoalectoursdocker.onrender.com' }}
         run: |
-          for intento in 1 2 3; do
-            codigo=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BACKEND_URL/health" || true)
+          for intento in 1 2 3 4; do
+            codigo=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 "$BACKEND_URL/health" || true)
             echo "Intento $intento: HTTP $codigo"
             if [ "$codigo" = "200" ]; then exit 0; fi
-            sleep 10
+            sleep 15
           done
           echo "::warning::El backend no respondió 200 en /health"
