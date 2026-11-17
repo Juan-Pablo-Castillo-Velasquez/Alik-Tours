@@ -8,6 +8,11 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import ErrorCampo from "../../shared/ErrorCampo";
+
+// Mismos límites que el backend (solicitud_cancelacion_schema/route).
+const DETALLE_MIN = 10;
+const DETALLE_MAX = 1000;
 import { MOTIVOS } from "./constants";
 import { solicitudCancelacionService } from "../../../services/solicitudCancelacion.service";
 import { ModalOverlay } from "../../ui/ModalBackdrop";
@@ -24,6 +29,7 @@ export default function ModalCancelacion({ reserva, onClose, onConfirm }: Props)
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState("");
+  const [errorDetalle, setErrorDetalle] = useState("");
   const motivoFinal = motivo === "Otro motivo" ? motivoCustom : motivo;
 
   // Antes esto era un mock (setTimeout falso) que nunca llamaba al backend
@@ -33,8 +39,13 @@ export default function ModalCancelacion({ reserva, onClose, onConfirm }: Props)
   // el mensaje de éxito solo se muestra tras una respuesta real del
   // servidor, y un error real (ej. ya existe una solicitud pendiente para
   // esta reserva) se muestra en vez de fingir que se envió.
+  const detalleCorto = motivo === "Otro motivo" && motivoCustom.trim().length < DETALLE_MIN;
   const handleEnviar = async () => {
-    if (!motivoFinal.trim()) return;
+    if (!motivoFinal.trim() || enviando) return;
+    if (detalleCorto) {
+      setErrorDetalle(`Explica el motivo en al menos ${DETALLE_MIN} caracteres`);
+      return;
+    }
     setEnviando(true);
     setError("");
     try {
@@ -118,13 +129,26 @@ export default function ModalCancelacion({ reserva, onClose, onConfirm }: Props)
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden mb-4"
                   >
+                    <label htmlFor="cancelacion-detalle" className="mb-1 block text-xs font-medium text-foreground">
+                      Cuéntanos el motivo <span className="text-destructive" aria-hidden>*</span>
+                    </label>
                     <textarea
+                      id="cancelacion-detalle"
                       value={motivoCustom}
-                      onChange={(e) => setMotivoCustom(e.target.value)}
+                      onChange={(e) => { setMotivoCustom(e.target.value); setErrorDetalle(""); }}
                       placeholder="Por favor, detalla los motivos del cambio..."
                       rows={3}
+                      maxLength={DETALLE_MAX}
+                      aria-invalid={!!errorDetalle}
+                      aria-describedby="cancelacion-detalle-ayuda"
                       className="w-full border border-border bg-muted/30 text-foreground rounded-lg p-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 resize-none"
                     />
+                    <div id="cancelacion-detalle-ayuda" className="mt-1 flex justify-between gap-2">
+                      <ErrorCampo id="cancelacion-detalle-error" mensaje={errorDetalle} />
+                      <span className="ml-auto text-[11px] text-muted-foreground">
+                        {motivoCustom.trim().length}/{DETALLE_MAX} · mínimo {DETALLE_MIN}
+                      </span>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

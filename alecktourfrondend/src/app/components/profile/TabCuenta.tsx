@@ -1,4 +1,6 @@
 import { Camera, Check, Eye, EyeOff, Lock, Loader2, Pencil, ShieldAlert, User, X } from "lucide-react";
+import ErrorCampo from "../shared/ErrorCampo";
+import { limpiarTelefono, mensajeErrorEnvio, validarFormulario, type Reglas } from "../../utils/validacionFormulario";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { resolveFotoUrl } from "../admin/types";
@@ -12,15 +14,27 @@ interface Props {
 }
 
 const CAMPOS_EDITABLES = [
-  { name: "nombre", label: "Nombre", required: true },
-  { name: "apellido", label: "Apellido", required: true },
-  { name: "correo", label: "Correo Electrónico", type: "email" },
-  { name: "celular", label: "Teléfono Celular" },
-  { name: "ciudad", label: "Ciudad" },
-  { name: "pais", label: "País" },
-  { name: "direccion", label: "Dirección de Residencia" },
+  { name: "nombre", label: "Nombre", required: true, max: 100 },
+  { name: "apellido", label: "Apellido", required: true, max: 100 },
+  { name: "correo", label: "Correo Electrónico", type: "email", max: 100 },
+  { name: "celular", label: "Teléfono Celular", max: 20 },
+  { name: "ciudad", label: "Ciudad", max: 100 },
+  { name: "pais", label: "País", max: 100 },
+  { name: "direccion", label: "Dirección de Residencia", max: 255 },
   { name: "fecha_nacimiento", label: "Fecha de Nacimiento", type: "date" },
 ] as const;
+
+type CampoTexto = "nombre" | "apellido" | "correo" | "celular" | "ciudad" | "pais" | "direccion";
+// Mismos límites que ClienteUpdate en el backend (cliente_schema.py).
+const REGLAS_CUENTA: Reglas<CampoTexto> = {
+  nombre: { etiqueta: "El nombre", obligatorio: true, min: 2, max: 100 },
+  apellido: { etiqueta: "El apellido", obligatorio: true, min: 2, max: 100 },
+  correo: { etiqueta: "El correo", tipo: "correo", max: 100 },
+  celular: { etiqueta: "El celular", tipo: "telefono", max: 20 },
+  ciudad: { etiqueta: "La ciudad", min: 2, max: 100 },
+  pais: { etiqueta: "El país", min: 2, max: 100 },
+  direccion: { etiqueta: "La dirección", min: 3, max: 255 },
+};
 
 const TIPOS_PERMITIDOS = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const TAMANO_MAXIMO = 5 * 1024 * 1024; // 5MB
@@ -82,10 +96,18 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
     }
   };
 
+  const [erroresCuenta, setErroresCuenta] = useState<Partial<Record<CampoTexto, string>>>({});
+
   const handleGuardarPersonal = async () => {
     if (!clienteData) return;
-    if (!formPersonal.nombre.trim() || !formPersonal.apellido.trim()) {
-      toast.error("Nombre y apellido son obligatorios.");
+    if (guardandoPersonal) return; // evita el doble envío
+    const textos = Object.fromEntries(
+      (Object.keys(REGLAS_CUENTA) as CampoTexto[]).map((k) => [k, formPersonal[k] ?? ""]),
+    ) as Record<CampoTexto, string>;
+    const { errores, limpios, valido } = validarFormulario(textos, REGLAS_CUENTA);
+    setErroresCuenta(errores);
+    if (!valido) {
+      document.getElementById(`cuenta-${Object.keys(errores)[0]}`)?.focus();
       return;
     }
     setGuardandoPersonal(true);
@@ -93,8 +115,10 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
       // fecha_nacimiento y correo vacíos no son valores válidos para el
       // backend (date/EmailStr) — se omiten en vez de mandar "" cuando el
       // usuario los deja en blanco.
-      const { fecha_nacimiento, correo, ...resto } = formPersonal;
+      const { fecha_nacimiento } = formPersonal;
+      const { correo, ...resto } = limpios;
       const payload: Record<string, string> = { ...resto };
+      if (payload.celular) payload.celular = limpiarTelefono(payload.celular);
       if (fecha_nacimiento) payload.fecha_nacimiento = fecha_nacimiento;
       if (correo) payload.correo = correo;
       const actualizado = await clienteService.update(clienteData.id_cliente, payload);
@@ -102,7 +126,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
       setEditandoPersonal(false);
       toast.success("Datos personales actualizados");
     } catch (err: any) {
-      toast.error(err?.message || "No pudimos actualizar tus datos.");
+      toast.error(/demasiadas solicitudes/i.test(err?.message ?? "") ? mensajeErrorEnvio(err, "") : err?.message || "No pudimos actualizar tus datos.");
     } finally {
       setGuardandoPersonal(false);
     }
@@ -336,16 +360,24 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
                   key={campo.name}
                   className="bg-background border border-primary/30 rounded-2xl p-4"
                 >
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
-                    {campo.label}
+                  <label htmlFor={`cuenta-${campo.name}`} className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
+                    {campo.label}{"required" in campo && campo.required && <span className="text-destructive" aria-hidden> *</span>}
                   </label>
                   <input
+                    id={`cuenta-${campo.name}`}
                     type={campo.type ?? "text"}
                     value={formPersonal[campo.name] ?? ""}
-                    onChange={(e) => setFormPersonal((f) => ({ ...f, [campo.name]: e.target.value }))}
-                    required={campo.required}
+                    onChange={(e) => {
+                      setFormPersonal((f) => ({ ...f, [campo.name]: e.target.value }));
+                      setErroresCuenta((x) => ({ ...x, [campo.name]: undefined }));
+                    }}
+                    required={"required" in campo ? campo.required : undefined}
+                    maxLength={"max" in campo ? campo.max : undefined}
+                    aria-invalid={!!erroresCuenta[campo.name as CampoTexto]}
+                    aria-describedby={`cuenta-${campo.name}-error`}
                     className={inputPersonalCls}
                   />
+                  <ErrorCampo id={`cuenta-${campo.name}-error`} mensaje={erroresCuenta[campo.name as CampoTexto]} />
                 </div>
               ))}
               <div className="bg-muted/40 border border-border/50 rounded-2xl p-4 opacity-70">

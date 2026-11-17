@@ -1,6 +1,10 @@
 import { CheckCircle } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
+
+// Mismos límites que ResenaCreate en el backend (resena_route.py).
+const COMENTARIO_MIN = 10;
+const COMENTARIO_MAX = 1000;
 import { resenaService } from "../../../services/resena.service";
 import { ModalOverlay } from "../../ui/ModalBackdrop";
 
@@ -17,7 +21,7 @@ export default function ModalResena({ reserva, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const handleEnviar = async () => {
-    if (calificacion === 0 || comentario.trim().length < 10) return;
+    if (calificacion === 0 || comentario.trim().length < COMENTARIO_MIN || enviando) return;
     setEnviando(true);
     setError(null);
     try {
@@ -76,16 +80,22 @@ export default function ModalResena({ reserva, onClose }: Props) {
                 ))}
               </div>
 
-              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                Tu comentario
+              <label htmlFor="resena-comentario" className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                Tu comentario <span className="text-destructive" aria-hidden>*</span>
               </label>
               <textarea
+                id="resena-comentario"
                 value={comentario}
                 onChange={(e) => setComentario(e.target.value)}
                 placeholder="Cuéntanos qué te gustó, qué mejorarías, o cualquier detalle de tu estadía..."
                 rows={4}
-                className="w-full border border-border bg-muted/30 text-foreground rounded-lg p-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 resize-none mb-4"
+                maxLength={COMENTARIO_MAX}
+                aria-describedby="resena-comentario-ayuda"
+                className="w-full border border-border bg-muted/30 text-foreground rounded-lg p-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 resize-none"
               />
+              <p id="resena-comentario-ayuda" className={`mt-1 mb-4 text-right text-[11px] ${comentario.trim().length > 0 && comentario.trim().length < COMENTARIO_MIN ? "text-destructive" : "text-muted-foreground"}`}>
+                {comentario.trim().length}/{COMENTARIO_MAX} · mínimo {COMENTARIO_MIN} caracteres
+              </p>
 
               {error && (
                 <p className="text-xs text-destructive mb-3">{error}</p>
@@ -102,7 +112,7 @@ export default function ModalResena({ reserva, onClose }: Props) {
                   onClick={handleEnviar}
                   disabled={
                     calificacion === 0 ||
-                    comentario.trim().length < 10 ||
+                    comentario.trim().length < COMENTARIO_MIN ||
                     enviando
                   }
                   className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"

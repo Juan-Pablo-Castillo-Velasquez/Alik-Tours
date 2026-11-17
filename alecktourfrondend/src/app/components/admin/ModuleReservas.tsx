@@ -1053,14 +1053,11 @@ export default function ModuleReservas({
     setPage(0);
   }, [busquedaServidor, estadoFilter, pagoFilter, canalFilter, asesorFilter, tipoFilter, fechaDesde, fechaHasta, clienteFiltroActivo, orden]);
 
-  // Listado paginado y filtrado EN EL BACKEND (GET /reservas/buscar). Se
-  // vuelve a pedir cuando cambian los filtros, la página o la lista del
-  // panel (el padre la refresca al crear, editar o borrar una reserva).
-  useEffect(() => {
-    let vigente = true;
+  // Parámetros de /reservas/buscar con los filtros actuales (tabla y CSV).
+  function paramsFiltros(pagina: number, porPagina: number): URLSearchParams {
     const params = new URLSearchParams({
-      pagina: String(page + 1),
-      por_pagina: String(POR_PAGINA_RESERVAS),
+      pagina: String(pagina),
+      por_pagina: String(porPagina),
       orden: orden.campo,
       direccion: orden.dir,
     });
@@ -1074,6 +1071,27 @@ export default function ModuleReservas({
     if (clienteFiltroActivo != null) params.set("id_cliente", String(clienteFiltroActivo));
     if (fechaDesde) params.set("fecha_desde", fechaDesde);
     if (fechaHasta) params.set("fecha_hasta", fechaHasta);
+    return params;
+  }
+
+  // CSV: TODAS las reservas que coinciden con los filtros (de 100 en 100),
+  // no solo la página visible.
+  async function cargarTodasFiltradas(): Promise<ReservaExtended[]> {
+    const todas: ReservaExtended[] = [];
+    for (let pagina = 1; pagina <= 200; pagina++) {
+      const d = await apiFetch<PaginaReservas>(`/reservas/buscar?${paramsFiltros(pagina, 100).toString()}`);
+      todas.push(...d.items);
+      if (todas.length >= d.total || d.items.length === 0) break;
+    }
+    return todas;
+  }
+
+  // Listado paginado y filtrado EN EL BACKEND (GET /reservas/buscar). Se
+  // vuelve a pedir cuando cambian los filtros, la página o la lista del
+  // panel (el padre la refresca al crear, editar o borrar una reserva).
+  useEffect(() => {
+    let vigente = true;
+    const params = paramsFiltros(page + 1, POR_PAGINA_RESERVAS);
     setCargando(true);
     apiFetch<PaginaReservas>(`/reservas/buscar?${params.toString()}`)
       .then((d) => {
@@ -1201,14 +1219,21 @@ export default function ModuleReservas({
         <BotonExportarCsv
           nombre="reservas"
           filas={filtered}
+          total={totalFiltrado}
+          cargarTodas={cargarTodasFiltradas}
           columnas={[
             { titulo: "ID", valor: (r) => r.id_reserva },
             {
               titulo: "Cliente",
               valor: (r) => {
                 const c = clientes.find((x) => x.id_cliente === r.id_cliente);
-                return c ? `${c.nombre} ${c.apellido}` : r.id_cliente;
+                return c ? `${c.nombre} ${c.apellido}` : r.cliente_nombre ?? r.id_cliente;
               },
+            },
+            { titulo: "Documento", valor: (r) => r.cliente_documento ?? "" },
+            {
+              titulo: "Saldo pendiente",
+              valor: (r) => r.saldo_pendiente,
             },
             {
               titulo: "Paquete / hotel",

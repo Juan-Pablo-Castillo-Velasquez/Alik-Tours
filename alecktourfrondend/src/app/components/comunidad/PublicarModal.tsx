@@ -1,3 +1,4 @@
+import { mensajeErrorEnvio } from "../../utils/validacionFormulario";
 import { ImagePlus, Loader2, Video, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -107,7 +108,7 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
       reiniciar();
       onCerrar();
     } catch (err: any) {
-      setError(err?.message || "No se pudo publicar. Intenta de nuevo.");
+      setError(/demasiadas solicitudes/i.test(err?.message ?? "") ? mensajeErrorEnvio(err, "") : err?.message || "No se pudo publicar. Intenta de nuevo.");
     } finally {
       setEnviando(false);
     }
