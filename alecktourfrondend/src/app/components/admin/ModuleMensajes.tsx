@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { EnlaceAdjunto, ImagenAdjunto } from "../shared/AdjuntoChat";
 import { CalendarDays, Check, ChevronUp, Circle, Copy, CreditCard, Download, FileText, Info, Mail, MapPin, MessageCircle, Paperclip, Phone, Receipt, Search, Send, X, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
@@ -775,19 +776,16 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                             </button>
                           )}
                           {m.imagen_url && (
-                            <img
-                              src={resolveFotoUrl(m.imagen_url)}
-                              alt="Captura enviada"
+                            <ImagenAdjunto
+                              url={m.imagen_url}
                               className="rounded-lg mb-1.5 max-h-56 object-cover cursor-pointer"
-                              onClick={() => setImagenAmpliada(resolveFotoUrl(m.imagen_url))}
+                              onAmpliar={setImagenAmpliada}
                             />
                           )}
                           {m.archivo_url && (
-                            <a
-                              href={resolveFotoUrl(m.archivo_url)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              download={m.archivo_nombre ?? undefined}
+                            <EnlaceAdjunto
+                              url={m.archivo_url}
+                              nombre={m.archivo_nombre}
                               className={`flex items-center gap-2 mb-1.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors ${
                                 m.remitente_tipo === "admin"
                                   ? "bg-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/25"
@@ -797,7 +795,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                               <FileText className="w-4 h-4 flex-shrink-0" />
                               <span className="truncate flex-1">{m.archivo_nombre || "Documento"}</span>
                               <Download className="w-3.5 h-3.5 flex-shrink-0 opacity-70" />
-                            </a>
+                            </EnlaceAdjunto>
                           )}
                           {m.contenido && <p className="text-sm whitespace-pre-wrap break-words">{m.contenido}</p>}
                           <p

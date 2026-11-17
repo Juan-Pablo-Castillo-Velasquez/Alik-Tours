@@ -14,16 +14,20 @@ justo lo que el diseño de este modulo busca evitar. Por eso el envio del
 cliente vive en su propio path "/me/enviar", distinto de la lectura "/me".
 """
 
+import os
+
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core import image_storage
+from app.core.archivos_privados import respuesta_archivo_privado
 from app.core.cache import reservar_clave_unica
 from app.core.database import get_db
-from app.core.deps import get_current_usuario, get_usuario_verificado, usuario_es_staff
+from app.core.deps import exigir_propietario_o_admin, get_current_usuario, get_usuario_verificado, usuario_es_staff
 from app.core.file_validation import validar_y_leer_archivo
-from app.core.image_storage import guardar_imagen
 from app.core.security import require_empleado
+from app.models.mensaje_chat_model import MensajeChat
 from app.models.reserva_model import Reserva
 from app.models.user_model import Usuario
 from app.repositories.mensaje_chat_repository import MensajeChatRepository
@@ -35,7 +39,13 @@ from app.schemas.mensaje_chat_schema import (
 
 router = APIRouter(prefix="/api/mensajes", tags=["Mensajes"])
 
-PUBLIC_PATH_PREFIX = "/uploads/chat"
+# Adjuntos privados: solo el cliente dueño del hilo y el equipo los pueden
+# abrir, por GET /api/mensajes/{id}/adjunto. Antes quedaban públicos en
+# /uploads/chat/<archivo> (o en Cloudinary público): una cédula o un voucher
+# enviados por chat los podía ver cualquiera con el enlace. Los mensajes
+# viejos conservan su URL pública (no se migran), los nuevos ya no.
+CHAT_PRIVADO_PREFIX = "/uploads/chat-privado"
+CHAT_PRIVADO_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "uploads", "chat-privado")
 # Mismo criterio de formato/tamaño que banner_route.py -- una captura de
 # pantalla de reserva/pago no necesita más que esto.
 IMAGEN_TIPOS_PERMITIDOS = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
@@ -108,7 +118,9 @@ async def _guardar_archivo_chat(archivo: UploadFile) -> tuple[str | None, str | 
         mensaje_tipo="Formato no soportado. Usa JPG, PNG, WEBP o PDF.",
         tamano_maximo_bytes=TAMANO_MAXIMO_BYTES,
     )
-    url = guardar_imagen(contenido, extension, carpeta="chat", public_path_prefix=PUBLIC_PATH_PREFIX)
+    url = image_storage.guardar_archivo_privado(
+        contenido, "chat", extension, directorio_local=CHAT_PRIVADO_DIR, prefijo_local=CHAT_PRIVADO_PREFIX
+    )
     if archivo.content_type == "application/pdf":
         return None, url, archivo.filename or f"documento.{extension}"
     return url, None, None
@@ -239,6 +251,28 @@ async def enviar_como_cliente(
 
 
 # ===================== COMPARTIDOS (ambos roles) =====================
+
+
+@router.get("/{id_mensaje}/adjunto")
+def descargar_adjunto(
+    id_mensaje: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_usuario),
+    authorization: str | None = Header(None),
+):
+    """Adjunto (imagen o PDF) de un mensaje, solo para el cliente dueño del
+    hilo o el equipo (admin/empleado con rol vigente en la BD)."""
+    mensaje = db.query(MensajeChat).filter(MensajeChat.id_mensaje == id_mensaje).first()
+    referencia = (mensaje.imagen_url or mensaje.archivo_url) if mensaje else None
+    if not mensaje or not referencia:
+        raise HTTPException(status_code=404, detail="Adjunto no encontrado")
+    exigir_propietario_o_admin(current_user, mensaje.id_cliente, authorization)
+    return respuesta_archivo_privado(
+        referencia,
+        directorio_local=CHAT_PRIVADO_DIR,
+        prefijo_local=CHAT_PRIVADO_PREFIX,
+        nombre_descarga=f"adjunto-mensaje-{id_mensaje}",
+    )
 
 
 @router.patch("/leido")

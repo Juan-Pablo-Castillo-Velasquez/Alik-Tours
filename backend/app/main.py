@@ -209,7 +209,7 @@ async def bloquear_archivos_privados(request, call_next):
     """Los comprobantes de pago son documentos privados: ya no se sirven
     desde la carpeta pública /uploads (cualquiera con el enlace podía
     abrirlos). Se descargan con sesión en GET /api/pagos/{id}/comprobante."""
-    if request.url.path.startswith("/uploads/comprobantes"):
+    if request.url.path.startswith(("/uploads/comprobantes", "/uploads/chat-privado")):
         return JSONResponse(status_code=404, content={"detail": "No encontrado"})
     return await call_next(request)
 

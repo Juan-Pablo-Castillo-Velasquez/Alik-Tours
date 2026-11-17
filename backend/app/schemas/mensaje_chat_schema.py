@@ -1,6 +1,10 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
+
+# Debe coincidir con CHAT_PRIVADO_PREFIX (mensaje_chat_route.py) y con el
+# prefijo de image_storage.PREFIJO_PRIVADO_CLOUDINARY.
+_PREFIJOS_PRIVADOS = ("privado:", "/uploads/chat-privado/")
 
 
 class ReservaResumenChatResponse(BaseModel):
@@ -47,6 +51,17 @@ class MensajeChatResponse(BaseModel):
     remitente_foto: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="after")
+    def _ocultar_referencias_privadas(self):
+        """Un adjunto privado nunca expone dónde está guardado: se devuelve
+        la ruta de la API que lo entrega con sesión (relativa a /api)."""
+        ruta = f"/mensajes/{self.id_mensaje}/adjunto"
+        if self.imagen_url and self.imagen_url.startswith(_PREFIJOS_PRIVADOS):
+            self.imagen_url = ruta
+        if self.archivo_url and self.archivo_url.startswith(_PREFIJOS_PRIVADOS):
+            self.archivo_url = ruta
+        return self
 
 
 class HiloResumenResponse(BaseModel):

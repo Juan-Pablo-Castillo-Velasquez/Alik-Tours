@@ -209,17 +209,23 @@ async function apiFetchRed<T>(
 // ─── Archivos privados (comprobantes de pago) ─────────────────────────────────
 // Un <a href> no puede mandar el token: se descarga con fetch autenticado y se
 // abre como blob en otra pestaña (el archivo nunca queda en una URL pública).
+/** Descarga con sesión un archivo privado de la API (adjuntos del chat,
+ * comprobantes) y lo devuelve como Blob. */
+export async function obtenerArchivoProtegido(endpoint: string): Promise<Blob> {
+  const token = localStorage.getItem("token");
+  const respuesta = await fetch(`${BASE_URL}${API_PREFIX}${endpoint}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!respuesta.ok) {
+    throw new Error(respuesta.status === 404 ? "El archivo ya no está disponible" : "No tienes acceso a este archivo");
+  }
+  return respuesta.blob();
+}
+
 export async function abrirArchivoProtegido(endpoint: string): Promise<void> {
   const ventana = window.open("", "_blank");
   try {
-    const token = localStorage.getItem("token");
-    const respuesta = await fetch(`${BASE_URL}${API_PREFIX}${endpoint}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!respuesta.ok) {
-      throw new Error(respuesta.status === 404 ? "El archivo ya no está disponible" : "No tienes acceso a este archivo");
-    }
-    const url = URL.createObjectURL(await respuesta.blob());
+    const url = URL.createObjectURL(await obtenerArchivoProtegido(endpoint));
     if (ventana) ventana.location.href = url;
     else window.location.assign(url);
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
