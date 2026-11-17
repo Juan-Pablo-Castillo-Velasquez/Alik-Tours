@@ -941,8 +941,8 @@ export default function SearchResults() {
             {/* RESULTADOS */}
             <main className="lg:col-span-3">
               {/* BANNER COMERCIAL — el mismo beneficio real que ya se
-                  publicita en el Home (Benefits.tsx: "Paga en cuotas, sin
-                  intereses"), reutilizado aquí en formato compacto tipo
+                  publicita en el Home (Benefits.tsx: "Abona y paga el saldo
+                  después"), reutilizado aquí en formato compacto tipo
                   Despegar. Nunca una oferta o descuento inventado. Único
                   punto de esta página con acento de temporada -- a
                   propósito NO se decora HotelCard.tsx (se repite por cada
@@ -955,9 +955,9 @@ export default function SearchResults() {
                   <CreditCard className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold">Paga en hasta 12 cuotas sin intereses</p>
+                  <p className="text-sm font-bold">Separa tu viaje con un abono</p>
                   <p className="text-xs text-primary-foreground/80">
-                    El plan que mejor se acomode a tu bolsillo, no al revés.
+                    Paga con Nequi o PayPal, o con un asesor, y completa el saldo después.
                   </p>
                 </div>
               </div>

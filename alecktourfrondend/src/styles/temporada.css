@@ -185,3 +185,62 @@
   .temporada-copos-tarjeta i { animation: none; }
   .temporada-copos-tarjeta { display: none; }
 }
+
+/* ── Trineo que cruza la portada ────────────────────────────────────── */
+.temporada-trineo__vuelo {
+  position: relative;
+  transform: translate3d(-120%, 0, 0);
+  animation: temporada-trineo 26s linear 3s infinite;
+  will-change: transform;
+}
+.temporada-trineo__vuelo > svg { animation: temporada-trineo-bote 1.6s ease-in-out infinite alternate; }
+@keyframes temporada-trineo {
+  0% { transform: translate3d(-120%, 40px, 0); opacity: 0; }
+  3% { opacity: 1; }
+  45% { transform: translate3d(calc(100vw + 20%), -30px, 0); opacity: 1; }
+  46%, 100% { transform: translate3d(calc(100vw + 20%), -30px, 0); opacity: 0; }
+}
+@keyframes temporada-trineo-bote {
+  from { transform: translateY(-3px) rotate(-2deg); }
+  to { transform: translateY(3px) rotate(1deg); }
+}
+.temporada-trineo__estela {
+  position: absolute;
+  top: 55%;
+  right: 100%;
+  width: 140px;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, rgba(255, 236, 170, 0.9));
+  box-shadow: 0 0 8px 1px rgba(255, 220, 130, 0.7);
+}
+
+/* ── Estrellas y detalles ───────────────────────────────────────────── */
+.temporada-estrella { animation: temporada-estrella 2.8s ease-in-out var(--retraso) infinite; }
+@keyframes temporada-estrella {
+  0%, 100% { opacity: 0.25; transform: scale(0.7) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.15) rotate(20deg); }
+}
+.temporada-saludo { animation: temporada-saludo 1.4s ease-in-out infinite alternate; }
+@keyframes temporada-saludo {
+  from { transform: rotate(-8deg); }
+  to { transform: rotate(14deg); }
+}
+.temporada-tic { animation: temporada-tic 0.35s ease-out; }
+@keyframes temporada-tic {
+  from { opacity: 0.4; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+[data-animacion-temporada="off"] .temporada-trineo,
+[data-animacion-temporada="off"] .temporada-estrella,
+[data-animacion-temporada="off"] .temporada-saludo,
+[data-animacion-temporada="off"] .temporada-tic { animation: none; }
+[data-animacion-temporada="off"] .temporada-trineo { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .temporada-trineo { display: none; }
+  .temporada-estrella,
+  .temporada-saludo,
+  .temporada-tic,
+  .temporada-trineo__vuelo > svg { animation: none; }
+}

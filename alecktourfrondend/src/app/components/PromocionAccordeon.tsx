@@ -6,30 +6,34 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "./ui/accordion";
 
+// Facetas con lo que es cierto para CUALQUIER banner (no prometen
+// descuentos ni cuotas: eso lo decide el administrador en cada pieza).
+// Medios de pago: los mismos que ofrece el checkout (Nequi, PayPal o pago
+// con asesor; ver Checkout.tsx -> metodosPermitidos).
 const FACETAS: { valor: string; titulo: string; texto: string }[] = [
   {
     valor: "para-quien",
     titulo: "Para quién es",
     texto:
-      "Válida para nuevos clientes y para quienes ya viajan con nosotros. Aplica a reservas de paquetes, hoteles y experiencias turísticas.",
+      "Para cualquier viajero, nuevo o frecuente. Aplica a los paquetes, hoteles y vuelos publicados en el sitio.",
   },
   {
     valor: "medios-pago",
     titulo: "Medios de pago",
     texto:
-      "Paga con tarjeta de crédito o débito en cuotas, o por transferencia y efectivo en oficina. Consulta promociones bancarias del mes.",
+      "En línea con Nequi o PayPal, o eliges pagar con un asesor y él te indica cómo. Puedes abonar y completar el saldo después.",
   },
   {
     valor: "vigencia",
     titulo: "Vigencia",
     texto:
-      "Aplica hasta agotar existencias y según las fechas indicadas en cada oferta. No acumulable con otros descuentos.",
+      "Según las fechas de salida y los cupos disponibles que ves en cada producto al momento de reservar.",
   },
   {
-    valor: "como-reclamar",
-    titulo: "Cómo reclamarla",
+    valor: "como-reservar",
+    titulo: "Cómo reservar",
     texto:
-      "Reserva desde el catálogo o menciónala con tu asesor. Al confirmar, el descuento se aplica automáticamente al total.",
+      "Elige el producto, completa los datos de los viajeros, confirma y paga. La guía Cómo reservar lo explica paso a paso.",
   },
 ];
 
@@ -64,18 +68,20 @@ export default function PromocionAccordeon() {
       <div className="flex items-center gap-2 mb-6">
         <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/15 text-primary text-xs font-bold">
           <Sparkles className="w-3.5 h-3.5" />
-          VENTAJAS DE LA OFERTA
+          DESTACADO
         </span>
       </div>
 
       <div className="space-y-6">
-        {banners.map((banner) => (
+        {/* Una sola pieza destacada. El carrusel de arriba ya abre con el
+            primer banner, así que aquí va el segundo cuando hay varios. */}
+        {[banners[banners.length > 1 ? 1 : 0]].map((banner) => (
           <div
             key={banner.id_banner}
             className="grid md:grid-cols-2 overflow-hidden rounded-2xl border border-border shadow-lg bg-card"
           >
             <div className="relative min-h-[220px] h-full">
-              <img
+              <img loading="lazy" decoding="async"
                 src={resolveImagenBanner(banner.imagen_url)}
                 alt={banner.titulo}
                 className="absolute inset-0 w-full h-full object-cover"

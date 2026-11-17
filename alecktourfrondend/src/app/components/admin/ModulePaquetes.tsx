@@ -428,7 +428,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {detalle.imagenes.map((img) => (
                   <div key={img.id_imagen} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
-                    <img src={resolveFotoUrl(img.url)} alt="" className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={resolveFotoUrl(img.url)} alt="" className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => handleBorrarFotoGaleriaPaquete(img.id_imagen)}

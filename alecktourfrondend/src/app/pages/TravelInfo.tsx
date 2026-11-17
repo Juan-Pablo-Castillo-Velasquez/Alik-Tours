@@ -122,13 +122,13 @@ export default function TravelInfo() {
       items: [
         {
           icon: CreditCard,
-          title: "Tarjetas de crédito",
-          description: "Aceptamos Visa, Mastercard, American Express. Pago en 1 cuota o hasta 12 cuotas sin intereses.",
+          title: "Pago en línea",
+          description: "Paga desde la web con Nequi o PayPal. Si prefieres otro medio, elige pagar con un asesor y él te indica cómo hacerlo.",
         },
         {
           icon: CreditCard,
-          title: "Pago anticipado",
-          description: "Paga 50% al reservar y 50% hasta 15 días antes del viaje. O paga el 100% y recibe 5% descuento adicional.",
+          title: "Pago por abonos",
+          description: "Puedes pagar una parte al reservar y completar el saldo desde Mis Reservas antes del viaje.",
         },
         {
           icon: Shield,

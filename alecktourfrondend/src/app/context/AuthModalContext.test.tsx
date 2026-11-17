@@ -58,10 +58,10 @@ describe("AuthModalContext", () => {
     montar();
 
     await user.click(screen.getByRole("button", { name: "Abrir login" }));
-    expect(screen.getByRole("dialog", { name: "Login" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Login" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Ir a registro" }));
-    expect(screen.getByRole("dialog", { name: "Registro" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Registro" })).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Login" })).not.toBeInTheDocument();
   });
 
@@ -73,7 +73,7 @@ describe("AuthModalContext", () => {
     await user.click(screen.getByRole("button", { name: "Abrir login" }));
 
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
-    expect(screen.getByRole("dialog", { name: "Login" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Login" })).toBeInTheDocument();
   });
 
   it("cada modal se cierra solo y closeModals cierra cualquiera", async () => {

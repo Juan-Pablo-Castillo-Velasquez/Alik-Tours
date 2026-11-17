@@ -310,6 +310,17 @@ export default function GuiaUso() {
 
           <RecorridoGuia key={recorrido} pasos={RECORRIDOS[recorrido].pasos} onIr={() => abrir(false)} />
 
+          {recorrido === "reserva" && (
+            <Link
+              to="/como-reservar"
+              onClick={() => abrir(false)}
+              className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-primary/30 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
+            >
+              Ver la guía completa paso a paso
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          )}
+
           <div className="mt-6 rounded-2xl bg-muted/60 p-4 text-sm">
             <p className="font-medium">¿Aún tienes dudas?</p>
             <p className="mt-1 text-muted-foreground">

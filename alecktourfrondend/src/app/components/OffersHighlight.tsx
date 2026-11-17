@@ -93,7 +93,7 @@ export default function OffersHighlight() {
                                 to={`/hotel/${o.id}`}
                                 className="group relative h-64 rounded-2xl overflow-hidden cursor-pointer block"
                             >
-                                <img
+                                <img loading="lazy" decoding="async"
                                     src={o.img}
                                     alt={o.title}
                                     onError={() => marcarImagenRota(o.id)}

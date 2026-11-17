@@ -82,7 +82,7 @@ export default function DestinationsGrid() {
                     >
                         <div className="absolute bottom-10 h-64 w-64 rounded-full bg-[var(--chart-2)]/15 blur-3xl -z-10" />
 
-                        <img
+                        <img loading="lazy" decoding="async"
                             src={esHalloween ? "/img/imagenpromocional-halloween.png" : "/img/imagenpromocional-removebg-preview.png"}
                             alt={esHalloween ? "Personajes de Halloween de Alik Tours" : "Viajera promocional"}
                             className="block h-full w-full object-contain object-bottom drop-shadow-2xl mix-blend-multiply"
@@ -97,8 +97,8 @@ export default function DestinationsGrid() {
                                 <Sparkles className="w-5 h-5" />
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Promo Especial</p>
-                                <p className="text-sm font-bold text-foreground">Hasta 30% OFF</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Reserva fácil</p>
+                                <p className="text-sm font-bold text-foreground">Abona y paga después</p>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -126,7 +126,7 @@ export default function DestinationsGrid() {
                             >
                                 <Link to={`/hotel/${d.id}`} className="flex flex-col flex-1 cursor-pointer">
                                     <div className="relative h-48 overflow-hidden shrink-0">
-                                        <img
+                                        <img loading="lazy" decoding="async"
                                             src={d.img}
                                             alt={d.name}
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"

@@ -1,3 +1,6 @@
+import EstrellasTitilantes from "./EstrellasTitilantes";
+import TrineoNavidad from "./TrineoNavidad";
+
 // Acentos navideños para la portada (Hero) cuando el tema activo trae
 // nieve: ramas de pino en las esquinas superiores, esferas que se mecen y
 // un par de copos grandes girando despacio. Equivalente navideño de
@@ -53,6 +56,8 @@ export default function AcentosNavidad() {
       aria-hidden="true"
       data-testid="acentos-navidad"
     >
+      <EstrellasTitilantes />
+      <TrineoNavidad />
       <Rama className="absolute -left-2 -top-1 w-40 sm:w-56 opacity-90" />
       <Rama className="absolute -right-2 -top-1 w-40 sm:w-56 opacity-90 -scale-x-100" />
 

@@ -369,7 +369,7 @@ export default function PackageDetail() {
                 onClick={() => setLightboxIndex(idx + 1)}
                 className="relative h-20 w-28 shrink-0 rounded-xl overflow-hidden border border-border hover:opacity-90 transition-opacity"
               >
-                <img
+                <img loading="lazy" decoding="async"
                   src={resolveFotoUrl(img.url) ?? img.url}
                   alt={`Foto ${idx + 1} de ${pkg.nombre_paquete}`}
                   className="w-full h-full object-cover"
@@ -679,7 +679,7 @@ export default function PackageDetail() {
                   {resenas.slice(0, 6).map((r) => (
                     <div key={r.id_resena} className="p-5 rounded-2xl border border-border bg-muted/30">
                       <div className="flex items-center gap-3 mb-3">
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={
                             r.foto_url ||
                             `https://ui-avatars.com/api/?background=random&name=${encodeURIComponent(r.nombre_cliente ?? "Huésped")}`
@@ -930,6 +930,12 @@ export default function PackageDetail() {
                 <ShieldCheck className="w-4 h-4 text-primary" />
                 Pago 100% seguro
               </p>
+              <Link
+                to="/como-reservar"
+                className="mt-2 block text-center text-xs font-medium text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+              >
+                ¿Primera vez? Mira cómo reservar paso a paso
+              </Link>
             </div>
           </div>
         </div>

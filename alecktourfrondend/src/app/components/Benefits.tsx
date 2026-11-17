@@ -10,8 +10,8 @@ import { motion } from "motion/react";
 const perks = [
   {
     icon: CreditCard,
-    title: "Paga en cuotas, sin intereses",
-    desc: "Hasta 12 cuotas con tu tarjeta. El plan que mejor se acomode a tu bolsillo, no al revés.",
+    title: "Abona y paga el saldo después",
+    desc: "Separa tu viaje con un abono y completa el pago desde Mis Reservas antes de viajar.",
   },
   {
     icon: HeadphonesIcon,
@@ -25,13 +25,14 @@ const perks = [
   },
 ];
 
-// Métodos de pago realmente aceptados (mismo dato ya publicado en
-// TravelInfo.tsx y faq.tsx) — se muestran como texto/insignia, no como
-// logos de marca, para no reproducir marcas registradas de terceros.
+// Medios de pago: en línea, los que ofrece el checkout (Nequi y PayPal,
+// ver Checkout.tsx -> metodosPermitidos); con el asesor, los que el equipo
+// registra en el panel (tabla metodos_pago: tarjeta, PSE, transferencia,
+// efectivo). Texto/insignia, no logos de marca.
 const metodosPago = [
-  { icon: CreditCard, label: "Visa" },
-  { icon: CreditCard, label: "Mastercard" },
-  { icon: CreditCard, label: "American Express" },
+  { icon: Wallet, label: "Nequi" },
+  { icon: Wallet, label: "PayPal" },
+  { icon: CreditCard, label: "Tarjeta con asesor" },
   { icon: Building2, label: "PSE / Transferencia" },
 ];
 
@@ -103,9 +104,7 @@ export default function Benefits() {
           ))}
         </div>
 
-        {/* MÉTODOS DE PAGO — información comercial real (Visa/Mastercard/Amex/PSE
-            ya son los métodos que el sitio publica en Info de viaje y Preguntas
-            frecuentes), no una lista inventada. */}
+        {/* MÉTODOS DE PAGO — los que de verdad acepta el flujo de reserva. */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -119,7 +118,7 @@ export default function Benefits() {
             </div>
             <div>
               <p className="text-sm font-bold text-foreground">Métodos de pago aceptados</p>
-              <p className="text-xs text-muted-foreground">Paga en 1 sola cuota o hasta en 12, sin intereses.</p>
+              <p className="text-xs text-muted-foreground">En línea con Nequi o PayPal; con tu asesor, otros medios.</p>
             </div>
           </div>
 

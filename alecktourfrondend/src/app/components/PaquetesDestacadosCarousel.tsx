@@ -97,7 +97,7 @@ export default function PaquetesDestacadosCarousel({ paquetes }: PaquetesDestaca
                 to={`/package/${pkg.id_paquete}`}
                 className="group relative block h-80 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow"
               >
-                <img
+                <img loading="lazy" decoding="async"
                   src={getImage(pkg)}
                   alt={pkg.nombre_paquete}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"

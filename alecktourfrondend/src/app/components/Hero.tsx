@@ -7,6 +7,7 @@ import { HotelDetailResponse, hotelService } from "../services/hotel.service";
 import { resolveVideoTema } from "../services/tema.service";
 import HalloweenAccents from "./HalloweenAccents";
 import AcentosNavidad from "./temporada/AcentosNavidad";
+import CuentaRegresivaTemporada from "./temporada/CuentaRegresivaTemporada";
 import { decoracionDeTema } from "./temporada/temporadas";
 import SearchBar from "./SearchBar";
 
@@ -188,6 +189,8 @@ export default function Hero() {
             ease: [0.25, 1, 0.5, 1],
           }}
         >
+          <CuentaRegresivaTemporada />
+
           {/* Badge — antes usaba bg-background/border-border (tokens de
               tema claro/oscuro); con el scrim oscuro de fondo se vuelve
               vidrio blanco fijo, igual que el resto de este bloque. */}

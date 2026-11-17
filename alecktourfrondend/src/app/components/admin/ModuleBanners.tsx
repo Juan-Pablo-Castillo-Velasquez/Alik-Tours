@@ -172,7 +172,7 @@ export default function ModuleBanners({ banners, onSubmit, onDelete, onToggleAct
                 {bannersOrdenados.map((banner, i) => (
                   <div key={banner.id_banner} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col">
                     <div className="relative h-36 bg-muted">
-                      <img src={resolveImagenBanner(banner.imagen_url)} alt={banner.titulo} className="w-full h-full object-cover" />
+                      <img loading="lazy" decoding="async" src={resolveImagenBanner(banner.imagen_url)} alt={banner.titulo} className="w-full h-full object-cover" />
                       <div className="absolute top-2 right-2">
                         <StatusBadge status={banner.activo ? "activo" : "inactivo"} />
                       </div>
@@ -262,7 +262,7 @@ export default function ModuleBanners({ banners, onSubmit, onDelete, onToggleAct
                 {folletosOrdenados.map((banner, i) => (
                   <div key={banner.id_banner} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col">
                     <div className="relative h-36 bg-muted">
-                      <img src={resolveImagenBanner(banner.imagen_url)} alt={banner.titulo} className="w-full h-full object-cover" />
+                      <img loading="lazy" decoding="async" src={resolveImagenBanner(banner.imagen_url)} alt={banner.titulo} className="w-full h-full object-cover" />
                       <div className="absolute top-2 right-2">
                         <StatusBadge status={banner.activo ? "activo" : "inactivo"} />
                       </div>

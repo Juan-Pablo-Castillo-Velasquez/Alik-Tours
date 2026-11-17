@@ -6,6 +6,7 @@ import {
   Building2,
   ChevronDown,
   Compass,
+  ListChecks,
   Gift,
   LogIn,
   LogOut,
@@ -27,9 +28,8 @@ import { resolveImagenTema } from "../services/tema.service";
 import { DURACION, EASE_ENTRADA, EASE_SUAVE } from "../utils/motion";
 import { getTemaIcono } from "../utils/temaIconos";
 import { resolveFotoUrl } from "./admin/types";
-import LoginModal from "./LoginModal";
 import NotificacionesBell from "./NotificacionesBell";
-import RegisterModal from "./RegisterModal";
+import { LoginModalDiferido, RegisterModalDiferido } from "./ModalesAuthDiferidos";
 import { ThemeToggle } from "./ThemeToggle";
 
 export default function Navbar() {
@@ -577,6 +577,15 @@ export default function Navbar() {
                       "
                     >
                       <Link
+                        to="/como-reservar"
+                        className="block px-4 py-3 rounded-xl hover:bg-accent transition-all"
+                      >
+                        <span className="block text-sm font-bold">
+                          Cómo reservar
+                        </span>
+                      </Link>
+
+                      <Link
                         to="/faq"
                         className="block px-4 py-3 rounded-xl hover:bg-accent transition-all"
                       >
@@ -892,6 +901,23 @@ export default function Navbar() {
                   </Link>
 
                   <Link
+                    to="/como-reservar"
+                    className="
+                      flex items-center gap-3
+                      px-4 py-3
+                      text-sm font-semibold
+                      text-foreground
+                      hover:bg-muted
+                      rounded-xl
+                      transition-all
+                    "
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <ListChecks className="w-4 h-4 text-primary" />
+                    Cómo reservar
+                  </Link>
+
+                  <Link
                     to="/comunidad"
                     className="
                       flex items-center gap-3
@@ -1071,7 +1097,7 @@ export default function Navbar() {
       </motion.nav>
 
       {/* Modales fuera del nav sticky */}
-      <LoginModal
+      <LoginModalDiferido
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onSwitchToRegister={() => {
@@ -1080,7 +1106,7 @@ export default function Navbar() {
         }}
       />
 
-      <RegisterModal
+      <RegisterModalDiferido
         isOpen={showRegisterModal}
         onClose={() => setShowRegisterModal(false)}
         onSwitchToLogin={() => {

@@ -8,6 +8,7 @@ import Hero from "../components/Hero";
 import Navbar from "../components/Navbar";
 import Newsletter from "../components/Newsletter";
 import OffersHighlight from "../components/OffersHighlight";
+import PasosReservaInicio from "../components/PasosReservaInicio";
 import PromocionAccordeon from "../components/PromocionAccordeon";
 import ScrollToTopButton from "../components/ScrollToTopButton";
 import Testimonials from "../components/Testimonials";
@@ -19,7 +20,7 @@ export default function Home() {
   useSeoMeta({
     title: "Agencia de Viajes en Colombia · RNT 224224",
     description:
-      "Alik Tours, agencia de viajes en Colombia (RNT 224224): paquetes nacionales e internacionales, hoteles y viajes a tu medida con asesoría humana y pago en cuotas.",
+      "Alik Tours, agencia de viajes en Colombia (RNT 224224): paquetes nacionales e internacionales, hoteles y viajes a tu medida con asesoría humana y pago por abonos.",
     path: "/",
   });
 
@@ -31,6 +32,7 @@ export default function Home() {
       <PromocionAccordeon />
       {/* Zona de vuelos: buscador rápido y próximas ofertas aéreas. */}
       <VuelosInicio />
+      <PasosReservaInicio />
       <Benefits />
       <DestinationsGrid />
       {/* Videos que el admin marca "Mostrar en el inicio" (si no hay, no ocupa espacio). */}

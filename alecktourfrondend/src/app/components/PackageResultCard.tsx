@@ -45,7 +45,7 @@ export default function PackageResultCard({ pkg, index = 0 }: PackageResultCardP
         className="group block h-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-xl"
       >
         <div className="relative h-44 overflow-hidden bg-muted">
-          <img
+          <img loading="lazy" decoding="async"
             src={imagen}
             alt={ruta}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

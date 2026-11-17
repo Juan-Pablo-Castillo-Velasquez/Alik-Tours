@@ -1,6 +1,5 @@
 import { createContext, ReactNode, useContext, useState } from "react";
-import LoginModal from "../components/LoginModal";
-import RegisterModal from "../components/RegisterModal";
+import { LoginModalDiferido, RegisterModalDiferido } from "../components/ModalesAuthDiferidos";
 
 interface AuthModalContextType {
     openLogin: () => void;
@@ -33,12 +32,12 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
         <AuthModalContext.Provider value={{ openLogin, openRegister, closeModals }}>
             {children}
 
-            <LoginModal
+            <LoginModalDiferido
                 isOpen={showLogin}
                 onClose={() => setShowLogin(false)}
                 onSwitchToRegister={openRegister}
             />
-            <RegisterModal
+            <RegisterModalDiferido
                 isOpen={showRegister}
                 onClose={() => setShowRegister(false)}
                 onSwitchToLogin={openLogin}

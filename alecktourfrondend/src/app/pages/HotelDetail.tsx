@@ -656,7 +656,7 @@ export default function HotelDetail() {
                               setHabitacionDetalle(hab);
                             }}
                           >
-                            <img
+                            <img loading="lazy" decoding="async"
                               src={
                                 hab.imagenes && hab.imagenes.length > 0
                                   ? resolveFotoUrl(hab.imagenes[0].url)
@@ -828,7 +828,7 @@ export default function HotelDetail() {
                           className="p-5 rounded-2xl border border-border bg-card"
                         >
                           <div className="flex items-center gap-3 mb-3">
-                            <img
+                            <img loading="lazy" decoding="async"
                               src={
                                 r.foto_url ||
                                 `https://ui-avatars.com/api/?background=random&name=${encodeURIComponent(r.nombre_cliente ?? "Huésped")}`

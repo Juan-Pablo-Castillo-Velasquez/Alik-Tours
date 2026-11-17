@@ -3,6 +3,7 @@ import { BRAND } from "../config/brand";
 import { Link } from "react-router";
 import BotonWhatsApp from "./BotonWhatsApp";
 import HalloweenAccentDiscreto from "./HalloweenAccentDiscreto";
+import MunecoNieve from "./temporada/MunecoNieve";
 import { BotonAnimacionTemporada, NieveFooter } from "./temporada/NieveFooter";
 import { useTema } from "../context/TemaContext";
 
@@ -20,6 +21,7 @@ export default function Footer() {
       { name: "Contacto", href: "/contact" },
     ],
     soporte: [
+      { name: "Cómo reservar", href: "/como-reservar" },
       { name: "Preguntas Frecuentes", href: "/faq" },
       { name: "Información de Viaje", href: "/travel-info" },
       { name: "Buscar Destinos", href: "/search" },
@@ -33,6 +35,10 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
+    // Envoltorio sin overflow-hidden: el muñeco de nieve de temporada se
+    // asoma por encima del borde del footer (el <footer> sí recorta).
+    <div className="relative">
+      <MunecoNieve />
     <footer className="footer-brand pt-16 pb-8 relative overflow-hidden">
       {/* Un solo acento discreto de temporada -- máximo un elemento
           decorativo por sección, mismo criterio que el resto del sitio.
@@ -141,5 +147,6 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    </div>
   );
 }

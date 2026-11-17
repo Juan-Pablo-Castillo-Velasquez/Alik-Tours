@@ -25,6 +25,7 @@ const Comunidad = lazy(() => import("./pages/Comunidad"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Corporate = lazy(() => import("./pages/Corporate"));
 const FAQ = lazy(() => import("./pages/faq"));
+const ComoReservar = lazy(() => import("./pages/ComoReservar"));
 const HotelDetail = lazy(() => import("./pages/HotelDetail"));
 const PackageDetail = lazy(() => import("./pages/PackageDetail"));
 const Packages = lazy(() => import("./pages/Packages"));
@@ -69,6 +70,7 @@ export const router = createBrowserRouter([
       { path: "/hotel/:id", Component: HotelDetail },
       { path: "/verify", Component: VerifyEmail },
       { path: "/faq", Component: FAQ },
+      { path: "/como-reservar", Component: ComoReservar },
       { path: "/comunidad", Component: Comunidad },
       { path: "/contact", Component: Contact },
       { path: "/testimonios", Component: Testimonios },

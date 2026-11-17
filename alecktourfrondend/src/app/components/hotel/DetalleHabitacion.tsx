@@ -263,7 +263,7 @@ export default function DetalleHabitacion({ hab, fotoReferencia, hotel, onClose,
                     aria-current={i === indice}
                     className={`h-16 w-24 shrink-0 overflow-hidden rounded-lg border-2 transition-opacity ${i === indice ? "border-primary" : "border-transparent opacity-60 hover:opacity-100"}`}
                   >
-                    <img src={f.url} alt="" className="h-full w-full object-cover" />
+                    <img loading="lazy" decoding="async" src={f.url} alt="" className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>

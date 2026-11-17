@@ -35,16 +35,13 @@ const sellingPoints = [
     },
 ];
 
+// Los medios que de verdad ofrece el checkout (Checkout.tsx ->
+// metodosPermitidos: Nequi y PayPal) más el pago coordinado con un asesor.
+// Nada de logos de tarjetas o bancos que el flujo no acepta.
 const paymentMethods = [
-    { name: "VISA", type: "visa" },
-    { name: "mastercard", type: "mastercard" },
-    { name: "AMEX", type: "amex" },
-    { name: "Diners Club", type: "diners" },
-    { name: "JCB", type: "jcb" },
-    { name: "efecty", type: "efecty" },
-    { name: "Bancolombia", type: "bancolombia" },
     { name: "nequi", type: "nequi" },
-    { name: "DaviPlata", type: "daviplata" },
+    { name: "PayPal", type: "paypal" },
+    { name: "Con asesor", type: "asesor" },
 ];
 
 export default function WhyChooseUs() {
@@ -249,7 +246,7 @@ export default function WhyChooseUs() {
                                 </h3>
 
                                 <p className="text-muted-foreground text-xs mt-1">
-                                    Elige la opción que más te convenga.
+                                    Paga en línea o coordina el pago con tu asesor.
                                 </p>
 
                             </div>
@@ -269,64 +266,23 @@ export default function WhyChooseUs() {
                                     className="h-14 rounded-xl border border-border bg-background flex items-center justify-center hover:border-primary/30 hover:bg-muted transition-all duration-300"
                                 >
 
-                                    {method.type === "visa" && (
-                                        <span className="italic font-black text-xl tracking-tight text-[#1A1F71] dark:text-blue-400">
-                                            VISA
-                                        </span>
-                                    )}
-
-                                    {method.type === "mastercard" && (
-                                        <div className="flex items-center">
-                                            <span
-                                                className="w-7 h-7 rounded-full"
-                                                style={{ background: "#EB001B" }}
-                                            />
-                                            <span
-                                                className="w-7 h-7 rounded-full -ml-3 opacity-90"
-                                                style={{ background: "#F79E1B" }}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {method.type === "amex" && (
-                                        <span className="text-white text-[10px] font-bold px-2.5 py-1.5 rounded bg-[#016FD0]">
-                                            AMEX
-                                        </span>
-                                    )}
-
-                                    {method.type === "diners" && (
-                                        <span className="text-[12px] font-bold text-[#0079BE] dark:text-blue-400">
-                                            Diners Club
-                                        </span>
-                                    )}
-
-                                    {method.type === "jcb" && (
-                                        <span className="text-[14px] font-black italic text-[#0B4EA2] dark:text-blue-500">
-                                            JCB
-                                        </span>
-                                    )}
-
-                                    {method.type === "efecty" && (
-                                        <span className="text-[15px] font-black italic text-[#E30613] dark:text-red-500">
-                                            efecty
-                                        </span>
-                                    )}
-
-                                    {method.type === "bancolombia" && (
-                                        <span className="text-[10px] font-bold text-foreground">
-                                            Bancolombia
-                                        </span>
-                                    )}
-
                                     {method.type === "nequi" && (
                                         <span className="text-[16px] font-black italic text-[#DB0270] dark:text-pink-500">
                                             nequi
                                         </span>
                                     )}
 
-                                    {method.type === "daviplata" && (
-                                        <span className="text-[11px] font-bold text-[#EE1C25] dark:text-red-500">
-                                            DaviPlata
+                                    {method.type === "paypal" && (
+                                        <span className="text-[16px] font-black italic">
+                                            <span className="text-[#003087] dark:text-blue-300">Pay</span>
+                                            <span className="text-[#009CDE]">Pal</span>
+                                        </span>
+                                    )}
+
+                                    {method.type === "asesor" && (
+                                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-foreground">
+                                            <Headset className="w-4 h-4 text-primary" />
+                                            Con asesor
                                         </span>
                                     )}
 
@@ -379,7 +335,7 @@ export default function WhyChooseUs() {
                                 </span>
 
                                 <strong className="text-secondary-foreground text-sm">
-                                    Hasta 12 cuotas*
+                                    Abona y paga el saldo después
                                 </strong>
                             </div>
 
@@ -389,8 +345,8 @@ export default function WhyChooseUs() {
 
                         </div>
 
-                        <p className="text-[9px] text-muted-foreground mt-3">
-                            *Sujeto a condiciones de la entidad financiera.
+                        <p className="text-[10px] text-muted-foreground mt-3">
+                            Completas el saldo desde Mis Reservas antes de la fecha del viaje.
                         </p>
 
                     </div>

@@ -20,7 +20,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     categoria: "Pagos",
     pregunta: "¿Qué métodos de pago aceptan para los paquetes turísticos?",
-    respuesta: "Aceptamos una amplia variedad de métodos de pago seguros, incluyendo Tarjetas de Crédito y Débito (Visa, Mastercard, Amex), Transferencias Bancarias directas y PayPal. Todos tus datos se procesan de forma encriptada.",
+    respuesta: "En línea puedes pagar con Nequi o PayPal. Si prefieres otro medio, elige pagar con un asesor al confirmar la reserva: él te contacta y te indica cómo hacerlo. También puedes abonar una parte y completar el saldo después desde Mis Reservas. La guía Cómo reservar (en el menú Más) lo explica paso a paso.",
   },
   {
     categoria: "Hoteles",
