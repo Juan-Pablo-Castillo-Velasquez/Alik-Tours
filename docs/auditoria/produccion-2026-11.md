@@ -46,14 +46,20 @@ Nuevas pruebas: `test_busqueda_reservas_panel_api.py` (acceso entre roles, búsq
 - **Formularios:** cancelación (mínimo 10 caracteres si el motivo es «Otro», también validado en el backend), reseña (contador 10–1000), comunidad (mensaje claro para el 429) y Mi Cuenta (errores bajo cada campo, teléfono y correo validados, límites iguales a la BD; el backend ahora limita longitudes en `ClienteUpdate`, que antes podían provocar 500).
 - **Servicio despierto:** el cron de GitHub corre con horas de retraso y encontró el backend dormido; quedó como respaldo con más margen de espera. Lo que hay que configurar es un monitor externo (ver despliegue).
 
-## 5. Pendientes
+## 5. Tercera ronda (17 nov. 2026)
 
-- **Archivos del chat:** siguen accesibles por URL (nombres aleatorios, no listables). Pasarlos al mismo almacenamiento privado obliga a cambiar cómo el chat muestra imágenes en línea.
+- **Adjuntos del chat privados:** las imágenes y PDF nuevos se guardan como los comprobantes (Cloudinary `authenticated` o carpeta local bloqueada) y solo los abren el cliente dueño del hilo y el equipo, en `GET /api/mensajes/{id}/adjunto`. La API ya no expone dónde está guardado el archivo; el chat los pide con la sesión y los muestra como blob. Los mensajes anteriores conservan su URL pública.
+- **Cabeceras de seguridad en Vercel:** `nosniff`, `Referrer-Policy`, bloqueo de iframes (`X-Frame-Options` y `frame-ancestors`), `Permissions-Policy`, HSTS y caché inmutable para `/assets`.
+- **Rendimiento:** los modales de login y registro salen del paquete inicial (se precargan cuando el navegador queda libre); carga diferida en las imágenes de tarjetas y galerías; `preconnect` a Unsplash y Cloudinary.
+- **Datos reales en la publicidad:** se retiraron «hasta 12 cuotas sin intereses», los logos de tarjetas y «Hasta 30% OFF», que el flujo de reserva no ofrece. Ahora dice lo que el sitio hace: Nequi o PayPal en línea, pago con asesor y abonos.
+- **Guía «Cómo reservar»** (`/como-reservar`), enlazada desde el menú, el footer, la guía flotante, la ficha del paquete y una franja nueva en el inicio.
+
+## 6. Pendientes
 - **Formularios del panel** (hoteles, paquetes, vuelos, usuarios): el backend valida y limita, pero el frontend aún no usa el patrón de errores bajo cada campo.
 - **Dashboard del admin:** no se rediseñó (el rediseño completo se hizo en el del asesor).
 - **Comprobantes antiguos:** los que se subieron antes de este cambio estaban en el disco de Render y no se pueden recuperar si ya hubo un despliegue.
 
-## 6. Desplegar en producción
+## 7. Desplegar en producción
 
 1. Hacer merge a `main`: Vercel despliega el frontend y Render el backend. Render ejecuta `alembic upgrade head` al arrancar (migración de índices `f2a7c4e9b1d8`, solo agrega índices).
 2. Configurar el monitor externo de `/health` (UptimeRobot o cron-job.org, cada 5 min).
