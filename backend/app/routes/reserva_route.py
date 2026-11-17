@@ -8,10 +8,11 @@ from datetime import date
 from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import text
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.core import image_storage
 from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
 from app.core.deps import exigir_propietario_o_admin, get_current_usuario, get_usuario_verificado, usuario_es_staff
@@ -131,6 +132,9 @@ COMPROBANTES_TAMANO_MAXIMO_BYTES = 5 * 1024 * 1024  # 5MB
 
 def _borrar_comprobante_si_existe(comprobante_url: str | None) -> None:
     if not comprobante_url:
+        return
+    if image_storage.es_privado_cloudinary(comprobante_url):
+        image_storage.borrar_archivo_privado(comprobante_url)
         return
     filename = os.path.basename(comprobante_url)
     ruta = os.path.join(COMPROBANTES_UPLOAD_DIR, filename)
@@ -1481,6 +1485,19 @@ def descargar_comprobante_pago(
         raise HTTPException(status_code=404, detail="Comprobante no encontrado")
     reserva_del_pago = ReservaRepository.get_by_id(db, pago.id_reserva)
     exigir_propietario_o_admin(current_user, reserva_del_pago.id_cliente if reserva_del_pago else None, authorization)
+    cabeceras = {"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"}
+    if image_storage.es_privado_cloudinary(pago.comprobante_url):
+        try:
+            contenido, formato = image_storage.leer_archivo_privado(pago.comprobante_url)
+        except Exception as exc:
+            logger.warning("No se pudo leer el comprobante privado del pago %s: %s", pago_id, exc)
+            raise HTTPException(status_code=502, detail="No se pudo obtener el comprobante. Intenta de nuevo.") from exc
+        tipo = "application/pdf" if formato == "pdf" else f"image/{'jpeg' if formato in ('jpg', 'jpeg') else formato}"
+        return Response(
+            content=contenido,
+            media_type=tipo,
+            headers={**cabeceras, "Content-Disposition": f'inline; filename="comprobante-pago-{pago_id}.{formato}"'},
+        )
     if not pago.comprobante_url.startswith(f"{COMPROBANTES_PUBLIC_PREFIX}/"):
         raise HTTPException(status_code=404, detail="Comprobante no encontrado")
     nombre = os.path.basename(pago.comprobante_url)
@@ -1490,7 +1507,7 @@ def descargar_comprobante_pago(
     return FileResponse(
         ruta,
         filename=f"comprobante-pago-{pago_id}{os.path.splitext(nombre)[1]}",
-        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
+        headers=cabeceras,
     )
 
 
@@ -1531,16 +1548,19 @@ async def subir_comprobante_pago(
         tamano_maximo_bytes=COMPROBANTES_TAMANO_MAXIMO_BYTES,
     )
 
-    os.makedirs(COMPROBANTES_UPLOAD_DIR, exist_ok=True)
-
-    nombre_archivo = f"{uuid.uuid4().hex}.{extension}"
-    ruta_destino = os.path.join(COMPROBANTES_UPLOAD_DIR, nombre_archivo)
-    with open(ruta_destino, "wb") as f:
-        f.write(contenido)
+    # Privado y persistente: Cloudinary autenticado en producción (el disco
+    # de Render se borra en cada despliegue), disco local en desarrollo.
+    try:
+        referencia = image_storage.guardar_archivo_privado(
+            contenido, "comprobantes", extension, COMPROBANTES_UPLOAD_DIR, COMPROBANTES_PUBLIC_PREFIX
+        )
+    except Exception as exc:
+        logger.warning("No se pudo guardar el comprobante del pago %s: %s", pago_id, exc)
+        raise HTTPException(status_code=502, detail="No se pudo guardar el comprobante. Intenta de nuevo.") from exc
 
     _borrar_comprobante_si_existe(pago.comprobante_url)
 
-    pago.comprobante_url = f"{COMPROBANTES_PUBLIC_PREFIX}/{nombre_archivo}"
+    pago.comprobante_url = referencia
     db.commit()
     db.refresh(pago)
     delete_pattern(PAGOS_CACHE_PATTERN)

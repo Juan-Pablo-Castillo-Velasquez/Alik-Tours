@@ -306,3 +306,77 @@ class TestCuentaSinVerificar:
         r = client.request(metodo, ruta, headers=headers, json={})
         assert r.status_code == 403
         assert "Verifica tu correo" in r.json()["detail"]
+
+
+class TestComprobantesEnCloudinaryPrivado:
+    """Con Cloudinary configurado, el comprobante va a un recurso
+    autenticado (no público) y el backend lo entrega con sesión."""
+
+    def test_se_sube_autenticado_y_se_entrega_por_el_backend(self, client, db, crear_usuario, monkeypatch):
+        from datetime import date, timedelta
+
+        from app.core import image_storage
+        from app.models.reserva_model import MetodoPago, Pago, Reserva
+
+        subidas = []
+
+        def upload_falso(contenido, **kw):
+            subidas.append(kw)
+            return {"resource_type": "image", "format": "png", "public_id": "alectours/privado/comprobantes/abc"}
+
+        monkeypatch.setattr(image_storage, "CLOUDINARY_CONFIGURADO", True)
+        monkeypatch.setattr(image_storage.cloudinary.uploader, "upload", upload_falso)
+        monkeypatch.setattr(image_storage, "leer_archivo_privado", lambda ref: (b"\x89PNG-falso", "png"))
+
+        dueno, h_dueno = crear_usuario()
+        _, h_otro = crear_usuario()
+        metodo = MetodoPago(nombre_metodo="Nequi")
+        db.add(metodo)
+        db.commit()
+        reserva = Reserva(
+            id_cliente=dueno.cliente.id_cliente,
+            fecha_inicio=date.today() + timedelta(days=5),
+            fecha_fin=date.today() + timedelta(days=7),
+            numero_personas=1,
+            estado="pendiente",
+        )
+        db.add(reserva)
+        db.commit()
+        pago = Pago(id_reserva=reserva.id_reserva, id_metodo_pago=metodo.id_metodo, monto=100, estado="pendiente")
+        db.add(pago)
+        db.commit()
+
+        png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+        r = client.post(
+            f"/api/pagos/{pago.id_pago}/comprobante",
+            files={"file": ("pago.png", png, "image/png")},
+            headers=h_dueno,
+        )
+        assert r.status_code == 200, r.text
+        assert subidas and subidas[0]["type"] == "authenticated"
+        db.refresh(pago)
+        assert pago.comprobante_url == "privado:cloudinary:image:png:alectours/privado/comprobantes/abc"
+        # La API no expone una URL pública que se pueda abrir sin sesión.
+        assert not r.json()["comprobante_url"].startswith("http")
+
+        d = client.get(f"/api/pagos/{pago.id_pago}/comprobante", headers=h_dueno)
+        assert d.status_code == 200 and d.content == b"\x89PNG-falso"
+        assert d.headers["content-type"] == "image/png"
+        assert client.get(f"/api/pagos/{pago.id_pago}/comprobante", headers=h_otro).status_code == 403
+
+    def test_la_url_firmada_vence_y_es_autenticada(self, monkeypatch):
+        from app.core import image_storage
+
+        visto = {}
+
+        def firmar(public_id, formato, **kw):
+            visto.update(public_id=public_id, formato=formato, **kw)
+            return "https://api.cloudinary.com/firmada"
+
+        monkeypatch.setattr("cloudinary.utils.private_download_url", firmar)
+        url = image_storage.url_firmada_privada(
+            "privado:cloudinary:image:pdf:alectours/privado/comprobantes/x", segundos=60
+        )
+        assert url == "https://api.cloudinary.com/firmada"
+        assert visto["public_id"] == "alectours/privado/comprobantes/x"
+        assert visto["formato"] == "pdf" and visto["type"] == "authenticated"

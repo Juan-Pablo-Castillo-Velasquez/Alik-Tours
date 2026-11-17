@@ -95,8 +95,8 @@ async def crear_solicitud_cancelacion(
             status_code=409, detail="Ya existe una solicitud de cancelación pendiente para esta reserva"
         )
 
-    if data.motivo == "Otro motivo" and not (data.motivo_detalle and data.motivo_detalle.strip()):
-        raise HTTPException(status_code=422, detail="Debes detallar el motivo cuando eliges 'Otro motivo'")
+    if data.motivo == "Otro motivo" and len((data.motivo_detalle or "").strip()) < 10:
+        raise HTTPException(status_code=422, detail="Cuando eliges 'Otro motivo', explícalo en al menos 10 caracteres")
 
     solicitud = SolicitudCancelacionRepository.create(
         db,

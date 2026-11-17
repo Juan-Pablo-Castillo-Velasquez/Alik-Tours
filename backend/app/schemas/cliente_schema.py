@@ -34,17 +34,19 @@ class ClienteUpdate(BaseModel):
     # Quita espacios al inicio y al final: "   " ya no pasa como dato válido.
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    nombre: str | None = None
-    apellido: str | None = None
+    # Mismos límites que ClienteCreate y que las columnas: antes un texto
+    # más largo que la columna llegaba a la BD y respondía 500.
+    nombre: str | None = Field(None, min_length=2, max_length=100)
+    apellido: str | None = Field(None, min_length=2, max_length=100)
     correo: EmailStr | None = None
     # Opcional al editar (None = no cambia), pero si se envía debe ser válido.
     celular: Celular | None = None
-    direccion: str | None = None
-    barrio: str | None = None
-    departamento: str | None = None
-    codigo_postal: str | None = None
-    ciudad: str | None = None
-    pais: str | None = None
+    direccion: str | None = Field(None, max_length=255)
+    barrio: str | None = Field(None, max_length=100)
+    departamento: str | None = Field(None, max_length=100)
+    codigo_postal: str | None = Field(None, max_length=10)
+    ciudad: str | None = Field(None, max_length=100)
+    pais: str | None = Field(None, max_length=100)
     fecha_nacimiento: FechaValida | None = None
 
     @field_validator("celular", mode="before")

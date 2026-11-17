@@ -13,11 +13,10 @@ Este fallback es intencional: el requisito general del proyecto es que
 ninguna cuenta externa. Cloudinary es 100% opcional — solo se activa si
 alguien define CLOUDINARY_URL en backend/.env.
 
-No se usa para los comprobantes de pago (reserva_route.py): esos son
-capturas de transferencias/pagos que puede traer datos bancarios del
-cliente, y se dejan deliberadamente en disco local por ahora (ver nota en
-reserva_route.py) — sección conservadora del proyecto por instrucción
-explícita, no un descuido.
+Los comprobantes de pago (pueden traer datos bancarios) NO usan
+guardar_imagen: van por guardar_archivo_privado (al final de este módulo),
+que en Cloudinary los sube como recurso "authenticated" (sin URL pública)
+y en local los deja fuera de la ruta pública /uploads.
 """
 
 from __future__ import annotations
@@ -195,3 +194,76 @@ def borrar_imagen(
     if os.path.isfile(ruta):
         with contextlib.suppress(OSError):
             os.remove(ruta)
+
+
+# ─── Archivos PRIVADOS (comprobantes de pago) ────────────────────────────────
+# Con Cloudinary: se suben con type="authenticated" (Cloudinary no los sirve
+# por URL pública; solo con una URL firmada de corta vida que genera este
+# backend) y quedan guardados aunque Render reinicie el contenedor -- en
+# disco local se perdían en cada despliegue. Sin Cloudinary (desarrollo): en
+# disco, fuera de la ruta pública (ver bloquear_archivos_privados en main.py).
+PREFIJO_PRIVADO_CLOUDINARY = "privado:cloudinary:"
+
+
+def guardar_archivo_privado(
+    contenido: bytes, carpeta: str, extension: str, directorio_local: str, prefijo_local: str
+) -> str:
+    """Guarda un archivo privado y devuelve la referencia a guardar en la BD:
+    "privado:cloudinary:<tipo>:<formato>:<public_id>" o "<prefijo_local>/<archivo>"."""
+    identificador = uuid.uuid4().hex
+    if CLOUDINARY_CONFIGURADO:
+        resultado = cloudinary.uploader.upload(
+            contenido,
+            folder=f"alectours/privado/{carpeta}",
+            public_id=identificador,
+            resource_type="auto",
+            type="authenticated",
+            overwrite=False,
+        )
+        formato = resultado.get("format") or extension
+        return f"{PREFIJO_PRIVADO_CLOUDINARY}{resultado['resource_type']}:{formato}:{resultado['public_id']}"
+    os.makedirs(directorio_local, exist_ok=True)
+    nombre = f"{identificador}.{extension}"
+    with open(os.path.join(directorio_local, nombre), "wb") as f:
+        f.write(contenido)
+    return f"{prefijo_local}/{nombre}"
+
+
+def es_privado_cloudinary(referencia: str | None) -> bool:
+    return bool(referencia) and referencia.startswith(PREFIJO_PRIVADO_CLOUDINARY)
+
+
+def _partes_privado(referencia: str) -> tuple[str, str, str]:
+    tipo, formato, public_id = referencia[len(PREFIJO_PRIVADO_CLOUDINARY) :].split(":", 2)
+    return tipo, formato, public_id
+
+
+def url_firmada_privada(referencia: str, segundos: int = 120) -> str:
+    """URL de descarga firmada que vence en `segundos` (no se cachea)."""
+    import time
+
+    import cloudinary.utils
+
+    tipo, formato, public_id = _partes_privado(referencia)
+    return cloudinary.utils.private_download_url(
+        public_id, formato, resource_type=tipo, type="authenticated", expires_at=int(time.time()) + segundos
+    )
+
+
+def leer_archivo_privado(referencia: str) -> tuple[bytes, str]:
+    """Descarga desde Cloudinary un archivo privado (el backend hace de
+    intermediario: el navegador nunca ve la URL firmada). Devuelve
+    (contenido, extensión)."""
+    import urllib.request
+
+    _, formato, _ = _partes_privado(referencia)
+    with urllib.request.urlopen(url_firmada_privada(referencia), timeout=20) as respuesta:  # noqa: S310 -- URL firmada propia de Cloudinary
+        return respuesta.read(), formato
+
+
+def borrar_archivo_privado(referencia: str) -> None:
+    if not es_privado_cloudinary(referencia):
+        return
+    tipo, _, public_id = _partes_privado(referencia)
+    with contextlib.suppress(Exception):
+        cloudinary.uploader.destroy(public_id, resource_type=tipo, type="authenticated")
