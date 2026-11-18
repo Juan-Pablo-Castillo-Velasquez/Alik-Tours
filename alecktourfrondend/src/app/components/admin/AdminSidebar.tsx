@@ -129,7 +129,12 @@ interface AdminSidebarProps {
   /** true = quien entró tiene rol "empleado" pero NO "admin" -- muestra
    * solo MODULOS_EMPLEADO y la etiqueta "Asesor" en vez de "Administrador". */
   soloEmpleado?: boolean;
+  /** Cierra el menú (en celular el menú es un cajón superpuesto). */
+  onClose?: () => void;
 }
+
+const esPantallaAngosta = () =>
+  typeof window !== "undefined" && typeof window.matchMedia === "function" && !window.matchMedia("(min-width: 1024px)").matches;
 
 export default function AdminSidebar({
   activeModule,
@@ -138,6 +143,7 @@ export default function AdminSidebar({
   usuarioInicial,
   usuarioNombre,
   soloEmpleado = false,
+  onClose,
 }: AdminSidebarProps) {
   // Mismas secciones para admin (sin filtrar); para "empleado" sin admin,
   // solo los ítems de MODULOS_EMPLEADO, y se descartan las secciones que
@@ -182,13 +188,26 @@ export default function AdminSidebar({
 
   return (
     <AnimatePresence>
+      {open && onClose && (
+        <motion.button
+          key="fondo-menu"
+          type="button"
+          aria-label="Cerrar menú"
+          onClick={onClose}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] lg:hidden"
+        />
+      )}
       {open && (
         <motion.aside
+          key="menu"
           initial={{ x: -280 }}
           animate={{ x: 0, width: collapsed ? 76 : 256 }}
           exit={{ x: -280 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="flex-shrink-0 flex flex-col border-r transition-colors duration-300 bg-sidebar border-sidebar-border overflow-hidden"
+          className="flex-shrink-0 flex flex-col border-r transition-colors duration-300 bg-sidebar border-sidebar-border overflow-hidden max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:shadow-2xl"
         >
           <div className="px-5 py-3.5 border-b border-sidebar-border flex items-center justify-between gap-2">
             {!collapsed && (
@@ -219,7 +238,10 @@ export default function AdminSidebar({
                     const button = (
                       <button
                         key={id}
-                        onClick={() => setActiveModule(id)}
+                        onClick={() => {
+                          setActiveModule(id);
+                          if (esPantallaAngosta()) onClose?.();
+                        }}
                         className={`w-full flex items-center gap-3 px-3 py-2 min-h-[40px] rounded-xl text-sm font-medium transition-all group relative ${
                           collapsed ? "justify-center" : ""
                         } ${

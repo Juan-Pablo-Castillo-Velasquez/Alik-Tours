@@ -13,6 +13,9 @@ import { dashboardService, type DashboardResumen, type ResumenEmpleado, type Ten
 import { reservaDetailService, type ActividadRecienteItem } from "../../services/reserva.service";
 import StatusBadge from "./ui/StatusBadge";
 import DashboardEmpleado from "./DashboardEmpleado";
+import DashboardAdmin from "./DashboardAdmin";
+import { useAuth } from "../../context/AuthContext";
+import { limpiarCacheApi } from "../../api/v1/api";
 import {
   Tooltip as InfoTooltip,
   TooltipTrigger as InfoTooltipTrigger,
@@ -116,11 +119,21 @@ export default function ModuleDashboard({ setActiveModule, onVerReserva, onFiltr
   // igual, la tarjeta simplemente no aparece.
   const [resumenEmpleado, setResumenEmpleado] = useState<ResumenEmpleado | null>(null);
 
-  useEffect(() => {
+  const [actualizando, setActualizando] = useState(false);
+  const { usuario } = useAuth();
+
+  const cargar = (forzar = false) => {
+    if (forzar) setActualizando(true);
     dashboardService.getResumen()
-      .then((r) => { setResumen(r); setLoading(false); })
-      .catch(() => { setError(true); setLoading(false); });
+      .then((r) => { setResumen(r); setError(false); })
+      .catch(() => setError(true))
+      .finally(() => { setLoading(false); setActualizando(false); });
     reservaDetailService.getActividadReciente(soloEmpleado ? 15 : 12).then(setActividad).catch(() => {});
+  };
+
+  useEffect(() => {
+    cargar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -142,6 +155,27 @@ export default function ModuleDashboard({ setActiveModule, onVerReserva, onFiltr
         <AlertCircle className="w-8 h-8" />
         <p className="text-sm">No se pudo cargar el resumen operativo. Intenta recargar la página.</p>
       </div>
+    );
+  }
+
+  // El admin ve el dashboard comercial (DashboardAdmin.tsx); el asesor
+  // sigue con su panel operativo de abajo, sin cambios.
+  if (!soloEmpleado) {
+    const nombre = usuario?.username?.split("@")[0];
+    return (
+      <DashboardAdmin
+        resumen={resumen}
+        actividad={actividad}
+        nombreUsuario={nombre}
+        actualizando={actualizando}
+        onActualizar={() => {
+          limpiarCacheApi();
+          cargar(true);
+        }}
+        setActiveModule={setActiveModule}
+        onVerReserva={onVerReserva}
+        onFiltrarModulo={onFiltrarModulo}
+      />
     );
   }
 

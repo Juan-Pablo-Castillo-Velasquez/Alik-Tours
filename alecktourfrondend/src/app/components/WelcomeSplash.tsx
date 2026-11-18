@@ -32,6 +32,9 @@ export default function WelcomeSplash() {
     // volver a mostrar en una sesión/pestaña nueva, pero nunca dos veces
     // en la misma, sin importar cuántas rutas internas se visiten).
     if (sessionStorage.getItem(SESSION_KEY)) return;
+    // Es publicidad para clientes: el equipo que entra directo al panel
+    // de administración no debe toparse con ella.
+    if (window.location.pathname.startsWith("/admin")) return;
 
     let activo = true;
 

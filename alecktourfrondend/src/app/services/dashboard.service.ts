@@ -30,6 +30,12 @@ export interface ReservasPorMesItem {
   total: number;
 }
 
+export interface MesComercialItem {
+  mes: string; // "2026-06"
+  reservas: number;
+  ingresos: number;
+}
+
 export interface SerieDiariaItem {
   fecha: string; // "2026-08-20"
   total: number;
@@ -86,6 +92,17 @@ export interface DashboardResumen {
 
   reservas_ultimos_14d: SerieDiariaItem[];
   ingresos_ultimos_14d: SerieDiariaItem[];
+
+  // ---- Vista comercial (dashboard del admin) ----
+  comercial_por_mes: MesComercialItem[];
+  ventas_por_producto: ConteoNombre[];
+  reservas_por_canal: ConteoNombre[];
+  hoteles_mas_reservados: ConteoNombre[];
+  asesores_top_mes: ConteoNombre[];
+  cartera_por_cobrar: number;
+  reservas_con_saldo: number;
+  ingresos_hoy: number;
+  reservas_hoy: number;
 }
 
 // Espejo exacto de ResumenEmpleadoResponse (backend/app/schemas/dashboard_schema.py)

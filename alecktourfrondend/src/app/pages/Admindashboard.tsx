@@ -66,7 +66,10 @@ export default function AdminDashboard() {
   // Clave de idempotencia del formulario "Crear reserva" (ver submitReserva).
   const claveReservaRef = useRef(nuevoClientMsgId());
   const [activeModule, setActiveModule] = useState<Module>("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Abierto en escritorio; en celular arranca cerrado (es un cajón).
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window.matchMedia !== "function" || window.matchMedia("(min-width: 1024px)").matches,
+  );
   const [loading, setLoading] = useState(false);
   const [dark, setDark] = useState(() => localStorage.getItem("admin-theme") === "dark");
 
@@ -990,10 +993,11 @@ export default function AdminDashboard() {
           usuarioInicial={usuarioInicial}
           usuarioNombre={usuario?.username}
           soloEmpleado={soloEmpleado}
+          onClose={() => setSidebarOpen(false)}
         />
 
         {/* ── Main content ─────────────────────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto p-6 transition-colors duration-300 bg-background">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 transition-colors duration-300 bg-background">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeModule}
