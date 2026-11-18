@@ -133,6 +133,14 @@ function formatFechaCorta(iso?: string | null): string {
   return `${m[3]} ${MESES_CORTOS[mesIdx] ?? m[2]} ${m[1]}`;
 }
 
+const ETIQUETA_PAGO: Record<string, string> = {
+  pendiente: "Pendiente",
+  procesando: "Procesando",
+  pagado: "Pagado",
+  rechazado: "Rechazado",
+  cancelado: "Cancelado",
+};
+
 const ETIQUETA_ESTADO: Record<string, string> = {
   pendiente: "Pendiente",
   confirmada: "Confirmada",
@@ -182,6 +190,30 @@ function mejorPago<T extends { estado: string; fecha_pago?: string | null }>(pag
       (b.fecha_pago ?? "").localeCompare(a.fecha_pago ?? ""),
   )[0];
 }
+
+/** "En 12 días", "Hoy", "En curso", "Hace 3 días": cuándo es el viaje. */
+export function cuandoViaja(inicio?: string | null, fin?: string | null): string {
+  if (!inicio) return "";
+  const parse = (f: string) => {
+    const [y, m, d] = f.slice(0, 10).split("-").map(Number);
+    return new Date(y, m - 1, d).getTime();
+  };
+  const h = new Date();
+  const hoy = new Date(h.getFullYear(), h.getMonth(), h.getDate()).getTime();
+  const dias = Math.round((parse(inicio) - hoy) / 86_400_000);
+  if (dias === 0) return "Sale hoy";
+  if (dias === 1) return "Sale mañana";
+  if (dias > 1) return `En ${dias} días`;
+  if (fin && parse(fin) >= hoy) return "En curso";
+  return "Ya viajó";
+}
+
+const BORDE_ESTADO: Record<string, string> = {
+  pendiente: "border-l-amber-400",
+  confirmada: "border-l-emerald-500",
+  cancelada: "border-l-slate-300 dark:border-l-slate-600",
+  finalizada: "border-l-sky-400",
+};
 
 const pesosCOP = (v: number) => `$${Math.round(v).toLocaleString("es-CO")}`;
 
@@ -374,7 +406,9 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
   const montoPagado = pagosReales.filter(p => p.estado === "pagado").reduce((sum, p) => sum + p.monto, 0);
   const intentosFallidos = pagosReales.filter(p => p.estado === "rechazado").length;
   const pct = totalReal > 0 ? Math.min(100, Math.round((montoPagado / totalReal) * 100)) : 0;
-  const producto = productoDe(reserva as ReservaConDatos, paquete);
+  // El panel puede montarse sin reserva (devuelve null más abajo).
+  const producto = reserva ? productoDe(reserva as ReservaConDatos, paquete) : productoDe({ id_reserva: 0 } as ReservaConDatos);
+  const [codigoCopiado, setCodigoCopiado] = useState(false);
   const saldoReal = Math.max(totalReal - montoPagado, 0);
 
   // Nota interna del asesor — no cambia el estado de la reserva, solo deja
@@ -555,6 +589,46 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
           </p>
           <p className="text-[11px] text-muted-foreground">Pagado {pesosCOP(montoPagado)}</p>
         </div>
+      </div>
+
+      <div className="mb-5 flex flex-wrap gap-2">
+        {cliente?.celular && enlaceWhatsApp(cliente.celular) && (
+          <a
+            href={enlaceWhatsApp(cliente.celular, `Hola ${cliente.nombre}, te escribimos de Alik Tours por tu reserva #${reserva.id_reserva}.`) ?? undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-2 text-xs font-semibold text-white transition-transform hover:-translate-y-0.5"
+          >
+            <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+          </a>
+        )}
+        {cliente?.celular && (
+          <a href={`tel:${cliente.celular}`} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted">
+            <Phone className="h-3.5 w-3.5" /> Llamar
+          </a>
+        )}
+        {cliente?.correo && (
+          <a href={`mailto:${cliente.correo}?subject=${encodeURIComponent(`Tu reserva #${reserva.id_reserva} en Alik Tours`)}`} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted">
+            <Mail className="h-3.5 w-3.5" /> Correo
+          </a>
+        )}
+        {onVerPagos && (
+          <button type="button" onClick={() => onVerPagos(reserva.id_reserva)} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted">
+            <CreditCard className="h-3.5 w-3.5" /> Ver pagos
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard?.writeText(`#${reserva.id_reserva}`).catch(() => {});
+            setCodigoCopiado(true);
+            setTimeout(() => setCodigoCopiado(false), 1500);
+          }}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          {codigoCopiado ? <CheckCircle className="h-3.5 w-3.5 text-emerald-600" /> : <FileText className="h-3.5 w-3.5" />}
+          {codigoCopiado ? "Copiado" : "Copiar código"}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
@@ -1115,6 +1189,55 @@ export default function ModuleReservas({
     || canalFilter !== "todos" || asesorFilter !== "todos" || search.trim() !== ""
     || clienteFiltroActivo != null || tipoFilter !== "todos" || fechaDesde !== "" || fechaHasta !== "";
 
+  // ---------- Vistas rápidas ----------
+  const hoyISO = new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+  const en7ISO = (() => {
+    const [y, m, d] = hoyISO.split("-").map(Number);
+    const f = new Date(y, m - 1, d + 7);
+    return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+  })();
+  const VISTAS_RAPIDAS = [
+    { id: "todas", label: "Todas", Icono: CalendarDays },
+    { id: "por-confirmar", label: "Por confirmar", Icono: Clock },
+    { id: "pago-pendiente", label: "Pago pendiente", Icono: Wallet },
+    { id: "salen-semana", label: "Salen en 7 días", Icono: Plane },
+    { id: "sin-asesor", label: "Llegaron por la web", Icono: Globe },
+  ] as const;
+  function aplicarVista(id: (typeof VISTAS_RAPIDAS)[number]["id"]) {
+    clearFilters();
+    if (id === "por-confirmar") setEstadoFilter("pendiente");
+    if (id === "pago-pendiente") setPagoFilter("pendiente");
+    if (id === "salen-semana") {
+      setEstadoFilter("confirmada");
+      setFechaDesde(hoyISO);
+      setFechaHasta(en7ISO);
+    }
+    if (id === "sin-asesor") setAsesorFilter("sin_asesor");
+  }
+  const soloEstos = (cond: boolean, ...otros: boolean[]) => cond && otros.every(Boolean);
+  const sinOtros = search.trim() === "" && canalFilter === "todos" && tipoFilter === "todos" && clienteFiltroActivo == null;
+  const vistaActiva =
+    !hasActiveFilters ? "todas"
+    : soloEstos(estadoFilter === "pendiente", pagoFilter === "todos", asesorFilter === "todos", !fechaDesde, !fechaHasta, sinOtros) ? "por-confirmar"
+    : soloEstos(pagoFilter === "pendiente", estadoFilter === "todos", asesorFilter === "todos", !fechaDesde, !fechaHasta, sinOtros) ? "pago-pendiente"
+    : soloEstos(estadoFilter === "confirmada", fechaDesde === hoyISO, fechaHasta === en7ISO, pagoFilter === "todos", asesorFilter === "todos", sinOtros) ? "salen-semana"
+    : soloEstos(asesorFilter === "sin_asesor", estadoFilter === "todos", pagoFilter === "todos", !fechaDesde, !fechaHasta, sinOtros) ? "sin-asesor"
+    : null;
+
+  // Filtros activos (fuera de búsqueda y estado, que se ven arriba) como chips.
+  const NOMBRE_CANAL: Record<string, string> = { web: "Web", empleado: "Presencial", telefono: "Teléfono" };
+  const chipsFiltros = [
+    pagoFilter !== "todos" && { texto: `Pago: ${ETIQUETA_PAGO[pagoFilter] ?? pagoFilter}`, quitar: () => setPagoFilter("todos") },
+    canalFilter !== "todos" && { texto: `Canal: ${NOMBRE_CANAL[canalFilter] ?? canalFilter}`, quitar: () => setCanalFilter("todos") },
+    tipoFilter !== "todos" && { texto: `Tipo: ${TIPOS_PRODUCTO.find((t) => t.valor === tipoFilter)?.texto ?? tipoFilter}`, quitar: () => setTipoFilter("todos") },
+    fechaDesde && { texto: `Desde ${formatFechaCorta(fechaDesde)}`, quitar: () => setFechaDesde("") },
+    fechaHasta && { texto: `Hasta ${formatFechaCorta(fechaHasta)}`, quitar: () => setFechaHasta("") },
+    asesorFilter !== "todos" && {
+      texto: asesorFilter === "sin_asesor" ? "Sin asesor (web)" : `Asesor: ${empleados.find((e) => String(e.id_empleado) === asesorFilter)?.nombre ?? asesorFilter}`,
+      quitar: () => setAsesorFilter("todos"),
+    },
+  ].filter(Boolean) as { texto: string; quitar: () => void }[];
+
   function clearFilters() {
     setSearch(""); setEstadoFilter("todos"); setPagoFilter("todos");
     setCanalFilter("todos"); setAsesorFilter("todos"); setClienteFiltroActivo(null);
@@ -1256,17 +1379,56 @@ export default function ModuleReservas({
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Encabezado */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Reservas</h2>
-          <p className="text-muted-foreground text-sm">{totalReservas} reservas en total{hasActiveFilters ? ` · ${totalFiltrado} con los filtros` : ""}</p>
+          <p className="text-sm text-muted-foreground">
+            {totalReservas.toLocaleString("es-CO")} reservas en total
+            {hasActiveFilters ? ` · ${totalFiltrado.toLocaleString("es-CO")} con los filtros` : ""}
+          </p>
         </div>
-        <button
-          onClick={onNueva}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-[#A13B55] text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-primary/20 transition-all"
-        >
-          <PlusCircle className="w-4 h-4" /> Nueva
-        </button>
+        <div className="flex items-center gap-2">
+          <BotonExportarCsv
+            nombre="reservas"
+            filas={filtered}
+            total={totalFiltrado}
+            cargarTodas={cargarTodasFiltradas}
+            columnas={[
+              { titulo: "ID", valor: (r) => r.id_reserva },
+              {
+                titulo: "Cliente",
+                valor: (r) => {
+                  const c = clientes.find((x) => x.id_cliente === r.id_cliente);
+                  return c ? `${c.nombre} ${c.apellido}` : r.cliente_nombre ?? r.id_cliente;
+                },
+              },
+              { titulo: "Documento", valor: (r) => r.cliente_documento ?? "" },
+              {
+                titulo: "Saldo pendiente",
+                valor: (r) => r.saldo_pendiente,
+              },
+              {
+                titulo: "Paquete / hotel",
+                valor: (r) => paquetes.find((x) => x.id_paquete === r.id_paquete)?.nombre_paquete ?? r.hotel_nombre,
+              },
+              { titulo: "Destino", valor: (r) => r.destino },
+              { titulo: "Inicio", valor: (r) => r.fecha_inicio?.slice(0, 10) },
+              { titulo: "Fin", valor: (r) => r.fecha_fin?.slice(0, 10) },
+              { titulo: "Personas", valor: (r) => r.numero_personas },
+              { titulo: "Estado", valor: (r) => r.estado },
+              { titulo: "Total", valor: (r) => r.precio_total },
+              { titulo: "Canal", valor: (r) => r.canal_origen },
+              { titulo: "Creada", valor: (r) => r.fecha_reserva?.slice(0, 10) },
+            ]}
+          />
+          <button
+            onClick={onNueva}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-[color-mix(in_oklab,var(--primary)_75%,var(--gold))] px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/20"
+          >
+            <PlusCircle className="h-4 w-4" /> Nueva reserva
+          </button>
+        </div>
       </div>
 
       {/* Métricas: cada tarjeta filtra la tabla por ese estado */}
@@ -1309,200 +1471,208 @@ export default function ModuleReservas({
         </div>
       </div>
 
-      {/* Búsqueda + estado */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por código, cliente, documento, correo o destino..."
-            aria-label="Buscar reservas"
-            className="w-full pl-10 pr-4 py-2.5 border border-border rounded-xl text-sm outline-none
-              bg-card
-              text-foreground
-              placeholder:text-muted-foreground/60
-              focus:ring-2 focus:ring-primary/40 focus:border-transparent"
-          />
-        </div>
-
-        <BotonExportarCsv
-          nombre="reservas"
-          filas={filtered}
-          total={totalFiltrado}
-          cargarTodas={cargarTodasFiltradas}
-          columnas={[
-            { titulo: "ID", valor: (r) => r.id_reserva },
-            {
-              titulo: "Cliente",
-              valor: (r) => {
-                const c = clientes.find((x) => x.id_cliente === r.id_cliente);
-                return c ? `${c.nombre} ${c.apellido}` : r.cliente_nombre ?? r.id_cliente;
-              },
-            },
-            { titulo: "Documento", valor: (r) => r.cliente_documento ?? "" },
-            {
-              titulo: "Saldo pendiente",
-              valor: (r) => r.saldo_pendiente,
-            },
-            {
-              titulo: "Paquete / hotel",
-              valor: (r) => paquetes.find((x) => x.id_paquete === r.id_paquete)?.nombre_paquete ?? r.hotel_nombre,
-            },
-            { titulo: "Destino", valor: (r) => r.destino },
-            { titulo: "Inicio", valor: (r) => r.fecha_inicio?.slice(0, 10) },
-            { titulo: "Fin", valor: (r) => r.fecha_fin?.slice(0, 10) },
-            { titulo: "Personas", valor: (r) => r.numero_personas },
-            { titulo: "Estado", valor: (r) => r.estado },
-            { titulo: "Total", valor: (r) => r.precio_total },
-            { titulo: "Canal", valor: (r) => r.canal_origen },
-            { titulo: "Creada", valor: (r) => r.fecha_reserva?.slice(0, 10) },
-          ]}
-        />
-
-        <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {ESTADOS.map(e => (
+      {/* Vistas rápidas: atajos a los filtros que más se usan en el día a día */}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label="Vistas rápidas">
+        {VISTAS_RAPIDAS.map((v) => {
+          const activa = vistaActiva === v.id;
+          return (
             <button
-              key={e}
-              onClick={() => setEstadoFilter(e)}
-              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${
-                estadoFilter === e
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+              key={v.id}
+              type="button"
+              onClick={() => aplicarVista(v.id)}
+              aria-pressed={activa}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-all ${
+                activa
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-card text-muted-foreground ring-1 ring-border hover:text-foreground hover:ring-primary/30"
               }`}
             >
-              {e === "todos" ? "Todas" : ETIQUETA_ESTADO[e] ?? e}
+              <v.Icono className="h-3.5 w-3.5" />
+              {v.label}
             </button>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setFiltrosAbiertos((v) => !v)}
-          aria-expanded={filtrosAbiertos}
-          className={`flex items-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold md:hidden ${
-            hasActiveFilters ? "border-primary/40 bg-primary/5 text-primary" : "border-border bg-card text-muted-foreground"
-          }`}
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" /> Filtros{hasActiveFilters ? " activos" : ""}
-        </button>
+          );
+        })}
       </div>
 
-      {/* Filtros avanzados + columnas (en celular se despliegan con "Filtros") */}
-      <div className={`${filtrosAbiertos ? "flex" : "hidden"} md:flex items-center gap-2.5 flex-wrap`}>
-        <Select value={pagoFilter} onValueChange={(v) => setPagoFilter(v as PagoFilter)}>
-          <SelectTrigger className={selectTriggerCls}>
-            <SelectValue placeholder="Estado de pago" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border">
-            <SelectItem value="todos">Pago: todos</SelectItem>
-            {PAGO_ESTADOS.map(p => (
-              <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={canalFilter} onValueChange={(v) => setCanalFilter(v as CanalFilter)}>
-          <SelectTrigger className={selectTriggerCls}>
-            <SelectValue placeholder="Canal" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border">
-            <SelectItem value="todos">Canal: todos</SelectItem>
-            <SelectItem value="web">Web</SelectItem>
-            <SelectItem value="empleado">Presencial</SelectItem>
-            <SelectItem value="telefono">Teléfono</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={tipoFilter} onValueChange={setTipoFilter}>
-          <SelectTrigger className={selectTriggerCls} aria-label="Tipo de viaje">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border">
-            {TIPOS_PRODUCTO.map(t => (
-              <SelectItem key={t.valor} value={t.valor}>{t.texto}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          Viaje desde
-          <input type="date" value={fechaDesde} max={fechaHasta || undefined} onChange={e => setFechaDesde(e.target.value)}
-            className="px-2 py-1.5 border border-border rounded-lg bg-card text-foreground text-xs" />
-        </label>
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          hasta
-          <input type="date" value={fechaHasta} min={fechaDesde || undefined} onChange={e => setFechaHasta(e.target.value)}
-            className="px-2 py-1.5 border border-border rounded-lg bg-card text-foreground text-xs" />
-        </label>
-
-        <Select value={asesorFilter} onValueChange={setAsesorFilter}>
-          <SelectTrigger className={selectTriggerCls}>
-            <SelectValue placeholder="Asesor" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border">
-            <SelectItem value="todos">Asesor: todos</SelectItem>
-            <SelectItem value="sin_asesor">Web (sin asesor)</SelectItem>
-            {empleados.map(e => (
-              <SelectItem key={e.id_empleado} value={String(e.id_empleado)}>
-                {e.nombre} {e.apellido}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {clienteFiltroNombre && (
-          <span className="flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 bg-primary/10 text-primary text-xs font-medium rounded-full">
-            Cliente: {clienteFiltroNombre}
-            <button
-              type="button"
-              onClick={() => setClienteFiltroActivo(null)}
-              className="p-0.5 rounded-full hover:bg-primary/20 transition-colors"
-              aria-label="Quitar filtro de cliente"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </span>
-        )}
-
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="flex items-center gap-1 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <X className="w-3.5 h-3.5" /> Limpiar filtros
-          </button>
-        )}
-
-        <div className="ml-auto hidden md:block">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+      {/* Búsqueda, estado y filtros */}
+      <div className="space-y-3 rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar por código, cliente, documento, correo o destino..."
+              aria-label="Buscar reservas"
+              className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-9 text-sm text-foreground outline-none placeholder:text-muted-foreground/60 focus:border-transparent focus:ring-2 focus:ring-primary/40"
+            />
+            {search && (
               <button
                 type="button"
-                className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors bg-card"
+                onClick={() => setSearch("")}
+                aria-label="Borrar búsqueda"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               >
-                <MoreHorizontal className="w-3.5 h-3.5" />
-                Columnas
+                <X className="h-3.5 w-3.5" />
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
-              <DropdownMenuLabel className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                Mostrar columnas
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {ALL_COLUMNS.map(key => (
-                <DropdownMenuCheckboxItem
-                  key={key}
-                  checked={isVisible(key)}
-                  onCheckedChange={() => toggleCol(key)}
-                  className="text-xs"
+            )}
+          </div>
+
+          <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {ESTADOS.map(e => (
+              <button
+                key={e}
+                onClick={() => setEstadoFilter(e)}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                  estadoFilter === e ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {e === "todos" ? "Todas" : ETIQUETA_ESTADO[e] ?? e}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setFiltrosAbiertos((v) => !v)}
+            aria-expanded={filtrosAbiertos}
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold transition-colors ${
+              filtrosAbiertos || chipsFiltros.length > 0
+                ? "border-primary/40 bg-primary/5 text-primary"
+                : "border-border bg-card text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" /> Filtros
+            {chipsFiltros.length > 0 && (
+              <span className="rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">{chipsFiltros.length}</span>
+            )}
+          </button>
+
+          <div className="hidden md:block">
+          <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors bg-card"
                 >
-                  {COLUMN_LABELS[key]}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                  Columnas
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
+                <DropdownMenuLabel className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                  Mostrar columnas
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ALL_COLUMNS.map(key => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={isVisible(key)}
+                    onCheckedChange={() => toggleCol(key)}
+                    className="text-xs"
+                  >
+                    {COLUMN_LABELS[key]}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        {filtrosAbiertos && (
+          <div className="flex flex-wrap items-center gap-2.5 border-t border-border pt-3">
+        <Select value={pagoFilter} onValueChange={(v) => setPagoFilter(v as PagoFilter)}>
+              <SelectTrigger className={selectTriggerCls}>
+                <SelectValue placeholder="Estado de pago" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="todos">Pago: todos</SelectItem>
+                {PAGO_ESTADOS.map(p => (
+                  <SelectItem key={p} value={p}>Pago: {ETIQUETA_PAGO[p] ?? p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={canalFilter} onValueChange={(v) => setCanalFilter(v as CanalFilter)}>
+              <SelectTrigger className={selectTriggerCls}>
+                <SelectValue placeholder="Canal" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="todos">Canal: todos</SelectItem>
+                <SelectItem value="web">Web</SelectItem>
+                <SelectItem value="empleado">Presencial</SelectItem>
+                <SelectItem value="telefono">Teléfono</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={tipoFilter} onValueChange={setTipoFilter}>
+              <SelectTrigger className={selectTriggerCls} aria-label="Tipo de viaje">
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                {TIPOS_PRODUCTO.map(t => (
+                  <SelectItem key={t.valor} value={t.valor}>{t.texto}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <label className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground">
+              <CalendarDays className="h-3.5 w-3.5" /> Viaje desde
+              <input type="date" value={fechaDesde} max={fechaHasta || undefined} onChange={e => setFechaDesde(e.target.value)}
+                className="bg-transparent text-xs text-foreground outline-none" />
+            </label>
+            <label className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground">
+              hasta
+              <input type="date" value={fechaHasta} min={fechaDesde || undefined} onChange={e => setFechaHasta(e.target.value)}
+                className="bg-transparent text-xs text-foreground outline-none" />
+            </label>
+
+            <Select value={asesorFilter} onValueChange={setAsesorFilter}>
+              <SelectTrigger className={selectTriggerCls}>
+                <SelectValue placeholder="Asesor" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                <SelectItem value="todos">Asesor: todos</SelectItem>
+                <SelectItem value="sin_asesor">Web (sin asesor)</SelectItem>
+                {empleados.map(e => (
+                  <SelectItem key={e.id_empleado} value={String(e.id_empleado)}>
+                    {e.nombre} {e.apellido}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+          </div>
+        )}
+
+        {(chipsFiltros.length > 0 || clienteFiltroNombre) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {clienteFiltroNombre && (
+              <span className="flex items-center gap-1.5 rounded-full bg-primary/10 py-1 pl-3 pr-1.5 text-xs font-medium text-primary">
+                Cliente: {clienteFiltroNombre}
+                <button
+                  type="button"
+                  onClick={() => setClienteFiltroActivo(null)}
+                  className="rounded-full p-0.5 transition-colors hover:bg-primary/20"
+                  aria-label="Quitar filtro de cliente"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+            {chipsFiltros.map((c) => (
+              <span key={c.texto} className="flex items-center gap-1.5 rounded-full bg-muted py-1 pl-3 pr-1.5 text-xs font-medium text-foreground">
+                {c.texto}
+                <button type="button" onClick={c.quitar} className="rounded-full p-0.5 hover:bg-background" aria-label={`Quitar ${c.texto}`}>
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+            <button onClick={clearFilters} className="px-2 py-1 text-xs font-semibold text-muted-foreground hover:text-destructive">
+              Limpiar todo
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -1530,7 +1700,7 @@ export default function ModuleReservas({
                 <button
                   type="button"
                   onClick={() => setSelectedId(r.id_reserva)}
-                  className="w-full rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-shadow active:shadow-md"
+                  className={`w-full rounded-2xl border border-l-4 border-border bg-card p-4 text-left shadow-sm transition-shadow active:shadow-md ${BORDE_ESTADO[r.estado] ?? ""}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -1546,6 +1716,7 @@ export default function ModuleReservas({
                   <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
                     <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{formatFechaCorta(r.fecha_inicio)}</span>
                     <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{r.numero_personas}</span>
+                    {r.estado !== "cancelada" && <span className="font-semibold text-primary">{cuandoViaja(r.fecha_inicio, r.fecha_fin)}</span>}
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
                     <span className="text-sm font-bold text-foreground">{r.precio_total != null ? pesosCOP(r.precio_total) : "—"}</span>
@@ -1593,7 +1764,7 @@ export default function ModuleReservas({
                     onClick={() => setSelectedId(r.id_reserva)}
                     className="hover:bg-accent transition-colors cursor-pointer group"
                   >
-                    <td className="px-3 py-3 font-semibold text-foreground">
+                    <td className={`border-l-4 px-3 py-3 font-semibold text-foreground ${BORDE_ESTADO[r.estado] ?? "border-l-transparent"}`}>
                       #{r.id_reserva}
                     </td>
 
@@ -1640,8 +1811,10 @@ export default function ModuleReservas({
 
                     {isVisible("fechas") && (
                       <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                        <p>{formatFechaCorta(r.fecha_inicio)}</p>
-                        <p className="text-[11px] text-muted-foreground/70">→ {formatFechaCorta(r.fecha_fin)}</p>
+                        <p className="text-foreground">{formatFechaCorta(r.fecha_inicio)}</p>
+                        <p className={`text-[11px] font-medium ${r.estado === "cancelada" ? "text-muted-foreground/60" : cuandoViaja(r.fecha_inicio, r.fecha_fin).startsWith("En ") || cuandoViaja(r.fecha_inicio, r.fecha_fin).startsWith("Sale") ? "text-primary" : "text-muted-foreground/70"}`}>
+                          {r.estado === "cancelada" ? `→ ${formatFechaCorta(r.fecha_fin)}` : cuandoViaja(r.fecha_inicio, r.fecha_fin)}
+                        </p>
                       </td>
                     )}
 
@@ -1667,12 +1840,14 @@ export default function ModuleReservas({
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${cobro.clase}`}>
                             {cobro.etiqueta}
                           </span>
-                          {pg && (pg.estado === "pendiente" || pg.estado === "procesando") && (
-                            <span className="ml-1 text-[10px] font-semibold text-amber-600" title="Hay un pago esperando revisión">• por revisar</span>
-                          )}
                           <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
                             <div className="h-full rounded-full bg-primary" style={{ width: `${cobro.pct}%` }} />
                           </div>
+                          {pg && (pg.estado === "pendiente" || pg.estado === "procesando") && (
+                            <span className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400" title="Hay un pago esperando revisión">
+                              <Clock className="h-3 w-3" /> Pago por revisar
+                            </span>
+                          )}
                         </div>
                       </td>
                     )}
@@ -1709,6 +1884,20 @@ export default function ModuleReservas({
                     )}
 
                     <td className="px-3 py-3">
+                      <div className="flex items-center justify-end gap-0.5">
+                      {cl?.celular && enlaceWhatsApp(cl.celular) && (
+                        <a
+                          href={enlaceWhatsApp(cl.celular, `Hola ${cl.nombre}, te escribimos de Alik Tours por tu reserva #${r.id_reserva}.`) ?? undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Escribir por WhatsApp a ${cl.nombre}`}
+                          title="Escribir por WhatsApp"
+                          className="rounded-lg p-1.5 text-emerald-600 opacity-0 transition-all hover:bg-emerald-500/10 group-hover:opacity-100 focus:opacity-100"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        </a>
+                      )}
                       {!soloEmpleado && (
                       <button
                         aria-label={`Eliminar reserva #${r.id_reserva}`}
@@ -1718,6 +1907,7 @@ export default function ModuleReservas({
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                       )}
+                      </div>
                     </td>
                   </tr>
                 );

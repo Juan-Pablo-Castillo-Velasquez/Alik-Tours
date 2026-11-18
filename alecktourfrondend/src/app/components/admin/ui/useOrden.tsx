@@ -61,7 +61,7 @@ export function EncabezadoOrdenable<C extends string>({
       <button
         type="button"
         onClick={() => onOrdenar(campo)}
-        className="inline-flex items-center gap-1 uppercase hover:text-foreground"
+        className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:text-foreground"
       >
         {texto}
         {!activo ? (
