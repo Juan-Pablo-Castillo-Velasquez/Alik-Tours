@@ -37,6 +37,15 @@ class ReservasPorMesItem(BaseModel):
     total: int
 
 
+class MesComercialItem(BaseModel):
+    """Un mes calendario con sus reservas creadas y lo cobrado (pagos
+    aprobados por fecha de pago)."""
+
+    mes: str  # "2026-06"
+    reservas: int
+    ingresos: float
+
+
 class SerieDiariaItem(BaseModel):
     """Un punto de una serie de los últimos 14 días (para sparklines) —
     `total` es genérico (cuenta de reservas o suma de ingresos según el
@@ -116,6 +125,24 @@ class DashboardResumenResponse(BaseModel):
     # ---- Series diarias (últimos 14 días) para sparklines ----
     reservas_ultimos_14d: list[SerieDiariaItem]
     ingresos_ultimos_14d: list[SerieDiariaItem]
+
+    # ---- Vista comercial (dashboard del admin) ----
+    # Últimos 6 meses: reservas creadas + ingresos cobrados en cada mes.
+    comercial_por_mes: list[MesComercialItem] = []
+    # Reservas no canceladas por tipo de producto (total) y lo cobrado por
+    # cada tipo (monto). "Otros" agrupa reservas viejas sin tipo.
+    ventas_por_producto: list[ConteoNombre] = []
+    # Reservas por canal de origen (web, asesor, teléfono).
+    reservas_por_canal: list[ConteoNombre] = []
+    hoteles_mas_reservados: list[ConteoNombre] = []
+    # Reservas creadas este mes por cada asesor (Reserva.id_empleado).
+    asesores_top_mes: list[ConteoNombre] = []
+    # Saldo que falta cobrar de las reservas vigentes (pendientes y
+    # confirmadas): total de cada reserva menos sus pagos aprobados.
+    cartera_por_cobrar: float = 0
+    reservas_con_saldo: int = 0
+    ingresos_hoy: float = 0
+    reservas_hoy: int = 0
 
 
 class ResumenEmpleadoResponse(BaseModel):

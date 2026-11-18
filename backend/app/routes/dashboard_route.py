@@ -19,23 +19,32 @@ corrió), el campo va en None en vez de mostrar un 0 que podría confundirse
 con "sabemos que son cero".
 """
 
-from calendar import monthrange
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.cache import get_cached, set_cached
 from app.core.database import get_db
 from app.core.security import require_empleado
-from app.models.cliente_model import Cliente
-from app.models.hotel_model import Hotel
-from app.models.reserva_model import HistorialReserva, MetodoPago, Pago, Paquete, Reserva, SolicitudCancelacion
+from app.models.cliente_model import Cliente, Empleado
+from app.models.hotel_model import Habitacion, Hotel
+from app.models.reserva_model import (
+    HistorialReserva,
+    MetodoPago,
+    Pago,
+    Paquete,
+    Reserva,
+    ReservaHabitacion,
+    SolicitudCancelacion,
+)
 from app.models.user_model import Usuario
 from app.schemas.dashboard_schema import (
     ConteoNombre,
     DashboardResumenResponse,
+    MesComercialItem,
     ReservaProximaItem,
     ReservasPorMesItem,
     ResumenEmpleadoResponse,
@@ -46,6 +55,10 @@ from app.schemas.dashboard_schema import (
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 DASHBOARD_CACHE_KEY = "kpi:dashboard:resumen"
+# Las marcas de tiempo se guardan sin zona, en UTC (now() de la BD). Para
+# agrupar por día y por mes se pasan a la hora de Colombia: si no, lo que
+# entra después de las 7 p. m. contaría para el día siguiente.
+ZONA_NEGOCIO = ZoneInfo("America/Bogota")
 DASHBOARD_CACHE_TTL = 60  # corto: el dashboard debe reflejar cambios casi en vivo
 
 
@@ -221,42 +234,74 @@ def get_dashboard_resumen(db: Session = Depends(get_db), admin_id: int = Depends
     )
     paquetes_mas_solicitados = [ConteoNombre(nombre=n, total=c) for n, c in paquetes_top_rows]
 
-    # Reservas por mes — últimos 6 meses calendario, incluyendo meses en
-    # cero (para que el gráfico no "salte" cuando un mes no tuvo reservas).
-    reservas_por_mes: list[ReservasPorMesItem] = []
-    cancelaciones_por_mes: list[ReservasPorMesItem] = []
-    cursor = inicio_mes_actual
+    # Reservas, cancelaciones e ingresos por mes — últimos 6 meses
+    # calendario, incluyendo meses en cero (para que el gráfico no "salte").
+    # Antes eran 2 consultas por mes y 2 por día (≈40 en total); ahora se
+    # traen las fechas una vez y se agrupan en Python.
+    hoy_local = datetime.now(ZONA_NEGOCIO).date()
     meses_rango = []
     for i in range(5, -1, -1):
-        y, m = cursor.year, cursor.month - i
+        y, m = hoy_local.year, hoy_local.month - i
         while m <= 0:
             m += 12
             y -= 1
         meses_rango.append((y, m))
+    # Un día de margen por la diferencia horaria con UTC.
+    inicio_ventana = min(date(*meses_rango[0], 1), hoy_local - timedelta(days=13)) - timedelta(days=1)
+
+    def _dia(valor) -> date | None:
+        if valor is None:
+            return None
+        if isinstance(valor, datetime):
+            if valor.tzinfo is None:
+                valor = valor.replace(tzinfo=UTC)
+            return valor.astimezone(ZONA_NEGOCIO).date()
+        return valor
+
+    fechas_reservas = [
+        _dia(f) for (f,) in db.query(Reserva.fecha_reserva).filter(Reserva.fecha_reserva >= inicio_ventana).all()
+    ]
+    pagos_ventana = [
+        (_dia(f), float(mnt or 0))
+        for f, mnt in db.query(Pago.fecha_pago, Pago.monto)
+        .filter(Pago.estado == "pagado", Pago.fecha_pago >= inicio_ventana)
+        .all()
+    ]
+    fechas_canceladas = [
+        _dia(f)
+        for (f,) in db.query(HistorialReserva.fecha_cambio)
+        .filter(HistorialReserva.estado_nuevo == "cancelada", HistorialReserva.fecha_cambio >= inicio_ventana)
+        .all()
+    ]
+
+    def _clave_mes(d: date | None) -> str | None:
+        return f"{d.year:04d}-{d.month:02d}" if d else None
+
+    reservas_mes_cnt: dict[str, int] = {}
+    for d in fechas_reservas:
+        k = _clave_mes(d)
+        reservas_mes_cnt[k] = reservas_mes_cnt.get(k, 0) + 1
+    cancel_mes_cnt: dict[str, int] = {}
+    for d in fechas_canceladas:
+        k = _clave_mes(d)
+        cancel_mes_cnt[k] = cancel_mes_cnt.get(k, 0) + 1
+    ingresos_mes_sum: dict[str, float] = {}
+    for d, mnt in pagos_ventana:
+        k = _clave_mes(d)
+        ingresos_mes_sum[k] = ingresos_mes_sum.get(k, 0.0) + mnt
+
+    reservas_por_mes: list[ReservasPorMesItem] = []
+    cancelaciones_por_mes: list[ReservasPorMesItem] = []
+    comercial_por_mes: list[MesComercialItem] = []
     for y, m in meses_rango:
-        inicio = date(y, m, 1)
-        fin = date(y, m, monthrange(y, m)[1]) + timedelta(days=1)
-        total = (
-            db.query(func.count(Reserva.id_reserva))
-            .filter(Reserva.fecha_reserva >= inicio, Reserva.fecha_reserva < fin)
-            .scalar()
-            or 0
-        )
-        reservas_por_mes.append(ReservasPorMesItem(mes=f"{y:04d}-{m:02d}", total=total))
-        # Igual que la tendencia mensual de cancelaciones más arriba: se
-        # cuenta por el momento real del cambio de estado (historial), no
-        # por la fecha de creación de la reserva.
-        canceladas_mes = (
-            db.query(func.count(HistorialReserva.id_historial))
-            .filter(
-                HistorialReserva.estado_nuevo == "cancelada",
-                HistorialReserva.fecha_cambio >= inicio,
-                HistorialReserva.fecha_cambio < fin,
+        k = f"{y:04d}-{m:02d}"
+        reservas_por_mes.append(ReservasPorMesItem(mes=k, total=reservas_mes_cnt.get(k, 0)))
+        cancelaciones_por_mes.append(ReservasPorMesItem(mes=k, total=cancel_mes_cnt.get(k, 0)))
+        comercial_por_mes.append(
+            MesComercialItem(
+                mes=k, reservas=reservas_mes_cnt.get(k, 0), ingresos=round(ingresos_mes_sum.get(k, 0.0), 2)
             )
-            .scalar()
-            or 0
         )
-        cancelaciones_por_mes.append(ReservasPorMesItem(mes=f"{y:04d}-{m:02d}", total=canceladas_mes))
 
     # ---------- Reservas próximas (para la lista "Reservas próximas") ----------
     proximas = (
@@ -288,7 +333,10 @@ def get_dashboard_resumen(db: Session = Depends(get_db), admin_id: int = Depends
     # cuentas por estado y de historial_reservas que ya se calculan arriba
     # o son igual de directas) ----------
     tasa_conversion_pct = (
-        round(conteo_estado.get("confirmada", 0) / reservas_total * 100, 1) if reservas_total else None
+        # Una reserva finalizada también llegó a confirmarse.
+        round((conteo_estado.get("confirmada", 0) + conteo_estado.get("finalizada", 0)) / reservas_total * 100, 1)
+        if reservas_total
+        else None
     )
     tasa_cancelacion_pct = (
         round(conteo_estado.get("cancelada", 0) / reservas_total * 100, 1) if reservas_total else None
@@ -320,26 +368,95 @@ def get_dashboard_resumen(db: Session = Depends(get_db), admin_id: int = Depends
     )
 
     # ---------- Series diarias (últimos 14 días, para sparklines) ----------
+    reservas_dia_cnt: dict[date, int] = {}
+    for d in fechas_reservas:
+        reservas_dia_cnt[d] = reservas_dia_cnt.get(d, 0) + 1
+    ingresos_dia_sum: dict[date, float] = {}
+    for d, mnt in pagos_ventana:
+        ingresos_dia_sum[d] = ingresos_dia_sum.get(d, 0.0) + mnt
     reservas_ultimos_14d: list[SerieDiariaItem] = []
     ingresos_ultimos_14d: list[SerieDiariaItem] = []
     for i in range(13, -1, -1):
-        dia = hoy - timedelta(days=i)
-        dia_fin = dia + timedelta(days=1)
-        total_reservas_dia = (
-            db.query(func.count(Reserva.id_reserva))
-            .filter(Reserva.fecha_reserva >= dia, Reserva.fecha_reserva < dia_fin)
-            .scalar()
-            or 0
+        dia = hoy_local - timedelta(days=i)
+        reservas_ultimos_14d.append(SerieDiariaItem(fecha=dia.isoformat(), total=reservas_dia_cnt.get(dia, 0)))
+        ingresos_ultimos_14d.append(
+            SerieDiariaItem(fecha=dia.isoformat(), total=round(ingresos_dia_sum.get(dia, 0.0), 2))
         )
-        reservas_ultimos_14d.append(SerieDiariaItem(fecha=dia.isoformat(), total=total_reservas_dia))
 
-        ingresos_dia = float(
-            db.query(func.coalesce(func.sum(Pago.monto), 0))
-            .filter(Pago.estado == "pagado", Pago.fecha_pago >= dia, Pago.fecha_pago < dia_fin)
-            .scalar()
-            or 0
+    # ---------- Vista comercial ----------
+    nombres_producto = {"paquete": "Paquetes", "hotel": "Hoteles", "vuelo": "Vuelos"}
+    reservas_por_tipo = dict(
+        db.query(Reserva.tipo_producto, func.count(Reserva.id_reserva))
+        .filter(Reserva.estado != "cancelada")
+        .group_by(Reserva.tipo_producto)
+        .all()
+    )
+    ingresos_por_tipo = dict(
+        db.query(Reserva.tipo_producto, func.sum(Pago.monto))
+        .join(Pago, Pago.id_reserva == Reserva.id_reserva)
+        .filter(Pago.estado == "pagado")
+        .group_by(Reserva.tipo_producto)
+        .all()
+    )
+    ventas_por_producto = []
+    for tipo in sorted(set(reservas_por_tipo) | set(ingresos_por_tipo), key=lambda t: (t is None, str(t))):
+        ventas_por_producto.append(
+            ConteoNombre(
+                nombre=nombres_producto.get(tipo, "Otros"),
+                total=int(reservas_por_tipo.get(tipo, 0) or 0),
+                monto=round(float(ingresos_por_tipo.get(tipo, 0) or 0), 2),
+            )
         )
-        ingresos_ultimos_14d.append(SerieDiariaItem(fecha=dia.isoformat(), total=ingresos_dia))
+    ventas_por_producto.sort(key=lambda v: (v.monto or 0, v.total), reverse=True)
+
+    nombres_canal = {"web": "Sitio web", "empleado": "Asesor", "telefono": "Teléfono"}
+    reservas_por_canal = [
+        ConteoNombre(nombre=nombres_canal.get(c, "Sin dato"), total=n)
+        for c, n in db.query(Reserva.canal_origen, func.count(Reserva.id_reserva))
+        .group_by(Reserva.canal_origen)
+        .order_by(func.count(Reserva.id_reserva).desc())
+        .all()
+    ]
+
+    hoteles_mas_reservados = [
+        ConteoNombre(nombre=n, total=c)
+        for n, c in db.query(Hotel.nombre_hotel, func.count(func.distinct(ReservaHabitacion.id_reserva)))
+        .join(Habitacion, Habitacion.id_hotel == Hotel.id_hotel)
+        .join(ReservaHabitacion, ReservaHabitacion.id_habitacion == Habitacion.id_habitacion)
+        .group_by(Hotel.nombre_hotel)
+        .order_by(func.count(func.distinct(ReservaHabitacion.id_reserva)).desc())
+        .limit(5)
+        .all()
+    ]
+
+    asesores_top_mes = [
+        ConteoNombre(nombre=f"{nombre} {apellido}".strip(), total=c)
+        for nombre, apellido, c in db.query(Empleado.nombre, Empleado.apellido, func.count(Reserva.id_reserva))
+        .join(Reserva, Reserva.id_empleado == Empleado.id_empleado)
+        .filter(Reserva.fecha_reserva >= inicio_mes_actual)
+        .group_by(Empleado.id_empleado, Empleado.nombre, Empleado.apellido)
+        .order_by(func.count(Reserva.id_reserva).desc())
+        .limit(5)
+        .all()
+    ]
+
+    # Cartera: el total de una reserva sale de su desglose (propiedad
+    # precio_total, ver Reserva), así que se calcula en Python sobre las
+    # reservas vigentes, con sus relaciones precargadas en 4 consultas.
+    vigentes = (
+        db.query(Reserva)
+        .options(
+            selectinload(Reserva.conceptos),
+            selectinload(Reserva.reserva_habitaciones),
+            selectinload(Reserva.reserva_servicios),
+            selectinload(Reserva.pagos),
+        )
+        .filter(Reserva.estado.in_(["pendiente", "confirmada"]))
+        .all()
+    )
+    saldos = [r.saldo_pendiente for r in vigentes]
+    cartera_por_cobrar = round(sum(saldos), 2)
+    reservas_con_saldo = sum(1 for x in saldos if x > 0)
 
     resultado = DashboardResumenResponse(
         reservas_total=reservas_total,
@@ -378,6 +495,15 @@ def get_dashboard_resumen(db: Session = Depends(get_db), admin_id: int = Depends
         tiempo_promedio_confirmacion_horas=tiempo_promedio_confirmacion_horas,
         reservas_ultimos_14d=reservas_ultimos_14d,
         ingresos_ultimos_14d=ingresos_ultimos_14d,
+        comercial_por_mes=comercial_por_mes,
+        ventas_por_producto=ventas_por_producto,
+        reservas_por_canal=reservas_por_canal,
+        hoteles_mas_reservados=hoteles_mas_reservados,
+        asesores_top_mes=asesores_top_mes,
+        cartera_por_cobrar=cartera_por_cobrar,
+        reservas_con_saldo=reservas_con_saldo,
+        ingresos_hoy=ingresos_ultimos_14d[-1].total,
+        reservas_hoy=int(reservas_ultimos_14d[-1].total),
     )
 
     data = resultado.model_dump(mode="json")
