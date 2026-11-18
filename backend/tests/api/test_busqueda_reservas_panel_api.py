@@ -180,4 +180,11 @@ def test_totales_de_todo_el_resultado_filtrado(client, asesor, datos):
 def test_totales_respetan_los_filtros_y_son_opcionales(client, asesor, datos):
     assert _buscar(client, asesor)["totales"] is None
     t = _buscar(client, asesor, con_totales="true", estado="pendiente")["totales"]
-    assert t == {"reservas": 1, "viajeros": 2, "monto_total": 200000, "cobrado": 0, "por_cobrar": 200000, "con_saldo": 1}
+    assert t == {
+        "reservas": 1,
+        "viajeros": 2,
+        "monto_total": 200000,
+        "cobrado": 0,
+        "por_cobrar": 200000,
+        "con_saldo": 1,
+    }
