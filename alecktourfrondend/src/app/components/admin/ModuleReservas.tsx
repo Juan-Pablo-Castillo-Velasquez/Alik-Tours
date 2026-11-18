@@ -5,6 +5,7 @@ import {
   Globe, UserCheck, PhoneCall, ChevronRight, AlertCircle,
   CheckCircle, Clock, XCircle, FileText, Save, MoreHorizontal,
   MessageCircle, Send, BedDouble, Sparkles, Receipt, Paperclip,
+  Plane, Hotel, SlidersHorizontal, Wallet, CalendarDays,
 } from "lucide-react";
 import { Reserva, Cliente, Paquete, ESTADO_COLOR, inputCls, resolveFotoUrl } from "./types";
 import { reservaDetailService, reservaService, type PagoResponse } from "../../services/reserva.service";
@@ -132,6 +133,58 @@ function formatFechaCorta(iso?: string | null): string {
   return `${m[3]} ${MESES_CORTOS[mesIdx] ?? m[2]} ${m[1]}`;
 }
 
+const ETIQUETA_ESTADO: Record<string, string> = {
+  pendiente: "Pendiente",
+  confirmada: "Confirmada",
+  cancelada: "Cancelada",
+  finalizada: "Finalizada",
+};
+
+type ReservaConDatos = ReservaExtended & {
+  nombre_paquete?: string | null;
+  vuelo_ruta?: string | null;
+  total_pagado?: number;
+  saldo_pendiente?: number;
+};
+
+/** Qué compró el cliente: nombre e ícono según paquete, hotel o vuelo. */
+export function productoDe(r: ReservaConDatos, pk?: Paquete) {
+  const tipo = r.tipo_producto ?? (r.id_paquete ? "paquete" : r.hotel_nombre ? "hotel" : r.vuelo_ruta ? "vuelo" : null);
+  if (tipo === "vuelo" || (!pk && !r.nombre_paquete && !r.hotel_nombre && r.vuelo_ruta)) {
+    return { Icono: Plane, tipo: "Vuelo", nombre: r.vuelo_ruta ?? r.destino ?? `Reserva #${r.id_reserva}` };
+  }
+  if (pk || r.nombre_paquete) {
+    return { Icono: Package, tipo: "Paquete", nombre: pk?.nombre_paquete ?? r.nombre_paquete ?? "Paquete" };
+  }
+  if (r.hotel_nombre) return { Icono: Hotel, tipo: "Hotel", nombre: r.hotel_nombre };
+  return { Icono: Package, tipo: "Reserva", nombre: r.destino ?? `Reserva #${r.id_reserva}` };
+}
+
+/** Cómo va el cobro de la reserva, con los totales que ya calcula el backend. */
+export function cobroDe(r: ReservaConDatos) {
+  const total = Number(r.precio_total ?? 0);
+  const pagado = Number(r.total_pagado ?? 0);
+  const saldo = Number(r.saldo_pendiente ?? Math.max(total - pagado, 0));
+  const pct = total > 0 ? Math.min(100, Math.round((pagado / total) * 100)) : 0;
+  if (total > 0 && saldo <= 0) return { etiqueta: "Pagada", clase: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400", pct: 100, saldo: 0 };
+  if (pagado > 0) return { etiqueta: "Abono", clase: "bg-sky-500/10 text-sky-700 dark:text-sky-400", pct, saldo };
+  return { etiqueta: "Sin pago", clase: "bg-muted text-muted-foreground", pct: 0, saldo };
+}
+
+/** Pago más relevante de una reserva para el listado: primero uno que
+ * espera revisión (pendiente/procesando), luego el aprobado más reciente. */
+const PRIORIDAD_LISTADO: Record<string, number> = { procesando: 0, pendiente: 1, pagado: 2, rechazado: 3, cancelado: 4 };
+function mejorPago<T extends { estado: string; fecha_pago?: string | null }>(pagos?: T[] | null): T | undefined {
+  if (!pagos?.length) return undefined;
+  return [...pagos].sort(
+    (a, b) =>
+      (PRIORIDAD_LISTADO[a.estado] ?? 9) - (PRIORIDAD_LISTADO[b.estado] ?? 9) ||
+      (b.fecha_pago ?? "").localeCompare(a.fecha_pago ?? ""),
+  )[0];
+}
+
+const pesosCOP = (v: number) => `$${Math.round(v).toLocaleString("es-CO")}`;
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function EstadoBadge({ estado }: { estado: string }) {
@@ -144,7 +197,7 @@ function EstadoBadge({ estado }: { estado: string }) {
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${ESTADO_COLOR[estado] ?? "bg-muted text-muted-foreground"}`}>
       {icons[estado]}
-      {estado}
+      {ETIQUETA_ESTADO[estado] ?? estado}
     </span>
   );
 }
@@ -321,6 +374,8 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
   const montoPagado = pagosReales.filter(p => p.estado === "pagado").reduce((sum, p) => sum + p.monto, 0);
   const intentosFallidos = pagosReales.filter(p => p.estado === "rechazado").length;
   const pct = totalReal > 0 ? Math.min(100, Math.round((montoPagado / totalReal) * 100)) : 0;
+  const producto = productoDe(reserva as ReservaConDatos, paquete);
+  const saldoReal = Math.max(totalReal - montoPagado, 0);
 
   // Nota interna del asesor — no cambia el estado de la reserva, solo deja
   // trazabilidad real de la gestión (ver POST /reservas/{id}/notas). Es la
@@ -472,6 +527,36 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
           </div>
         </div>
       )}
+      {/* Resumen de un vistazo: qué compró, cuándo viaja y cómo va el pago. */}
+      <div className="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <div className="col-span-3 flex items-center gap-3 rounded-xl bg-primary/5 p-3 ring-1 ring-primary/15 sm:col-span-1">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <producto.Icono className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] text-muted-foreground">{producto.tipo}</p>
+            <p className="truncate text-sm font-semibold text-foreground">{producto.nombre}</p>
+          </div>
+        </div>
+        <div className="rounded-xl bg-muted/50 p-3">
+          <p className="flex items-center gap-1 text-[11px] text-muted-foreground"><CalendarDays className="h-3 w-3" /> Viaje</p>
+          <p className="text-sm font-semibold text-foreground">{formatFechaCorta(reserva.fecha_inicio)}</p>
+          <p className="text-[11px] text-muted-foreground">{reserva.numero_personas} viajero{reserva.numero_personas === 1 ? "" : "s"}</p>
+        </div>
+        <div className="rounded-xl bg-muted/50 p-3">
+          <p className="flex items-center gap-1 text-[11px] text-muted-foreground"><Receipt className="h-3 w-3" /> Total</p>
+          <p className="text-sm font-semibold text-foreground">{pesosCOP(totalReal)}</p>
+          <p className="text-[11px] text-muted-foreground">{pct}% pagado</p>
+        </div>
+        <div className={`rounded-xl p-3 ${saldoReal > 0 ? "bg-amber-500/10" : "bg-emerald-500/10"}`}>
+          <p className="flex items-center gap-1 text-[11px] text-muted-foreground"><Wallet className="h-3 w-3" /> Saldo</p>
+          <p className={`text-sm font-semibold ${saldoReal > 0 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}>
+            {saldoReal > 0 ? pesosCOP(saldoReal) : "Pagada"}
+          </p>
+          <p className="text-[11px] text-muted-foreground">Pagado {pesosCOP(montoPagado)}</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
 
         {/* Columna izquierda: contexto */}
@@ -522,7 +607,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
                       </span>
                     ) : undefined
                   } />
-                  <DetailRow icon={MapPin} label="Ciudad"     value={`${cliente.ciudad}, ${cliente.pais}`} />
+                  <DetailRow icon={MapPin} label="Ciudad"     value={[cliente.ciudad, cliente.pais].filter(Boolean).join(", ") || undefined} />
                   <DetailRow icon={MapPin} label="Dirección"  value={cliente.direccion} />
                   <DetailRow icon={Calendar} label="Nacimiento" value={cliente.fecha_nacimiento ? formatFechaCorta(cliente.fecha_nacimiento) : undefined} />
                   <DetailRow icon={Calendar} label="Cliente desde" value={cliente.fecha_registro ? formatFechaCorta(cliente.fecha_registro) : undefined} />
@@ -542,28 +627,17 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
               usan acá igual que ya se usan como fallback en la tabla. */}
           <section>
             <h3 className={section}>
-              <Package className="w-3.5 h-3.5" /> {paquete ? "Paquete" : "Hotel"}
+              <producto.Icono className="w-3.5 h-3.5" /> {producto.tipo}
             </h3>
             <div className={card}>
-              {paquete ? (
-                <>
-                  <p className="text-sm font-semibold text-foreground mb-3">{paquete.nombre_paquete}</p>
-                  <DetailRow icon={Calendar} label="Check-in"  value={reserva.fecha_inicio} />
-                  <DetailRow icon={Calendar} label="Check-out" value={reserva.fecha_fin} />
-                  <DetailRow icon={Clock}    label="Duración"  value={`${paquete.duracion_dias} días`} />
-                  <DetailRow icon={Users}    label="Viajeros"  value={`${reserva.numero_personas} personas`} />
-                </>
-              ) : (
-                <>
-                  {reserva.hotel_nombre && (
-                    <p className="text-sm font-semibold text-foreground mb-3">{reserva.hotel_nombre}</p>
-                  )}
-                  <DetailRow icon={MapPin}   label="Destino"   value={reserva.destino} />
-                  <DetailRow icon={Calendar} label="Check-in"  value={reserva.fecha_inicio} />
-                  <DetailRow icon={Calendar} label="Check-out" value={reserva.fecha_fin} />
-                  <DetailRow icon={Users}    label="Viajeros"  value={`${reserva.numero_personas} personas`} />
-                </>
+              <p className="text-sm font-semibold text-foreground mb-3">{producto.nombre}</p>
+              {reserva.destino && producto.tipo !== "Vuelo" && (
+                <DetailRow icon={MapPin} label="Destino" value={reserva.destino} />
               )}
+              <DetailRow icon={Calendar} label={producto.tipo === "Vuelo" ? "Ida" : "Llegada"} value={formatFechaCorta(reserva.fecha_inicio)} />
+              <DetailRow icon={Calendar} label={producto.tipo === "Vuelo" ? "Regreso" : "Salida"} value={formatFechaCorta(reserva.fecha_fin)} />
+              {paquete && <DetailRow icon={Clock} label="Duración" value={`${paquete.duracion_dias} días`} />}
+              <DetailRow icon={Users} label="Viajeros" value={`${reserva.numero_personas} persona${reserva.numero_personas === 1 ? "" : "s"}`} />
             </div>
           </section>
 
@@ -572,6 +646,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
               botón "Ver habitaciones y servicios" en el footer; siendo esto el
               corazón de lo que el cliente realmente compró, se cargan y
               muestran de entrada, igual que el resto de esta ficha. */}
+          {(producto.tipo !== "Vuelo" || habitaciones.length > 0) && (
           <section>
             <h3 className={section}><BedDouble className="w-3.5 h-3.5" /> Habitaciones</h3>
             <div className="space-y-2">
@@ -597,6 +672,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
               )}
             </div>
           </section>
+          )}
 
           <section>
             <h3 className={section}><Sparkles className="w-3.5 h-3.5" /> Servicios adicionales</h3>
@@ -898,16 +974,18 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
   pax: "Pax",
   total: "Total",
   metodoPago: "Método de pago",
-  estadoPago: "Estado de pago",
+  estadoPago: "Cobro",
   estado: "Estado",
-  canal: "Canal",
+  canal: "Canal / asesor",
   asesor: "Asesor",
   actualizado: "Última actualización",
 };
 const ALL_COLUMNS = Object.keys(COLUMN_LABELS) as ColumnKey[];
 // Método de pago y última actualización arrancan ocultas para no saturar la
 // tabla por defecto — se activan desde el menú "Columnas" si se necesitan.
-const DEFAULT_HIDDEN: ColumnKey[] = ["metodoPago", "actualizado"];
+// "Asesor" se ve dentro de la columna Canal (ícono + quién la registró),
+// así la tabla cabe sin barra horizontal en una pantalla normal.
+const DEFAULT_HIDDEN: ColumnKey[] = ["metodoPago", "actualizado", "asesor"];
 
 interface Props {
   reservas: ReservaExtended[];
@@ -956,6 +1034,7 @@ export default function ModuleReservas({
   const [canalFilter,  setCanalFilter]  = useState<CanalFilter>("todos");
   const [asesorFilter, setAsesorFilter] = useState("todos");
   const [selectedId,   setSelectedId]   = useState<number | null>(null);
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const [tipoFilter,   setTipoFilter]   = useState<string>("todos");
   const [fechaDesde,   setFechaDesde]   = useState("");
   const [fechaHasta,   setFechaHasta]   = useState("");
@@ -1170,7 +1249,7 @@ export default function ModuleReservas({
     telefono: <PhoneCall  className="w-3.5 h-3.5 text-gold"  />,
   };
 
-  const thCls = "px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap";
+  const thCls = "px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap";
   const selectTriggerCls = "w-auto min-w-[140px] h-auto py-2 bg-card border-border text-xs";
 
   return (
@@ -1190,13 +1269,44 @@ export default function ModuleReservas({
         </button>
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <MetricCard label="Total"       value={totalReservas}        />
-        <MetricCard label="Confirmadas" value={counts.confirmada ?? 0} color="green" />
-        <MetricCard label="Pendientes"  value={counts.pendiente  ?? 0} color="amber" />
-        <MetricCard label="Canceladas"  value={counts.cancelada  ?? 0} color="red"   />
-        <MetricCard label="Cobrado (pagos aprobados)" value={`$${totalIngresos.toLocaleString("es-CO")}`} color="green" />
+      {/* Métricas: cada tarjeta filtra la tabla por ese estado */}
+      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:grid sm:grid-cols-3 sm:overflow-visible lg:grid-cols-5 [&::-webkit-scrollbar]:hidden">
+        {[
+          { label: "Todas", value: totalReservas.toLocaleString("es-CO"), estado: "todos", Icono: CalendarDays, tono: "bg-primary/10 text-primary" },
+          { label: "Pendientes", value: counts.pendiente ?? 0, estado: "pendiente", Icono: Clock, tono: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
+          { label: "Confirmadas", value: counts.confirmada ?? 0, estado: "confirmada", Icono: CheckCircle, tono: "bg-emerald-500/10 text-emerald-600" },
+          { label: "Canceladas", value: counts.cancelada ?? 0, estado: "cancelada", Icono: XCircle, tono: "bg-destructive/10 text-destructive" },
+        ].map(({ label, value, estado, Icono, tono }) => {
+          const activa = estadoFilter === estado;
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setEstadoFilter(estado as typeof estadoFilter)}
+              aria-pressed={activa}
+              className={`flex min-w-[9.5rem] shrink-0 items-center gap-3 rounded-2xl border bg-card p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:min-w-0 ${
+                activa ? "border-primary ring-2 ring-primary/20" : "border-border"
+              }`}
+            >
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tono}`}>
+                <Icono className="h-5 w-5" />
+              </span>
+              <span>
+                <span className="block text-2xl font-bold leading-tight text-foreground tabular-nums">{value}</span>
+                <span className="block text-xs text-muted-foreground">{label}</span>
+              </span>
+            </button>
+          );
+        })}
+        <div className="flex min-w-[11rem] shrink-0 items-center gap-3 rounded-2xl bg-gradient-to-br from-primary to-[color-mix(in_oklab,var(--primary)_65%,black)] p-4 text-primary-foreground shadow-sm sm:min-w-0">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
+            <Wallet className="h-5 w-5" />
+          </span>
+          <span>
+            <span className="block text-xl font-bold leading-tight tabular-nums">{pesosCOP(totalIngresos)}</span>
+            <span className="block text-xs text-white/80">Cobrado (pagos aprobados)</span>
+          </span>
+        </div>
       </div>
 
       {/* Búsqueda + estado */}
@@ -1250,25 +1360,36 @@ export default function ModuleReservas({
           ]}
         />
 
-        <div className="flex gap-1 bg-muted p-1 rounded-xl border border-border">
+        <div className="flex max-w-full gap-1 overflow-x-auto rounded-xl border border-border bg-muted p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {ESTADOS.map(e => (
             <button
               key={e}
               onClick={() => setEstadoFilter(e)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${
                 estadoFilter === e
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {e}
+              {e === "todos" ? "Todas" : ETIQUETA_ESTADO[e] ?? e}
             </button>
           ))}
         </div>
+
+        <button
+          type="button"
+          onClick={() => setFiltrosAbiertos((v) => !v)}
+          aria-expanded={filtrosAbiertos}
+          className={`flex items-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold md:hidden ${
+            hasActiveFilters ? "border-primary/40 bg-primary/5 text-primary" : "border-border bg-card text-muted-foreground"
+          }`}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" /> Filtros{hasActiveFilters ? " activos" : ""}
+        </button>
       </div>
 
-      {/* Filtros avanzados + columnas */}
-      <div className="flex items-center gap-2.5 flex-wrap">
+      {/* Filtros avanzados + columnas (en celular se despliegan con "Filtros") */}
+      <div className={`${filtrosAbiertos ? "flex" : "hidden"} md:flex items-center gap-2.5 flex-wrap`}>
         <Select value={pagoFilter} onValueChange={(v) => setPagoFilter(v as PagoFilter)}>
           <SelectTrigger className={selectTriggerCls}>
             <SelectValue placeholder="Estado de pago" />
@@ -1353,7 +1474,7 @@ export default function ModuleReservas({
           </button>
         )}
 
-        <div className="ml-auto">
+        <div className="ml-auto hidden md:block">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -1397,7 +1518,49 @@ export default function ModuleReservas({
         </div>
       ) : filtered.length > 0 ? (
         <>
-        <div className={`bg-card rounded-2xl shadow-sm border border-border overflow-hidden overflow-x-auto transition-opacity ${cargando ? "opacity-60" : ""}`} aria-busy={cargando}>
+        {/* Celular: tarjetas en vez de tabla (la tabla no cabe en 390 px). */}
+        <ul className={`space-y-2.5 md:hidden transition-opacity ${cargando ? "opacity-60" : ""}`} aria-busy={cargando}>
+          {slice.map(r => {
+            const cl = clienteMap[r.id_cliente];
+            const prod = productoDe(r as ReservaConDatos, paqueteMap[r.id_paquete]);
+            const cobro = cobroDe(r as ReservaConDatos);
+            const nombreCliente = cl ? `${cl.nombre} ${cl.apellido}` : r.cliente_nombre ?? `Cliente #${r.id_cliente}`;
+            return (
+              <li key={r.id_reserva}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(r.id_reserva)}
+                  className="w-full rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-shadow active:shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">{nombreCliente}</p>
+                      <p className="text-[11px] text-muted-foreground">Reserva #{r.id_reserva}</p>
+                    </div>
+                    <EstadoBadge estado={r.estado} />
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-foreground">
+                    <prod.Icono className="h-3.5 w-3.5 shrink-0 text-primary" />
+                    <span className="truncate font-medium">{prod.nombre}</span>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{formatFechaCorta(r.fecha_inicio)}</span>
+                    <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{r.numero_personas}</span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+                    <span className="text-sm font-bold text-foreground">{r.precio_total != null ? pesosCOP(r.precio_total) : "—"}</span>
+                    <span className="flex items-center gap-2">
+                      {cobro.saldo > 0 && <span className="text-[11px] text-muted-foreground">Saldo {pesosCOP(cobro.saldo)}</span>}
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cobro.clase}`}>{cobro.etiqueta}</span>
+                    </span>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className={`hidden md:block bg-card rounded-2xl shadow-sm border border-border overflow-hidden overflow-x-auto transition-opacity ${cargando ? "opacity-60" : ""}`} aria-busy={cargando}>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 border-b border-border">
               <tr>
@@ -1420,35 +1583,37 @@ export default function ModuleReservas({
               {slice.map(r => {
                 const cl = clienteMap[r.id_cliente];
                 const pk = paqueteMap[r.id_paquete];
-                const pg = pagoMap[r.id_reserva];
+                const pg = mejorPago(r.pagos) ?? pagoMap[r.id_reserva];
                 const asesor = r.id_empleado != null ? empleadoMap[r.id_empleado] : undefined;
+                const prod = productoDe(r as ReservaConDatos, pk);
+                const cobro = cobroDe(r as ReservaConDatos);
                 return (
                   <tr
                     key={r.id_reserva}
                     onClick={() => setSelectedId(r.id_reserva)}
                     className="hover:bg-accent transition-colors cursor-pointer group"
                   >
-                    <td className="px-4 py-3 font-semibold text-foreground">
+                    <td className="px-3 py-3 font-semibold text-foreground">
                       #{r.id_reserva}
                     </td>
 
                     {isVisible("cliente") && (
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3">
                         <div className="flex items-center gap-2 min-w-0">
                           {cl ? (
                             <>
                               <Avatar nombre={cl.nombre} apellido={cl.apellido} fotoUrl={resolveFotoUrl(cl.foto_perfil)} color="primary" />
                               <div className="min-w-0">
-                                <p className="text-xs font-semibold text-foreground truncate">
+                                <p className="text-xs font-semibold text-foreground truncate max-w-[180px]">
                                   {cl.nombre} {cl.apellido}
                                 </p>
-                                <p className="text-[11px] text-muted-foreground truncate">{cl.correo}</p>
+                                <p className="text-[11px] text-muted-foreground truncate max-w-[180px]">{cl.correo}</p>
                               </div>
                             </>
                           ) : r.cliente_nombre ? (
                             <div className="min-w-0">
-                              <p className="text-xs font-semibold text-foreground truncate">{r.cliente_nombre}</p>
-                              <p className="text-[11px] text-muted-foreground truncate">{r.cliente_correo ?? r.cliente_documento}</p>
+                              <p className="text-xs font-semibold text-foreground truncate max-w-[180px]">{r.cliente_nombre}</p>
+                              <p className="text-[11px] text-muted-foreground truncate max-w-[180px]">{r.cliente_correo ?? r.cliente_documento}</p>
                             </div>
                           ) : (
                             <span className="text-muted-foreground text-xs">#{r.id_cliente}</span>
@@ -1458,74 +1623,77 @@ export default function ModuleReservas({
                     )}
 
                     {isVisible("paquete") && (
-                      <td className="px-4 py-3">
-                        {pk ? (
-                          <div>
-                            <p className="text-xs font-medium text-foreground truncate max-w-[140px]">
-                              {pk.nombre_paquete}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {pk.duracion_dias}d · ${pk.precio_base.toLocaleString("es-CO")}
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground" title={prod.tipo}>
+                            <prod.Icono className="h-3.5 w-3.5" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate max-w-[150px]">{prod.nombre}</p>
+                            <p className="text-[11px] text-muted-foreground truncate max-w-[150px]">
+                              {prod.tipo}{r.destino && prod.tipo !== "Vuelo" ? ` · ${r.destino}` : ""}
                             </p>
                           </div>
-                        ) : r.hotel_nombre ? (
-                          <div>
-                            <p className="text-xs font-medium text-foreground truncate max-w-[140px]">
-                              {r.hotel_nombre}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">Reserva directa</p>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">#{r.id_paquete}</span>
-                        )}
+                        </div>
                       </td>
                     )}
 
                     {isVisible("fechas") && (
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">
                         <p>{formatFechaCorta(r.fecha_inicio)}</p>
                         <p className="text-[11px] text-muted-foreground/70">→ {formatFechaCorta(r.fecha_fin)}</p>
                       </td>
                     )}
 
                     {isVisible("pax") && (
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{r.numero_personas}</td>
+                      <td className="px-3 py-3 text-xs text-muted-foreground">{r.numero_personas}</td>
                     )}
 
                     {isVisible("total") && (
-                      <td className="px-4 py-3 text-xs font-semibold text-foreground whitespace-nowrap">
+                      <td className="px-3 py-3 text-xs font-semibold text-foreground whitespace-nowrap">
                         {r.precio_total != null ? `$${r.precio_total.toLocaleString("es-CO")}` : "—"}
                       </td>
                     )}
 
                     {isVisible("metodoPago") && (
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">
                         {pg?.metodo_pago?.nombre_metodo ?? "—"}
                       </td>
                     )}
 
                     {isVisible("estadoPago") && (
-                      <td className="px-4 py-3">
-                        {pg ? <StatusBadge status={pg.estado} /> : <span className="text-xs text-muted-foreground">—</span>}
+                      <td className="px-3 py-3">
+                        <div className="w-[110px]">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${cobro.clase}`}>
+                            {cobro.etiqueta}
+                          </span>
+                          {pg && (pg.estado === "pendiente" || pg.estado === "procesando") && (
+                            <span className="ml-1 text-[10px] font-semibold text-amber-600" title="Hay un pago esperando revisión">• por revisar</span>
+                          )}
+                          <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${cobro.pct}%` }} />
+                          </div>
+                        </div>
                       </td>
                     )}
 
                     {isVisible("estado") && (
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3">
                         <EstadoBadge estado={r.estado} />
                       </td>
                     )}
 
                     {isVisible("canal") && (
-                      <td className="px-4 py-3">
-                        <span title={r.canal_origen ?? "web"}>
+                      <td className="px-3 py-3">
+                        <span className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground" title={r.canal_origen ?? "web"}>
                           {CANAL_ICON[r.canal_origen ?? "web"]}
+                          <span className="max-w-[90px] truncate">{asesor ? asesor.nombre : "Web"}</span>
                         </span>
                       </td>
                     )}
 
                     {isVisible("asesor") && (
-                      <td className="px-4 py-3 text-xs whitespace-nowrap">
+                      <td className="px-3 py-3 text-xs whitespace-nowrap">
                         {asesor ? (
                           <span className="text-foreground">{asesor.nombre} {asesor.apellido}</span>
                         ) : (
@@ -1535,12 +1703,12 @@ export default function ModuleReservas({
                     )}
 
                     {isVisible("actualizado") && (
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">
                         {r.fecha_ultima_actualizacion ? tiempoRelativo(r.fecha_ultima_actualizacion) : "—"}
                       </td>
                     )}
 
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3">
                       {!soloEmpleado && (
                       <button
                         aria-label={`Eliminar reserva #${r.id_reserva}`}
