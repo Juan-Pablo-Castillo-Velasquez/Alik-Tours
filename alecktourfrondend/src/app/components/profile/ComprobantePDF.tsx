@@ -190,7 +190,7 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
       drawRow(
         "Plan / Paquete Contratado",
         detalle.paquete.nombre_paquete ||
-          `Paquete Turístico #${detalle.id_paquete}`,
+          "Paquete turístico",
         y,
         0,
       );

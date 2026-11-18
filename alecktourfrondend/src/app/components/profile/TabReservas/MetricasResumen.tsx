@@ -9,7 +9,7 @@ interface Props {
 export default function MetricasResumen({ counts }: Props) {
   const items = [
     {
-      label: "Total Procesadas",
+      label: "Reservas",
       value: counts.todas,
       color: "text-primary border-primary/20 bg-primary/5",
       icon: TrendingUp,
@@ -22,7 +22,7 @@ export default function MetricasResumen({ counts }: Props) {
       icon: CheckCircle,
     },
     {
-      label: "En Espera",
+      label: "Por confirmar",
       value: counts.pendiente,
       color:
         "text-warning border-warning/20 bg-warning/5",
@@ -39,8 +39,8 @@ export default function MetricasResumen({ counts }: Props) {
   return (
     <section>
       <SectionHeader
-        title="Métricas del perfil"
-        subtitle="Resumen volumétrico de solicitudes"
+        title="Tus reservas en números"
+        subtitle="Cómo van tus viajes con nosotros"
         icon={TrendingUp}
       />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

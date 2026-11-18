@@ -1,3 +1,4 @@
+import { nombreReserva } from "../../perfilUtils";
 import { Plane, Sunrise, Sunset } from "lucide-react";
 import { fmt } from "../utils";
 
@@ -21,13 +22,13 @@ export default function HeaderResumen({ proxima, diasRestantes, noches }: Props)
       <div className="relative flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-            Próximo itinerario
+            Tu próximo viaje
           </span>
           <h3 className="text-xl font-bold tracking-tight leading-tight text-foreground truncate">
-            Paquete Turístico #{proxima.id_paquete}
+            {nombreReserva(proxima)}
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Identificador de Reserva: #{proxima.id_reserva}
+            Reserva #{proxima.id_reserva}
           </p>
         </div>
         <div className="text-center bg-primary rounded-xl px-3.5 py-2 shadow-sm shrink-0">

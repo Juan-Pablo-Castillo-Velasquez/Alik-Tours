@@ -1,11 +1,12 @@
 import { ShieldAlert } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import Footer from "../components/Footer";
-import HalloweenAccentDiscreto from "../components/HalloweenAccentDiscreto";
 import Navbar from "../components/Navbar";
-import ProfileSidebar from "../components/profile/ProfileSidebar";
+import ProfileHero from "../components/profile/ProfileHero";
+import ProfileSidebar, { PerfilTabsMovil } from "../components/profile/ProfileSidebar";
+import TabInicio from "../components/profile/TabInicio";
 import TabCuenta from "../components/profile/TabCuenta";
 import TabFacturas from "../components/profile/TabFacturas";
 import TabFavoritos from "../components/profile/TabFavoritos";
@@ -14,8 +15,8 @@ import TabMetodosPago from "../components/profile/TabMetodosPago";
 import TabPreferencias from "../components/profile/TabPreferencias";
 import TabReservas from "../components/profile/TabReservas";
 import { useAuth } from "../context/AuthContext";
-import { useTema } from "../context/TemaContext";
 import { ClienteResponse, clienteService } from "../services/cliente.service";
+import { mensajeChatService } from "../services/mensajeChat.service";
 import {
   MetodoPagoGuardado,
   metodoPagoGuardadoService,
@@ -39,18 +40,11 @@ export default function Profile() {
   const { usuario, logout, isAuthenticated, updateUsuario } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  // El único lugar del perfil donde tiene sentido un acento de temporada:
-  // el banner superior es puramente decorativo (identidad de marca), a
-  // diferencia de TabCuenta (datos/seguridad de la cuenta) -- ahí nunca
-  // se agrega nada de esto, mismo criterio de "lejos de lo transaccional"
-  // que ya se aplicó en HotelDetail.tsx/PackageDetail.tsx.
-  const { temaActivo } = useTema();
-  const esHalloween = temaActivo?.clave === "halloween";
   // Permite que otras pantallas (p.ej. el wizard de /preferences al
   // terminar) vuelvan directo a una pestaña específica en vez de caer
   // siempre en "reservas" — ver PreferencesForm.tsx handleFinish.
   const [activeTab, setActiveTab] = useState(
-    () => (location.state as { tab?: string } | null)?.tab ?? "reservas",
+    () => (location.state as { tab?: string } | null)?.tab ?? "inicio",
   );
   // Deep-link desde la campana de notificaciones (NotificacionesBell) a una
   // reserva puntual — se resincroniza en el efecto de abajo porque, si ya
@@ -160,6 +154,39 @@ export default function Profile() {
       .finally(() => setLoading(false));
   }, [usuario]);
 
+  // Mensajes sin leer: lo muestran el menú (escritorio y celular) y la
+  // pestaña Inicio. Un solo sondeo cada 18 s para todo el perfil.
+  const [noLeidosMensajes, setNoLeidosMensajes] = useState(0);
+  const noLeidosRef = useRef(0);
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const cargar = () =>
+      mensajeChatService
+        .getNoLeidos()
+        .then(({ no_leidos }) => {
+          if (no_leidos !== noLeidosRef.current) {
+            noLeidosRef.current = no_leidos;
+            setNoLeidosMensajes(no_leidos);
+          }
+        })
+        .catch(() => {});
+    cargar();
+    const intervalo = setInterval(cargar, 18000);
+    return () => clearInterval(intervalo);
+  }, [isAuthenticated]);
+
+  const irATab = (tab: string) => {
+    cambiarTabDesdeSidebar(tab);
+    if (!requiereMetodoPago || tab === "metodos-pago") {
+      document.getElementById("contenido-perfil")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+  const verReserva = (id: number) => {
+    if (requiereMetodoPago) return;
+    setReservaIdInicial(id);
+    setActiveTab("reservas");
+  };
+
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -170,46 +197,64 @@ export default function Profile() {
     <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
       <Navbar />
 
-      {/* ── Banner Superior con la identidad Granate Agencia --
-          más bajo que antes (h-28 en vez de h-40) para que el peso visual
-          de la página lo lleve el contenido real (itinerario, reservas),
-          no una franja sólida de color -- ver el mismo criterio aplicado
-          en HeaderResumen.tsx / ProfileSidebar.tsx. ── */}
-      <div className="banner-textured h-28 relative">
-        <div className="absolute inset-0 bg-black/5 dark:bg-black/20" />
-        {/* Efectos sutiles de fondo para aportar dinamismo visual */}
-        <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-white/5 blur-2xl pointer-events-none" />
-        <div className="absolute top-8 left-1/4 w-32 h-32 rounded-full bg-white/5 blur-xl pointer-events-none" />
-        {/* Único acento de temporada de esta página. Variante "foto" (no
-            telaraña/murciélago/calabaza): esas se dibujan con
-            text-primary, que sobre este banner (ya en gradiente
-            --primary, ver .banner-textured en theme.css) casi no se
-            notaría -- el marco blanco tipo polaroid sí contrasta contra
-            cualquier fondo de color. */}
-        {esHalloween && (
-          <HalloweenAccentDiscreto variante="foto" posicion="bottom-right" tamano="sm" />
-        )}
-      </div>
+      <ProfileHero
+        usuario={usuario}
+        clienteData={clienteData}
+        reservas={reservas}
+        bloqueado={requiereMetodoPago}
+        onIr={irATab}
+      />
 
-      {/* ── Contenedor Principal ── */}
-      <div className="max-w-7xl mx-auto px-4 -mt-10 pb-16 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Barra Lateral de Usuario */}
-          <aside className="lg:col-span-1">
+      {/* ── Contenido: menú lateral en escritorio, pestañas deslizables en celular ── */}
+      <div className="mx-auto max-w-7xl px-4 pb-16 pt-6 lg:pt-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[250px_minmax(0,1fr)]">
+          <aside className="hidden lg:block">
             <ProfileSidebar
-              usuario={usuario}
               clienteData={clienteData}
-              reservas={reservas}
               activeTab={tabEfectiva}
               setActiveTab={cambiarTabDesdeSidebar}
               onLogout={handleLogout}
               bloqueado={requiereMetodoPago}
+              noLeidosMensajes={noLeidosMensajes}
             />
           </aside>
 
           {/* Área de Contenido Dinámico */}
-          <main className="lg:col-span-3 mt-4 lg:mt-6">
+          <main id="contenido-perfil" className="min-w-0 scroll-mt-24">
+            <PerfilTabsMovil
+              activeTab={tabEfectiva}
+              setActiveTab={cambiarTabDesdeSidebar}
+              bloqueado={requiereMetodoPago}
+              noLeidosMensajes={noLeidosMensajes}
+            />
             <AnimatePresence mode="wait">
+              {tabEfectiva === "inicio" && (
+                <motion.div
+                  key="inicio"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {loading ? (
+                    <div className="space-y-4" aria-label="Cargando tu perfil">
+                      <div className="h-72 animate-pulse rounded-3xl bg-muted" />
+                      <div className="h-40 animate-pulse rounded-3xl bg-muted" />
+                    </div>
+                  ) : (
+                  <TabInicio
+                    reservas={reservas}
+                    clienteData={clienteData}
+                    tienePreferencias={!!preferencias}
+                    idCliente={usuario?.id_cliente}
+                    noLeidosMensajes={noLeidosMensajes}
+                    onIr={irATab}
+                    onVerReserva={verReserva}
+                    onHablarDeReserva={hablarDeReserva}
+                  />
+                  )}
+                </motion.div>
+              )}
               {tabEfectiva === "reservas" && (
                 <motion.div
                   key="reservas"

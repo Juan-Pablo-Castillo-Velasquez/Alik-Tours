@@ -63,6 +63,13 @@ Nuevas pruebas: `test_busqueda_reservas_panel_api.py` (acceso entre roles, búsq
 - **Conversión:** ahora cuenta también las reservas finalizadas, que también llegaron a confirmarse.
 - **Panel en celular:** el menú lateral arranca cerrado y se abre como cajón superpuesto; la ventana de bienvenida publicitaria ya no aparece en el panel.
 
+### Perfil del cliente (17 nov. 2026)
+
+- **Nueva pestaña Inicio** (la que abre por defecto): próximo viaje con cuenta regresiva, avance del pago y botón para pagar el saldo; pendientes reales (saldos, mensajes nuevos, datos incompletos, preferencias); accesos rápidos; paquetes recomendados del catálogo (ordenados según las preferencias del cliente cuando las tiene) y ayuda por WhatsApp o la guía de reserva.
+- **Cabecera de bienvenida** con iniciales o foto, antigüedad como cliente, viajes realizados, próximos y saldo por pagar.
+- **Navegación cómoda en celular:** pestañas deslizables fijas bajo el menú en vez de la lista larga antes del contenido. En escritorio, menú lateral más limpio (ya no se cortaba «Mi cuenta»).
+- **Textos claros:** se retiraron «Paquete #» y «Paquete Turístico #» (ahora se usa el nombre del paquete, hotel o vuelo) y frases técnicas como «Resumen volumétrico de solicitudes».
+
 ## 6. Pendientes
 - **Formularios del panel** (hoteles, paquetes, vuelos, usuarios): el backend valida y limita, pero el frontend aún no usa el patrón de errores bajo cada campo.
 - **Comprobantes antiguos:** los que se subieron antes de este cambio estaban en el disco de Render y no se pueden recuperar si ya hubo un despliegue.

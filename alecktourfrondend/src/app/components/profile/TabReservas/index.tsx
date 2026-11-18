@@ -302,7 +302,7 @@ export default function TabReservas({
           Mis Reservas
         </h1>
         <p className="text-muted-foreground text-sm mt-0.5">
-          Monitorea y gestiona el estado de tus itinerarios contratados
+          Revisa tus viajes, paga tus saldos y descarga tus comprobantes
         </p>
       </div>
 
@@ -338,8 +338,8 @@ export default function TabReservas({
             vista === "calendario" ? (
               <section>
                 <SectionHeader
-                  title="Cronograma más cercano"
-                  subtitle="Control de tiempo real para tu próximo servicio"
+                  title="Cuenta regresiva"
+                  subtitle="Así se ve el calendario de tu próximo viaje"
                   icon={Plane}
                 />
                 <CalendarioViaje
