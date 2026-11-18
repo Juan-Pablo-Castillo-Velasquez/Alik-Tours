@@ -685,6 +685,17 @@ class ReservaPanelResponse(ReservaResponse):
     cliente_correo: str | None = None
 
 
+class TotalesBusquedaReservas(BaseModel):
+    """Cifras de todo el resultado filtrado (no solo la página actual)."""
+
+    reservas: int
+    viajeros: int
+    monto_total: float
+    cobrado: float
+    por_cobrar: float
+    con_saldo: int
+
+
 class ReservasPaginaResponse(BaseModel):
     items: list[ReservaPanelResponse]
     total: int
@@ -693,3 +704,5 @@ class ReservasPaginaResponse(BaseModel):
     # Conteo de TODAS las reservas por estado (para las tarjetas del panel,
     # no depende de los filtros aplicados).
     conteos: dict[str, int]
+    # Solo cuando se pide con ?con_totales=true (al cambiar los filtros).
+    totales: TotalesBusquedaReservas | None = None

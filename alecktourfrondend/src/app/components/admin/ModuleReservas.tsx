@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import {
   PlusCircle, Search, Trash2, X, User, Package,
   CreditCard, Calendar, Users, Phone, Mail, MapPin,
@@ -73,12 +73,22 @@ export interface ReservaExtended extends Reserva {
   tipo_producto?: string | null;
 }
 
+interface TotalesBusqueda {
+  reservas: number;
+  viajeros: number;
+  monto_total: number;
+  cobrado: number;
+  por_cobrar: number;
+  con_saldo: number;
+}
+
 interface PaginaReservas {
   items: ReservaExtended[];
   total: number;
   pagina: number;
   por_pagina: number;
   conteos: Record<string, number>;
+  totales?: TotalesBusqueda | null;
 }
 
 const POR_PAGINA_RESERVAS = 15;
@@ -207,6 +217,25 @@ export function cuandoViaja(inicio?: string | null, fin?: string | null): string
   if (fin && parse(fin) >= hoy) return "En curso";
   return "Ya viajó";
 }
+
+function nochesEntre(inicio?: string | null, fin?: string | null): number | null {
+  if (!inicio || !fin) return null;
+  const a = new Date(`${inicio.slice(0, 10)}T12:00:00`).getTime();
+  const b = new Date(`${fin.slice(0, 10)}T12:00:00`).getTime();
+  const n = Math.round((b - a) / 86_400_000);
+  return n >= 0 ? n : null;
+}
+
+/** "2 adultos, 1 niño" o "3 personas" si la reserva no trae el desglose. */
+function textoViajeros(r: { numero_personas: number; adultos?: number | null; ninos?: number | null; infantes?: number | null }): string {
+  const partes: string[] = [];
+  if (r.adultos) partes.push(`${r.adultos} adulto${r.adultos === 1 ? "" : "s"}`);
+  if (r.ninos) partes.push(`${r.ninos} niño${r.ninos === 1 ? "" : "s"}`);
+  if (r.infantes) partes.push(`${r.infantes} infante${r.infantes === 1 ? "" : "s"}`);
+  return partes.length ? partes.join(", ") : `${r.numero_personas} persona${r.numero_personas === 1 ? "" : "s"}`;
+}
+
+const NOMBRE_CANAL_ORIGEN: Record<string, string> = { web: "Sitio web", empleado: "Presencial (asesor)", telefono: "Teléfono" };
 
 const BORDE_ESTADO: Record<string, string> = {
   pendiente: "border-l-amber-400",
@@ -364,12 +393,14 @@ interface SidePanelProps {
    * ver sus pagos" en Admindashboard.tsx. Opcional: sin él, el enlace
    * "Ver en Pagos" simplemente no aparece. */
   onVerPagos?: (id: number) => void;
+  /** Abre otra reserva del mismo cliente en este panel. */
+  onAbrirReserva?: (id: number) => void;
   /** Asesor (no admin): puede ver todo y dejar notas, pero cambiar el estado
    * o eliminar es solo del administrador (lo valida también el backend). */
   soloLectura?: boolean;
 }
 
-function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReserva = [], reservasClienteCount, onClose, onDelete, onUpdateEstado, onVerPagos, soloLectura = false }: SidePanelProps) {
+function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReserva = [], reservasClienteCount, onClose, onDelete, onUpdateEstado, onVerPagos, onAbrirReserva, soloLectura = false }: SidePanelProps) {
   const solicitudPendiente = solicitudesReserva.find(s => s.estado === "pendiente");
 
   // reserva.precio_total ya viene calculado real desde el backend
@@ -409,6 +440,18 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
   // El panel puede montarse sin reserva (devuelve null más abajo).
   const producto = reserva ? productoDe(reserva as ReservaConDatos, paquete) : productoDe({ id_reserva: 0 } as ReservaConDatos);
   const [codigoCopiado, setCodigoCopiado] = useState(false);
+
+  // Historial del cliente: sus otras reservas y cuánto ha comprado en total.
+  const [historialCliente, setHistorialCliente] = useState<PaginaReservas | null>(null);
+  useEffect(() => {
+    if (!reserva) return;
+    let vigente = true;
+    setHistorialCliente(null);
+    apiFetch<PaginaReservas>(`/reservas/buscar?id_cliente=${reserva.id_cliente}&por_pagina=6&orden=creada&direccion=desc&con_totales=true`)
+      .then((d) => { if (vigente) setHistorialCliente(d); })
+      .catch(() => {});
+    return () => { vigente = false; };
+  }, [reserva?.id_cliente, reserva?.id_reserva]);
   const saldoReal = Math.max(totalReal - montoPagado, 0);
 
   // Nota interna del asesor — no cambia el estado de la reserva, solo deja
@@ -631,6 +674,38 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
         </button>
       </div>
 
+      {/* Recorrido: en qué punto está la reserva */}
+      {estadoLocal === "cancelada" ? (
+        <div className="mb-5 flex items-center gap-2 rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground">
+          <XCircle className="h-4 w-4" /> Esta reserva está cancelada.
+        </div>
+      ) : (
+        <ol className="mb-5 grid grid-cols-5 gap-1" aria-label="Recorrido de la reserva">
+          {(() => {
+            const hoy = new Date();
+            const hoyT = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
+            const t = (f?: string | null) => (f ? new Date(`${f.slice(0, 10)}T00:00:00`).getTime() : NaN);
+            const pasos = [
+              { label: "Reservada", hecho: true, detalle: (reserva as ReservaConDatos & { fecha_reserva?: string }).fecha_reserva ? formatFechaCorta((reserva as ReservaConDatos & { fecha_reserva?: string }).fecha_reserva) : "" },
+              { label: "Pagada", hecho: pct >= 100, parcial: pct > 0 && pct < 100, detalle: pct >= 100 ? "100%" : `${pct}%` },
+              { label: "Confirmada", hecho: estadoLocal === "confirmada" || estadoLocal === "finalizada", detalle: "" },
+              { label: "Viaja", hecho: hoyT >= t(reserva.fecha_inicio), detalle: formatFechaCorta(reserva.fecha_inicio) },
+              { label: "Finalizada", hecho: estadoLocal === "finalizada", detalle: formatFechaCorta(reserva.fecha_fin) },
+            ];
+            return pasos.map((p) => (
+              <li key={p.label} className="min-w-0">
+                <div className={`h-1.5 rounded-full ${p.hecho ? "bg-primary" : p.parcial ? "bg-gradient-to-r from-primary to-muted" : "bg-muted"}`} />
+                <p className={`mt-1.5 truncate text-[11px] font-semibold ${p.hecho ? "text-foreground" : "text-muted-foreground"}`}>
+                  {p.hecho && <CheckCircle className="mr-0.5 inline h-3 w-3 text-primary" />}
+                  {p.label}
+                </p>
+                {p.detalle && <p className="truncate text-[10px] text-muted-foreground">{p.detalle}</p>}
+              </li>
+            ));
+          })()}
+        </ol>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
 
         {/* Columna izquierda: contexto */}
@@ -699,6 +774,50 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
               reserva.hotel_nombre/destino ya vienen calculados desde el
               backend (ver Reserva.hotel_nombre en reserva_model.py) — se
               usan acá igual que ya se usan como fallback en la tabla. */}
+          {historialCliente?.totales && historialCliente.totales.reservas > 0 && (
+            <section>
+              <h3 className={section}><Receipt className="w-3.5 h-3.5" /> Historial del cliente</h3>
+              <div className={card}>
+                <div className="mb-3 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-lg bg-muted/50 py-2">
+                    <p className="text-base font-bold text-foreground">{historialCliente.totales.reservas}</p>
+                    <p className="text-[10px] text-muted-foreground">Reservas</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 py-2">
+                    <p className="text-base font-bold text-foreground">{pesosCOP(historialCliente.totales.monto_total)}</p>
+                    <p className="text-[10px] text-muted-foreground">Comprado</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 py-2">
+                    <p className="text-base font-bold text-foreground">{pesosCOP(historialCliente.totales.cobrado)}</p>
+                    <p className="text-[10px] text-muted-foreground">Pagado</p>
+                  </div>
+                </div>
+                <ul className="space-y-1">
+                  {historialCliente.items.filter((o) => o.id_reserva !== reserva.id_reserva).slice(0, 4).map((o) => {
+                    const po = productoDe(o as ReservaConDatos);
+                    return (
+                      <li key={o.id_reserva}>
+                        <button
+                          type="button"
+                          onClick={() => onAbrirReserva?.(o.id_reserva)}
+                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs hover:bg-muted"
+                        >
+                          <po.Icono className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="min-w-0 flex-1 truncate text-foreground">#{o.id_reserva} · {po.nombre}</span>
+                          <span className="shrink-0 text-muted-foreground">{formatFechaCorta(o.fecha_inicio)}</span>
+                          <EstadoBadge estado={o.estado} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {historialCliente.items.length <= 1 && (
+                    <li className="px-2 text-xs text-muted-foreground">Es su primera reserva con la agencia.</li>
+                  )}
+                </ul>
+              </div>
+            </section>
+          )}
+
           <section>
             <h3 className={section}>
               <producto.Icono className="w-3.5 h-3.5" /> {producto.tipo}
@@ -711,7 +830,18 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
               <DetailRow icon={Calendar} label={producto.tipo === "Vuelo" ? "Ida" : "Llegada"} value={formatFechaCorta(reserva.fecha_inicio)} />
               <DetailRow icon={Calendar} label={producto.tipo === "Vuelo" ? "Regreso" : "Salida"} value={formatFechaCorta(reserva.fecha_fin)} />
               {paquete && <DetailRow icon={Clock} label="Duración" value={`${paquete.duracion_dias} días`} />}
-              <DetailRow icon={Users} label="Viajeros" value={`${reserva.numero_personas} persona${reserva.numero_personas === 1 ? "" : "s"}`} />
+              {nochesEntre(reserva.fecha_inicio, reserva.fecha_fin) != null && (
+                <DetailRow icon={Clock} label="Noches" value={String(nochesEntre(reserva.fecha_inicio, reserva.fecha_fin))} />
+              )}
+              <DetailRow icon={Users} label="Viajeros" value={textoViajeros(reserva as ReservaConDatos & { adultos?: number | null; ninos?: number | null; infantes?: number | null })} />
+              {cuandoViaja(reserva.fecha_inicio, reserva.fecha_fin) && estadoLocal !== "cancelada" && (
+                <DetailRow icon={Plane} label="Cuándo" value={cuandoViaja(reserva.fecha_inicio, reserva.fecha_fin)} />
+              )}
+              {(reserva as { solicitudes_especiales?: string | null }).solicitudes_especiales && (
+                <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+                  <b>Solicitud del cliente:</b> {(reserva as { solicitudes_especiales?: string | null }).solicitudes_especiales}
+                </p>
+              )}
             </div>
           </section>
 
@@ -1116,6 +1246,8 @@ export default function ModuleReservas({
   const [page, setPage] = useState(0);
   const [orden, setOrden] = useState<{ campo: CampoOrden; dir: DireccionOrden }>({ campo: "id", dir: "desc" });
   const [datos, setDatos] = useState<PaginaReservas | null>(null);
+  const [totales, setTotales] = useState<TotalesBusqueda | null>(null);
+  const [expandida, setExpandida] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
   // Reserva abierta desde otro módulo (chat, dashboard) que no está en la
@@ -1294,11 +1426,15 @@ export default function ModuleReservas({
   useEffect(() => {
     let vigente = true;
     const params = paramsFiltros(page + 1, POR_PAGINA_RESERVAS);
+    // Los totales cubren TODO el resultado: se piden al llegar a la primera
+    // página (cualquier cambio de filtro vuelve a ella) y se conservan al paginar.
+    if (page === 0) params.set("con_totales", "true");
     setCargando(true);
     apiFetch<PaginaReservas>(`/reservas/buscar?${params.toString()}`)
       .then((d) => {
         if (!vigente) return;
         setDatos(d);
+        if (d.totales) setTotales(d.totales);
         setErrorCarga(null);
       })
       .catch((e: Error) => {
@@ -1675,6 +1811,25 @@ export default function ModuleReservas({
         )}
       </div>
 
+      {/* Totales de todo lo que coincide con los filtros (no solo esta página) */}
+      {totales && (
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-5">
+          {[
+            { label: "Reservas", valor: totales.reservas.toLocaleString("es-CO"), sub: hasActiveFilters ? "con estos filtros" : "en total" },
+            { label: "Viajeros", valor: totales.viajeros.toLocaleString("es-CO"), sub: "sin contar canceladas" },
+            { label: "Valor vendido", valor: pesosCOP(totales.monto_total), sub: "sin contar canceladas" },
+            { label: "Cobrado", valor: pesosCOP(totales.cobrado), sub: totales.monto_total > 0 ? `${Math.round((totales.cobrado / totales.monto_total) * 100)}% del valor vendido` : "pagos aprobados" },
+            { label: "Por cobrar", valor: pesosCOP(totales.por_cobrar), sub: `${totales.con_saldo} reserva${totales.con_saldo === 1 ? "" : "s"} con saldo`, destacado: totales.por_cobrar > 0 },
+          ].map((t) => (
+            <div key={t.label} className={`bg-card px-4 py-3 ${t.label === "Reservas" ? "col-span-2 sm:col-span-1" : ""}`}>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t.label}</p>
+              <p className={`mt-0.5 text-lg font-bold tabular-nums ${t.destacado ? "text-amber-600 dark:text-amber-400" : "text-foreground"}`}>{t.valor}</p>
+              <p className="text-[11px] text-muted-foreground">{t.sub}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Table */}
       {errorCarga ? (
         <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
@@ -1715,7 +1870,7 @@ export default function ModuleReservas({
                   </div>
                   <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
                     <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{formatFechaCorta(r.fecha_inicio)}</span>
-                    <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{r.numero_personas}</span>
+                    <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" />{textoViajeros(r as ReservaConDatos & { adultos?: number | null; ninos?: number | null; infantes?: number | null })}</span>
                     {r.estado !== "cancelada" && <span className="font-semibold text-primary">{cuandoViaja(r.fecha_inicio, r.fecha_fin)}</span>}
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
@@ -1758,14 +1913,30 @@ export default function ModuleReservas({
                 const asesor = r.id_empleado != null ? empleadoMap[r.id_empleado] : undefined;
                 const prod = productoDe(r as ReservaConDatos, pk);
                 const cobro = cobroDe(r as ReservaConDatos);
+                const rd = r as ReservaConDatos & {
+                  adultos?: number | null; ninos?: number | null; infantes?: number | null;
+                  solicitudes_especiales?: string | null; fecha_reserva?: string; estado_vuelo?: string | null;
+                };
+                const noches = nochesEntre(r.fecha_inicio, r.fecha_fin);
                 return (
+                  <Fragment key={r.id_reserva}>
                   <tr
-                    key={r.id_reserva}
                     onClick={() => setSelectedId(r.id_reserva)}
                     className="hover:bg-accent transition-colors cursor-pointer group"
                   >
                     <td className={`border-l-4 px-3 py-3 font-semibold text-foreground ${BORDE_ESTADO[r.estado] ?? "border-l-transparent"}`}>
-                      #{r.id_reserva}
+                      <span className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setExpandida(expandida === r.id_reserva ? null : r.id_reserva); }}
+                          aria-expanded={expandida === r.id_reserva}
+                          aria-label={`${expandida === r.id_reserva ? "Ocultar" : "Ver"} detalle rápido de la reserva #${r.id_reserva}`}
+                          className="-ml-1 rounded-md p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expandida === r.id_reserva ? "rotate-90" : ""}`} />
+                        </button>
+                        #{r.id_reserva}
+                      </span>
                     </td>
 
                     {isVisible("cliente") && (
@@ -1910,6 +2081,60 @@ export default function ModuleReservas({
                       </div>
                     </td>
                   </tr>
+                  {expandida === r.id_reserva && (
+                    <tr className="bg-muted/30">
+                      <td colSpan={99} className={`border-l-4 px-4 py-4 ${BORDE_ESTADO[r.estado] ?? "border-l-transparent"}`}>
+                        <div className="sticky left-4 grid max-w-[calc(100vw-22rem)] gap-4 text-xs sm:grid-cols-2 xl:grid-cols-4 [&>div]:min-w-0 [&>div]:break-words">
+                          <div className="space-y-1.5">
+                            <p className="font-semibold uppercase tracking-wide text-muted-foreground">Viaje</p>
+                            <p className="text-foreground"><Users className="mr-1 inline h-3.5 w-3.5 text-muted-foreground" />{textoViajeros(rd)}</p>
+                            <p className="text-foreground">
+                              <Calendar className="mr-1 inline h-3.5 w-3.5 text-muted-foreground" />
+                              {formatFechaCorta(r.fecha_inicio)} → {formatFechaCorta(r.fecha_fin)}
+                              {noches != null && <span className="text-muted-foreground"> · {noches} noche{noches === 1 ? "" : "s"}</span>}
+                            </p>
+                            {r.destino && <p className="text-foreground"><MapPin className="mr-1 inline h-3.5 w-3.5 text-muted-foreground" />{r.destino}</p>}
+                            {rd.estado_vuelo && <p className="text-foreground"><Plane className="mr-1 inline h-3.5 w-3.5 text-muted-foreground" />Vuelo: {rd.estado_vuelo.replace(/_/g, " ")}</p>}
+                          </div>
+                          <div className="space-y-1.5">
+                            <p className="font-semibold uppercase tracking-wide text-muted-foreground">Dinero</p>
+                            <p className="flex justify-between gap-2"><span className="text-muted-foreground">Total</span><b className="text-foreground">{pesosCOP(Number(r.precio_total ?? 0))}</b></p>
+                            <p className="flex justify-between gap-2"><span className="text-muted-foreground">Pagado</span><b className="text-emerald-600 dark:text-emerald-400">{pesosCOP(Number(rd.total_pagado ?? 0))}</b></p>
+                            <p className="flex justify-between gap-2"><span className="text-muted-foreground">Saldo</span><b className={cobro.saldo > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground"}>{pesosCOP(cobro.saldo)}</b></p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <p className="font-semibold uppercase tracking-wide text-muted-foreground">Pagos ({r.pagos?.length ?? 0})</p>
+                            {r.pagos && r.pagos.length > 0 ? (
+                              [...r.pagos].sort((a, b) => (b.fecha_pago ?? "").localeCompare(a.fecha_pago ?? "")).slice(0, 3).map((pp) => (
+                                <p key={pp.id_pago} className="flex items-center justify-between gap-2">
+                                  <span className="truncate text-foreground">
+                                    {pesosCOP(pp.monto)} · {pp.metodo_pago?.nombre_metodo ?? "Pago"}
+                                    <span className="text-muted-foreground"> · {pp.fecha_pago ? formatFechaCorta(pp.fecha_pago) : "—"}</span>
+                                  </span>
+                                  <StatusBadge status={pp.estado} />
+                                </p>
+                              ))
+                            ) : (
+                              <p className="text-muted-foreground">Sin pagos registrados</p>
+                            )}
+                          </div>
+                          <div className="space-y-1.5">
+                            <p className="font-semibold uppercase tracking-wide text-muted-foreground">Gestión</p>
+                            <p className="text-foreground">{NOMBRE_CANAL_ORIGEN[r.canal_origen ?? "web"]}{asesor ? ` · ${asesor.nombre} ${asesor.apellido}` : " · sin asesor"}</p>
+                            {rd.fecha_reserva && <p className="text-muted-foreground">Creada el {formatFechaCorta(rd.fecha_reserva)} ({tiempoRelativo(rd.fecha_reserva).toLowerCase()})</p>}
+                            {r.fecha_ultima_actualizacion && <p className="text-muted-foreground">Último cambio {tiempoRelativo(r.fecha_ultima_actualizacion).toLowerCase()}</p>}
+                            {rd.solicitudes_especiales && (
+                              <p className="rounded-lg bg-amber-500/10 px-2 py-1 text-amber-800 dark:text-amber-300">“{rd.solicitudes_especiales}”</p>
+                            )}
+                            <button type="button" onClick={() => setSelectedId(r.id_reserva)} className="pt-1 font-semibold text-primary hover:underline">
+                              Abrir ficha completa →
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -1950,6 +2175,7 @@ export default function ModuleReservas({
           reservasClienteCount={Math.max(reservas.filter(r => r.id_cliente === selectedReserva.id_cliente).length, 1)}
           onClose={() => setSelectedId(null)}
           onVerPagos={onVerPagos}
+          onAbrirReserva={(id) => setSelectedId(id)}
           onDelete={(id) => { onDelete(id); setSelectedId(null); }}
           onUpdateEstado={onUpdateEstado}
           soloLectura={soloEmpleado}

@@ -540,6 +540,7 @@ def buscar_reservas(
     direccion: str = Query("desc", pattern="^(asc|desc)$"),
     pagina: int = Query(1, ge=1, le=10000),
     por_pagina: int = Query(20, ge=1, le=100),
+    con_totales: bool = False,
     db: Session = Depends(get_db),
     staff_id: int = Depends(require_empleado),
 ):
@@ -548,18 +549,21 @@ def buscar_reservas(
     cada rol puede modificar lo controlan los endpoints de escritura."""
     if fecha_desde and fecha_hasta and fecha_hasta < fecha_desde:
         raise HTTPException(status_code=422, detail="fecha_hasta debe ser igual o posterior a fecha_desde")
+    filtros = {
+        "q": q,
+        "estado": estado,
+        "estado_pago": estado_pago,
+        "canal": canal,
+        "tipo_producto": tipo_producto,
+        "id_empleado": id_empleado,
+        "sin_asesor": sin_asesor,
+        "id_cliente": id_cliente,
+        "fecha_desde": fecha_desde,
+        "fecha_hasta": fecha_hasta,
+    }
     items, total = ReservaRepository.buscar(
         db,
-        q=q,
-        estado=estado,
-        estado_pago=estado_pago,
-        canal=canal,
-        tipo_producto=tipo_producto,
-        id_empleado=id_empleado,
-        sin_asesor=sin_asesor,
-        id_cliente=id_cliente,
-        fecha_desde=fecha_desde,
-        fecha_hasta=fecha_hasta,
+        **filtros,
         orden=orden,
         direccion=direccion,
         pagina=pagina,
@@ -579,6 +583,7 @@ def buscar_reservas(
         pagina=pagina,
         por_pagina=por_pagina,
         conteos=ReservaRepository.conteos_por_estado(db),
+        totales=ReservaRepository.totales_busqueda(db, **filtros) if con_totales else None,
     )
 
 

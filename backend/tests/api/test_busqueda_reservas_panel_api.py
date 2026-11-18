@@ -161,3 +161,23 @@ def test_el_asesor_no_puede_cambiar_estado_ni_borrar(client, asesor, datos):
     id_reserva = datos["reservas"][0].id_reserva
     assert client.put(f"/api/reservas/{id_reserva}", json={"estado": "confirmada"}, headers=asesor).status_code == 403
     assert client.delete(f"/api/reservas/{id_reserva}", headers=asesor).status_code == 403
+
+
+def test_totales_de_todo_el_resultado_filtrado(client, asesor, datos):
+    # Cuatro reservas de hotel de 200.000; una cancelada (no suma), una pagada.
+    d = _buscar(client, asesor, con_totales="true", por_pagina=1)
+    assert len(d["items"]) == 1  # la página es de 1, los totales son de todo
+    t = d["totales"]
+    assert t["reservas"] == 4
+    assert t["viajeros"] == 6
+    assert t["monto_total"] == 600000
+    assert t["cobrado"] == 400000
+    # Pendiente (200.000) y la otra confirmada (200.000); la pagada no debe.
+    assert t["por_cobrar"] == 400000
+    assert t["con_saldo"] == 2
+
+
+def test_totales_respetan_los_filtros_y_son_opcionales(client, asesor, datos):
+    assert _buscar(client, asesor)["totales"] is None
+    t = _buscar(client, asesor, con_totales="true", estado="pendiente")["totales"]
+    assert t == {"reservas": 1, "viajeros": 2, "monto_total": 200000, "cobrado": 0, "por_cobrar": 200000, "con_saldo": 1}

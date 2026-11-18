@@ -401,7 +401,7 @@ class ReservaRepository:
     }
 
     @staticmethod
-    def buscar(
+    def _consulta_busqueda(
         db: Session,
         *,
         q: str | None = None,
@@ -414,11 +414,7 @@ class ReservaRepository:
         id_cliente: int | None = None,
         fecha_desde=None,
         fecha_hasta=None,
-        orden: str = "id",
-        direccion: str = "desc",
-        pagina: int = 1,
-        por_pagina: int = 20,
-    ) -> tuple[list[Reserva], int]:
+    ):
         """Búsqueda paginada EN LA BASE DE DATOS para el panel (antes el
         panel descargaba todas las reservas y filtraba en el navegador).
 
@@ -523,7 +519,20 @@ class ReservaRepository:
             if numero.isdigit() and len(numero) <= 9:
                 condiciones.append(Reserva.id_reserva == int(numero))
             consulta = consulta.filter(or_(*condiciones))
+        return consulta
 
+    @staticmethod
+    def buscar(
+        db: Session,
+        *,
+        orden: str = "id",
+        direccion: str = "desc",
+        pagina: int = 1,
+        por_pagina: int = 20,
+        **filtros,
+    ) -> tuple[list[Reserva], int]:
+        """Listado paginado del panel (ver _consulta_busqueda para los filtros)."""
+        consulta = ReservaRepository._consulta_busqueda(db, **filtros)
         total = consulta.with_entities(func.count(Reserva.id_reserva)).scalar() or 0
         columna = ReservaRepository.ORDENES_BUSQUEDA.get(orden, Reserva.id_reserva)
         orden_sql = columna.asc() if direccion == "asc" else columna.desc()
@@ -535,6 +544,34 @@ class ReservaRepository:
             .all()
         )
         return items, total
+
+    @staticmethod
+    def totales_busqueda(db: Session, **filtros) -> dict:
+        """Cifras de TODO el resultado filtrado (no solo la página): cuánto
+        suman las reservas, cuánto se ha cobrado y cuánto falta. El total de
+        cada reserva sale de su desglose (propiedad precio_total), así que se
+        calcula en Python con las relaciones precargadas en pocas consultas.
+        Las canceladas no suman a lo vendido ni a lo que falta cobrar."""
+        reservas = (
+            ReservaRepository._consulta_busqueda(db, **filtros)
+            .options(
+                selectinload(Reserva.conceptos),
+                selectinload(Reserva.reserva_habitaciones),
+                selectinload(Reserva.reserva_servicios),
+                selectinload(Reserva.pagos),
+            )
+            .all()
+        )
+        vigentes = [r for r in reservas if r.estado != "cancelada"]
+        saldos = [r.saldo_pendiente for r in vigentes if r.estado in ("pendiente", "confirmada")]
+        return {
+            "reservas": len(reservas),
+            "viajeros": sum(r.numero_personas or 0 for r in vigentes),
+            "monto_total": round(sum(r.precio_total for r in vigentes), 2),
+            "cobrado": round(sum(r.total_pagado for r in reservas), 2),
+            "por_cobrar": round(sum(saldos), 2),
+            "con_saldo": sum(1 for x in saldos if x > 0),
+        }
 
     @staticmethod
     def conteos_por_estado(db: Session) -> dict[str, int]:
