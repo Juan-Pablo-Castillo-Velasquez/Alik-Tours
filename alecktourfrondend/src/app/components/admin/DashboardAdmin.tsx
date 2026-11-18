@@ -68,7 +68,7 @@ interface Props {
 const ZONA = "America/Bogota";
 
 // ---------- Formatos ----------
-const pesos = (v: number) => `$${Math.round(v).toLocaleString("es-CO")}`;
+export const pesos = (v: number) => `$${Math.round(v).toLocaleString("es-CO")}`;
 function pesosCortos(v: number): string {
   const a = Math.abs(v);
   if (a >= 1_000_000_000) return `$${(v / 1_000_000_000).toLocaleString("es-CO", { maximumFractionDigits: 1 })} mil M`;
@@ -84,7 +84,7 @@ const formatDia = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("es-CO", { day: "numeric", month: "short" }).replace(".", "");
 };
-function tiempoRelativo(fechaISO: string): string {
+export function tiempoRelativo(fechaISO: string): string {
   const fecha = new Date(fechaISO).getTime();
   if (Number.isNaN(fecha)) return "";
   const min = Math.floor((Date.now() - fecha) / 60000);
@@ -101,7 +101,7 @@ function duracion(horas: number): string {
   return `${horas.toLocaleString("es-CO", { maximumFractionDigits: 1 })} h`;
 }
 
-function saludo(): string {
+export function saludo(): string {
   const h = Number(new Date().toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: ZONA }));
   if (h < 12) return "Buenos días";
   if (h < 19) return "Buenas tardes";
@@ -149,13 +149,13 @@ function useContador(valor: number, duracion = 900) {
   return actual;
 }
 
-function Cifra({ valor, formato }: { valor: number; formato: (v: number) => string }) {
+export function Cifra({ valor, formato }: { valor: number; formato: (v: number) => string }) {
   const v = useContador(valor);
   return <>{formato(v)}</>;
 }
 
 // ---------- Piezas ----------
-function Tarjeta({
+export function Tarjeta({
   children,
   className = "",
   retraso = 0,
@@ -177,7 +177,7 @@ function Tarjeta({
   );
 }
 
-function Titulo({ icono: Icono, titulo, sub, accion }: { icono: typeof Package; titulo: string; sub?: string; accion?: ReactNode }) {
+export function Titulo({ icono: Icono, titulo, sub, accion }: { icono: typeof Package; titulo: string; sub?: string; accion?: ReactNode }) {
   return (
     <div className="mb-4 flex items-start justify-between gap-3">
       <div className="flex items-start gap-2.5">
@@ -194,7 +194,7 @@ function Titulo({ icono: Icono, titulo, sub, accion }: { icono: typeof Package; 
   );
 }
 
-function Variacion({ t, invertir = false }: { t: TendenciaValor; invertir?: boolean }) {
+export function Variacion({ t, invertir = false }: { t: TendenciaValor; invertir?: boolean }) {
   if (t.variacion_pct == null) {
     return <span className="text-[11px] italic text-muted-foreground">Sin mes anterior para comparar</span>;
   }
@@ -324,16 +324,19 @@ function TooltipOscuro({ active, payload, label }: { active?: boolean; payload?:
   );
 }
 
-function Ranking({
+export function Ranking({
   items,
   vacio,
   sufijo,
   onClick,
+  destacar,
 }: {
   items: ConteoNombre[];
   vacio: string;
   sufijo: (n: number) => string;
   onClick?: () => void;
+  /** Nombre a resaltar con la etiqueta "Tú" (panel del asesor). */
+  destacar?: string | null;
 }) {
   if (!items.length) return <p className="py-8 text-center text-sm text-muted-foreground">{vacio}</p>;
   const max = Math.max(...items.map((i) => i.total), 1);
@@ -353,6 +356,9 @@ function Ranking({
               </span>
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground group-hover:text-primary">
                 {it.nombre}
+                {destacar && it.nombre === destacar && (
+                  <span className="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">Tú</span>
+                )}
               </span>
               <span className="shrink-0 text-xs font-semibold tabular-nums text-muted-foreground">{sufijo(it.total)}</span>
             </div>

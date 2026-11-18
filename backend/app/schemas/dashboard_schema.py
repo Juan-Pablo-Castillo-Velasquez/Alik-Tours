@@ -179,3 +179,17 @@ class ResumenEmpleadoResponse(BaseModel):
     cancelaciones_aprobadas: int
     cancelaciones_rechazadas: int
     cancelaciones_total: int
+
+    # ---- Mis números del mes (Reserva.id_empleado = este asesor) ----
+    nombre: str | None = None
+    reservas_gestionadas_mes: int = 0
+    reservas_gestionadas_mes_anterior: int = 0
+    # Lo cobrado (pagos aprobados este mes) en reservas a cargo del asesor.
+    ventas_cobradas_mes: float = 0
+    # Mis reservas vigentes que aún tienen saldo por cobrar.
+    mis_reservas_con_saldo: int = 0
+    mis_reservas_pendientes: int = 0
+    # Puesto en el ranking de reservas del mes (1 = el que más registró).
+    # None si este mes no registró ninguna.
+    posicion_ranking_mes: int | None = None
+    asesores_activos_mes: int = 0

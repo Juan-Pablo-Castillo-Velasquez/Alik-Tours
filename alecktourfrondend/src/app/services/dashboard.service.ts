@@ -121,6 +121,15 @@ export interface ResumenEmpleado {
   cancelaciones_aprobadas: number;
   cancelaciones_rechazadas: number;
   cancelaciones_total: number;
+  // Mis números del mes (reservas con Reserva.id_empleado = este asesor).
+  nombre: string | null;
+  reservas_gestionadas_mes: number;
+  reservas_gestionadas_mes_anterior: number;
+  ventas_cobradas_mes: number;
+  mis_reservas_con_saldo: number;
+  mis_reservas_pendientes: number;
+  posicion_ranking_mes: number | null;
+  asesores_activos_mes: number;
 }
 
 export const dashboardService = {

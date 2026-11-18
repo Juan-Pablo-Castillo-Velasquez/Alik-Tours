@@ -527,8 +527,18 @@ def get_dashboard_resumen_empleado(db: Session = Depends(get_db), usuario_id: in
     usuario = db.query(Usuario).filter(Usuario.id_usuario == usuario_id).first()
     id_empleado = usuario.id_empleado if usuario else None
 
-    hoy = date.today()
-    inicio_dia = datetime.combine(hoy, datetime.min.time())
+    # "Hoy" en hora de Colombia, expresado en UTC sin zona (como guarda la
+    # BD las fechas de los mensajes). Antes date.today() del servidor (UTC)
+    # reiniciaba el contador de "respondidos hoy" a las 7 p. m.
+    ahora_local = datetime.now(ZONA_NEGOCIO)
+    inicio_dia = ahora_local.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(UTC).replace(tzinfo=None)
+    inicio_mes = (
+        ahora_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(UTC).replace(tzinfo=None)
+    )
+    inicio_mes_anterior_local = (ahora_local.replace(day=1) - timedelta(days=1)).replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0
+    )
+    inicio_mes_anterior = inicio_mes_anterior_local.astimezone(UTC).replace(tzinfo=None)
 
     # ---------- Chat: bandeja compartida, "pendientes" es el mismo total
     # para cualquier asesor (no hay asignación 1-a-1) ----------
@@ -584,10 +594,53 @@ def get_dashboard_resumen_empleado(db: Session = Depends(get_db), usuario_id: in
     # ---------- Operación propia (0 si el usuario no tiene perfil de
     # empleado vinculado -- ej. un admin puro) ----------
     reservas_gestionadas = 0
+    reservas_gestionadas_mes = 0
+    reservas_gestionadas_mes_anterior = 0
+    ventas_cobradas_mes = 0.0
+    mis_reservas_con_saldo = 0
+    mis_reservas_pendientes = 0
+    posicion_ranking_mes = None
+    nombre = None
     if id_empleado is not None:
-        reservas_gestionadas = (
-            db.query(func.count(Reserva.id_reserva)).filter(Reserva.id_empleado == id_empleado).scalar() or 0
+        empleado = db.query(Empleado).filter(Empleado.id_empleado == id_empleado).first()
+        nombre = empleado.nombre if empleado else None
+        mias = db.query(Reserva).filter(Reserva.id_empleado == id_empleado)
+        reservas_gestionadas = mias.count()
+        reservas_gestionadas_mes = mias.filter(Reserva.fecha_reserva >= inicio_mes).count()
+        reservas_gestionadas_mes_anterior = mias.filter(
+            Reserva.fecha_reserva >= inicio_mes_anterior, Reserva.fecha_reserva < inicio_mes
+        ).count()
+        ventas_cobradas_mes = float(
+            db.query(func.coalesce(func.sum(Pago.monto), 0))
+            .join(Reserva, Reserva.id_reserva == Pago.id_reserva)
+            .filter(Reserva.id_empleado == id_empleado, Pago.estado == "pagado", Pago.fecha_pago >= inicio_mes)
+            .scalar()
+            or 0
         )
+        vigentes_mias = (
+            mias.options(
+                selectinload(Reserva.conceptos),
+                selectinload(Reserva.reserva_habitaciones),
+                selectinload(Reserva.reserva_servicios),
+                selectinload(Reserva.pagos),
+            )
+            .filter(Reserva.estado.in_(["pendiente", "confirmada"]))
+            .all()
+        )
+        mis_reservas_con_saldo = sum(1 for r in vigentes_mias if r.saldo_pendiente > 0)
+        mis_reservas_pendientes = sum(1 for r in vigentes_mias if r.estado == "pendiente")
+
+    # Ranking del mes: reservas registradas por cada asesor.
+    conteo_mes = (
+        db.query(Reserva.id_empleado, func.count(Reserva.id_reserva))
+        .filter(Reserva.id_empleado.isnot(None), Reserva.fecha_reserva >= inicio_mes)
+        .group_by(Reserva.id_empleado)
+        .all()
+    )
+    asesores_activos_mes = len(conteo_mes)
+    if id_empleado is not None and reservas_gestionadas_mes > 0:
+        # Puesto = 1 + cuántos asesores registraron MÁS reservas (empates comparten puesto).
+        posicion_ranking_mes = 1 + sum(1 for _, n in conteo_mes if n > reservas_gestionadas_mes)
 
     # ---------- Cancelaciones: de TODA la agencia, no solo las que este
     # empleado resolvió (ver nota en ResumenEmpleadoResponse) ----------
@@ -610,4 +663,12 @@ def get_dashboard_resumen_empleado(db: Session = Depends(get_db), usuario_id: in
         cancelaciones_aprobadas=cancelaciones_aprobadas,
         cancelaciones_rechazadas=cancelaciones_rechazadas,
         cancelaciones_total=cancelaciones_total,
+        nombre=nombre,
+        reservas_gestionadas_mes=reservas_gestionadas_mes,
+        reservas_gestionadas_mes_anterior=reservas_gestionadas_mes_anterior,
+        ventas_cobradas_mes=round(ventas_cobradas_mes, 2),
+        mis_reservas_con_saldo=mis_reservas_con_saldo,
+        mis_reservas_pendientes=mis_reservas_pendientes,
+        posicion_ranking_mes=posicion_ranking_mes,
+        asesores_activos_mes=asesores_activos_mes,
     )

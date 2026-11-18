@@ -130,3 +130,56 @@ def test_sin_datos_no_inventa_cifras(client, crear_usuario):
 def test_un_cliente_no_ve_el_dashboard(client, crear_usuario):
     _, cliente = crear_usuario()
     assert client.get("/api/dashboard/resumen", headers=cliente).status_code == 403
+
+
+# ---------- Panel del asesor: GET /api/dashboard/resumen-empleado ----------
+
+
+@pytest.fixture
+def asesora_laura(db, crear_usuario, escenario):
+    """La asesora del escenario (2 reservas este mes, una pagada completa y
+    otra con abono) con su usuario vinculado, más un compañero con 3."""
+    laura = db.query(Empleado).filter(Empleado.cedula == "1010101010").one()
+    usuario, headers = crear_usuario(roles=("empleado",), con_cliente=False)
+    usuario.id_empleado = laura.id_empleado
+    pedro = Empleado(nombre="Pedro", apellido="Ruiz", cedula="2020202020")
+    db.add(pedro)
+    db.commit()
+    for i in range(3):
+        db.add(
+            Reserva(
+                id_cliente=escenario[0].id_cliente,
+                fecha_inicio=date.today() + timedelta(days=40 + i),
+                fecha_fin=date.today() + timedelta(days=42 + i),
+                numero_personas=1,
+                estado="pendiente",
+                id_empleado=pedro.id_empleado,
+            )
+        )
+    db.commit()
+    return headers
+
+
+def test_el_asesor_ve_sus_numeros_del_mes(client, asesora_laura):
+    r = client.get("/api/dashboard/resumen-empleado", headers=asesora_laura)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["nombre"] == "Laura"
+    assert d["reservas_gestionadas"] == 2
+    assert d["reservas_gestionadas_mes"] == 2
+    assert d["reservas_gestionadas_mes_anterior"] == 0
+    # Cobrado este mes en SUS reservas: 500.000 + 200.000 (el pendiente no cuenta).
+    assert d["ventas_cobradas_mes"] == 700000
+    # La confirmada con abono es la única de ella con saldo.
+    assert d["mis_reservas_con_saldo"] == 1
+    assert d["mis_reservas_pendientes"] == 0
+    # Pedro registró 3 este mes, ella 2: va de segunda entre 2 asesores.
+    assert d["posicion_ranking_mes"] == 2
+    assert d["asesores_activos_mes"] == 2
+
+
+def test_un_admin_sin_perfil_de_asesor_no_tiene_ranking(client, crear_usuario, escenario):
+    _, admin = crear_usuario(roles=("admin",), con_cliente=False)
+    d = client.get("/api/dashboard/resumen-empleado", headers=admin).json()
+    assert d["reservas_gestionadas_mes"] == 0 and d["ventas_cobradas_mes"] == 0
+    assert d["posicion_ranking_mes"] is None and d["nombre"] is None
