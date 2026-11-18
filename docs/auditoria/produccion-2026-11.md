@@ -54,9 +54,17 @@ Nuevas pruebas: `test_busqueda_reservas_panel_api.py` (acceso entre roles, búsq
 - **Datos reales en la publicidad:** se retiraron «hasta 12 cuotas sin intereses», los logos de tarjetas y «Hasta 30% OFF», que el flujo de reserva no ofrece. Ahora dice lo que el sitio hace: Nequi o PayPal en línea, pago con asesor y abonos.
 - **Guía «Cómo reservar»** (`/como-reservar`), enlazada desde el menú, el footer, la guía flotante, la ficha del paquete y una franja nueva en el inicio.
 
+### Dashboard comercial del admin (17 nov. 2026)
+
+- **Rediseño completo:** saludo con lo cobrado y las reservas de hoy, cartera por cobrar, alertas que abren el módulo ya filtrado, KPIs con tendencia real y minigráficos de 14 días, rendimiento comercial (6 meses o 14 días), embudo de conversión, ventas por producto, canales de venta, medios de pago, rankings de paquetes, hoteles y asesores del mes, próximos viajes y actividad reciente. Funciona en modo oscuro y con la decoración de temporada.
+- **Datos nuevos en `GET /api/dashboard/resumen`:** ingresos por mes, ventas por producto, reservas por canal, hoteles más reservados, asesores del mes, cartera por cobrar, ingresos y reservas de hoy. Todo calculado sobre las tablas reales (pruebas en `test_dashboard_resumen_api.py`).
+- **Corrección de zona horaria:** las series diarias y mensuales se agrupan con la hora de Colombia; antes lo que entraba después de las 7 p. m. contaba para el día siguiente.
+- **Menos consultas:** las series de 14 días y 6 meses pasaron de unas 40 consultas a 3.
+- **Conversión:** ahora cuenta también las reservas finalizadas, que también llegaron a confirmarse.
+- **Panel en celular:** el menú lateral arranca cerrado y se abre como cajón superpuesto; la ventana de bienvenida publicitaria ya no aparece en el panel.
+
 ## 6. Pendientes
 - **Formularios del panel** (hoteles, paquetes, vuelos, usuarios): el backend valida y limita, pero el frontend aún no usa el patrón de errores bajo cada campo.
-- **Dashboard del admin:** no se rediseñó (el rediseño completo se hizo en el del asesor).
 - **Comprobantes antiguos:** los que se subieron antes de este cambio estaban en el disco de Render y no se pueden recuperar si ya hubo un despliegue.
 
 ## 7. Desplegar en producción
