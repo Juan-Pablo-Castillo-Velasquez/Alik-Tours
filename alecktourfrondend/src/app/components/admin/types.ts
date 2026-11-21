@@ -37,7 +37,8 @@ export type Module =
   | "mi-cuenta"
   | "banners"
   | "temas"
-  | "mensajes";
+  | "mensajes"
+  | "iot";
 
 export interface Reserva {
   id_reserva: number;

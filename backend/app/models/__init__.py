@@ -15,6 +15,7 @@ from app.models.hotel_model import (
     ImagenHotel,
     TipoHabitacion,
 )
+from app.models.iot_model import DispositivoIoT, LecturaIoT
 from app.models.mensaje_chat_model import MensajeChat
 from app.models.metodo_pago_guardado_model import MetodoPagoGuardado
 from app.models.notificacion_model import Notificacion
@@ -47,6 +48,8 @@ from app.models.vuelo_model import OfertaVuelo, PaqueteVuelo
 # hasta que alguna ruta los importaba: la suite de pruebas las creaba o no
 # según el ORDEN de los tests, y el autogenerate de Alembic no las veía.
 __all__ = [
+    "DispositivoIoT",
+    "LecturaIoT",
     "Permiso",
     "RolPermiso",
     "Banner",

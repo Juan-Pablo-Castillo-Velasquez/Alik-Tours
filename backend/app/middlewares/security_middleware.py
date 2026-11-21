@@ -85,6 +85,9 @@ RATE_LIMIT_RULES: list[tuple[str, re.Pattern, str, int, int]] = [
     ("POST", re.compile(r"^/api/comunidad/publicaciones/?$"), "/publicar", 5, 3600),
     ("POST", re.compile(r"^/api/comunidad/(publicaciones|videos)/\d+/comentarios$"), "/comentar", 20, 600),
     ("POST", re.compile(r"^/api/resenas/?$"), "/resena", 5, 3600),
+    # Telemetría IoT: un dispositivo manda una lectura cada pocos segundos;
+    # más de 2 por segundo desde la misma IP es un error o un abuso.
+    ("POST", re.compile(r"^/api/iot/lecturas$"), "/iot-lecturas", 120, 60),
 ]
 
 

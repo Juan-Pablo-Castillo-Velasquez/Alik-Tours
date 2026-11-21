@@ -22,6 +22,7 @@ import ModuleUsuarios from "../components/admin/ModuleUsuarios";
 import ModuleRoles from "../components/admin/ModuleRoles";
 import ModulePagos, { type MetodoPago } from "../components/admin/ModulePagos";
 import ModuleActividad from "../components/admin/ModuleActividad";
+import ModuleIoT from "../components/admin/ModuleIoT";
 import ModuleConfiguracion from "../components/admin/ModuleConfiguracion";
 import ModuleMiCuenta from "../components/admin/ModuleMiCuenta";
 import AdminSidebar, { MODULOS_EMPLEADO } from "../components/admin/AdminSidebar";
@@ -920,6 +921,8 @@ export default function AdminDashboard() {
       />
     ),
     configuracion: <ModuleConfiguracion />,
+    // Prototipo IoT: se refresca solo cada 10 s.
+    iot: <ModuleIoT />,
     comunidad: <ModuleComunidad />,
     // Autosuficiente: trae sus ofertas con filtros y paginación del backend.
     vuelos: <ModuleVuelos />,
