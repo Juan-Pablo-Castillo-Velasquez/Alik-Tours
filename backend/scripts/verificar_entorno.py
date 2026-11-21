@@ -71,7 +71,14 @@ def check_env_file():
             print_success("Todas las variables requeridas presentes")
 
         # Verificar SECRET_KEY
-        if "SECRET_KEY=your-secret-key" in content or "SECRET_KEY=" in content:
+        # Antes: `"SECRET_KEY=" in content` era verdadero SIEMPRE que la
+        # variable existiera, así que el script la marcaba como faltante
+        # aunque estuviera bien (DEF-22). Ahora se mira el valor.
+        valor_secret = next(
+            (linea.split("=", 1)[1].strip() for linea in content.splitlines() if linea.startswith("SECRET_KEY=")),
+            "",
+        )
+        if not valor_secret or valor_secret == "your-secret-key" or len(valor_secret) < 32:
             print_error("SECRET_KEY no configurado. Generar con:")
             print(f'  {Colors.BLUE}python -c "import secrets; print(secrets.token_urlsafe(32))"{Colors.RESET}')
             return False

@@ -1,5 +1,7 @@
-from pydantic import field_validator
-from pydantic_settings import BaseSettings
+import sys
+
+from pydantic import ValidationError, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -48,8 +50,7 @@ class Settings(BaseSettings):
     # plan gratis desde septiembre de 2025, pero no el 443 de HTTPS).
     BREVO_API_KEY: str = ""
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env")
 
     @field_validator("SECRET_KEY")
     @classmethod
@@ -69,4 +70,31 @@ class Settings(BaseSettings):
         return v
 
 
-settings = Settings()
+def _cargar_settings() -> Settings:
+    """Carga la configuración y, si falta o sobra algo, explica qué hacer.
+
+    Sin esto, una variable faltante tumbaba el arranque con un traceback
+    largo de Pydantic. Ahora el proceso termina con un mensaje corto que
+    dice qué variable falta, en qué archivo ponerla y dónde está el ejemplo.
+    """
+    try:
+        return Settings()
+    except ValidationError as error:
+        lineas = []
+        for e in error.errors():
+            campo = ".".join(str(p) for p in e.get("loc", ())) or "configuración"
+            if e.get("type") == "missing":
+                lineas.append(f"  - {campo}: falta definirla")
+            else:
+                lineas.append(f"  - {campo}: {e.get('msg')}")
+        mensaje = (
+            "\n[AlekTours] No se pudo iniciar el backend: revisa las variables de entorno.\n"
+            + "\n".join(lineas)
+            + "\nCopia backend/.env.example a backend/.env (desarrollo) o defínelas en el hosting "
+            "(Render: Environment). Guía: docs/entrega-final/04-despliegue-y-variables.md\n"
+        )
+        print(mensaje, file=sys.stderr)
+        raise SystemExit(1) from None
+
+
+settings = _cargar_settings()
