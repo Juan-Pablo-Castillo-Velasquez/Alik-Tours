@@ -45,6 +45,19 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
+# translate() de PostgreSQL (búsqueda sin tildes de /vuelos/buscar): SQLite
+# no la trae, se registra una equivalente en cada conexión de prueba.
+@sa.event.listens_for(engine, "connect")
+def _registrar_translate(dbapi_conn, _registro):
+    def _translate(texto, desde, hacia):
+        if texto is None:
+            return None
+        return texto.translate(str.maketrans(desde, hacia))
+
+    dbapi_conn.create_function("translate", 3, _translate)
+
+
 # SQLite no soporta ARRAY (usado en preferencias_cliente.intereses --
 # ARRAY(String) genérico de sqlalchemy, no el de postgresql.dialects). Se
 # cambia a JSON solo para este motor de pruebas en memoria.

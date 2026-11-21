@@ -184,6 +184,28 @@ class OfertaVueloAdmin(OfertaVueloResponse):
     paquetes: list[dict] = []
 
 
+class FacetaVuelo(BaseModel):
+    nombre: str
+    total: int
+
+
+class FacetasBusquedaVuelos(BaseModel):
+    """Opciones para filtrar, calculadas sobre todas las ofertas vigentes."""
+
+    aerolineas: list[FacetaVuelo] = []
+    destinos: list[FacetaVuelo] = []
+    precio_min: float | None = None
+    precio_max: float | None = None
+
+
+class BusquedaVuelosPublica(BaseModel):
+    items: list[OfertaVueloResponse]
+    total: int
+    pagina: int
+    por_pagina: int
+    facetas: FacetasBusquedaVuelos
+
+
 class OfertasVueloPagina(BaseModel):
     items: list[OfertaVueloAdmin]
     total: int

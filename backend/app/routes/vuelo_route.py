@@ -15,6 +15,7 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.core.busqueda import coincide
 from app.core.cache import delete_pattern, get_cached, set_cached
 from app.core.database import get_db
 from app.core.deps import usuario_es_staff
@@ -24,6 +25,7 @@ from app.core.security import require_admin, require_empleado
 from app.models.reserva_model import Reserva
 from app.models.vuelo_model import OfertaVuelo, PaqueteVuelo
 from app.schemas.vuelo_schema import (
+    BusquedaVuelosPublica,
     EstadoOfertaUpdate,
     OfertasVueloPagina,
     OfertaVueloAdmin,
@@ -64,19 +66,38 @@ def _enriquecer(db: Session, oferta: OfertaVuelo, *, admin: bool = False) -> dic
     return datos
 
 
+# Búsqueda sin tildes ni mayúsculas: "bogota" encuentra "Bogotá" y "SAN
+# ANDRES" encuentra "San Andrés". translate() existe en PostgreSQL; las
+# pruebas con SQLite registran una equivalente (tests/conftest.py).
+
+
 def _filtrar(q, *, origen, destino, fecha_desde, fecha_hasta, aerolinea, texto=None):
     if origen:
-        like = f"%{origen.strip()}%"
-        q = q.filter(or_(OfertaVuelo.origen_ciudad.ilike(like), OfertaVuelo.origen_iata.ilike(like)))
+        q = q.filter(
+            coincide(
+                origen,
+                OfertaVuelo.origen_ciudad,
+                OfertaVuelo.origen_iata,
+                OfertaVuelo.origen_pais,
+                OfertaVuelo.origen_aeropuerto,
+            )
+        )
     if destino:
-        like = f"%{destino.strip()}%"
-        q = q.filter(or_(OfertaVuelo.destino_ciudad.ilike(like), OfertaVuelo.destino_iata.ilike(like)))
+        q = q.filter(
+            coincide(
+                destino,
+                OfertaVuelo.destino_ciudad,
+                OfertaVuelo.destino_iata,
+                OfertaVuelo.destino_pais,
+                OfertaVuelo.destino_aeropuerto,
+            )
+        )
     if fecha_desde:
         q = q.filter(OfertaVuelo.fecha_salida >= fecha_desde)
     if fecha_hasta:
         q = q.filter(OfertaVuelo.fecha_salida <= fecha_hasta)
     if aerolinea:
-        q = q.filter(OfertaVuelo.aerolinea.ilike(f"%{aerolinea.strip()}%"))
+        q = q.filter(coincide(aerolinea, OfertaVuelo.aerolinea))
     if texto:
         like = f"%{texto.strip()}%"
         q = q.filter(
@@ -127,6 +148,130 @@ def listar_ofertas_publicas(
     )
     ofertas = q.order_by(OfertaVuelo.fecha_salida, OfertaVuelo.id_oferta).offset(skip).limit(limit).all()
     data = jsonable_encoder([_enriquecer(db, o) for o in ofertas])
+    set_cached(cache_key, data, ttl_seconds=60)
+    return data
+
+
+ORDENES_VUELOS = {
+    "fecha": (OfertaVuelo.fecha_salida.asc(), OfertaVuelo.hora_salida.asc()),
+    "precio": (OfertaVuelo.precio_adulto.asc(), OfertaVuelo.fecha_salida.asc()),
+    "precio_desc": (OfertaVuelo.precio_adulto.desc(), OfertaVuelo.fecha_salida.asc()),
+}
+
+
+@router.get("/buscar", response_model=BusquedaVuelosPublica)
+def buscar_ofertas_publicas(
+    q: str | None = Query(None, max_length=100, description="Ciudad, código IATA, país, aerolínea o nombre"),
+    origen: str | None = Query(None, max_length=100),
+    destino: str | None = Query(None, max_length=100),
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
+    aerolinea: str | None = Query(None, max_length=100),
+    trayecto: str | None = Query(None, pattern="^(solo_ida|ida_regreso)$"),
+    solo_directos: bool = False,
+    precio_max: float | None = Query(None, gt=0),
+    orden: str = Query("fecha", pattern="^(fecha|precio|precio_desc)$"),
+    pagina: int = Query(1, ge=1, le=1000),
+    por_pagina: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    """Buscador público de /vuelos: filtra en la base de datos, sin tildes ni
+    mayúsculas, y devuelve el total y las opciones de filtro (aerolíneas,
+    destinos y rango de precios de lo que hay publicado). Cacheado 60 s."""
+    if fecha_desde and fecha_hasta and fecha_hasta < fecha_desde:
+        raise HTTPException(status_code=422, detail="La fecha final debe ser igual o posterior a la inicial")
+    cache_key = "vuelos:buscar:" + ":".join(
+        str(x or "").lower()
+        for x in (
+            q,
+            origen,
+            destino,
+            fecha_desde,
+            fecha_hasta,
+            aerolinea,
+            trayecto,
+            solo_directos,
+            precio_max,
+            orden,
+            pagina,
+            por_pagina,
+        )
+    )
+    cached = get_cached(cache_key)
+    if cached is not None:
+        return cached
+
+    hoy = date.today()
+    base = db.query(OfertaVuelo).filter(
+        OfertaVuelo.estado == "publicada",
+        # Los vuelos que solo se venden dentro de un paquete no salen en el buscador.
+        OfertaVuelo.venta_independiente.is_(True),
+        OfertaVuelo.fecha_salida >= hoy,
+        or_(OfertaVuelo.vigencia_hasta.is_(None), OfertaVuelo.vigencia_hasta >= hoy),
+    )
+    consulta = _filtrar(
+        base, origen=origen, destino=destino, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta, aerolinea=aerolinea
+    )
+    if q and q.strip():
+        consulta = consulta.filter(
+            coincide(
+                q,
+                OfertaVuelo.titulo,
+                OfertaVuelo.aerolinea,
+                OfertaVuelo.origen_ciudad,
+                OfertaVuelo.origen_iata,
+                OfertaVuelo.destino_ciudad,
+                OfertaVuelo.destino_iata,
+                OfertaVuelo.destino_pais,
+            )
+        )
+    if trayecto:
+        consulta = consulta.filter(OfertaVuelo.tipo_trayecto == trayecto)
+    if solo_directos:
+        consulta = consulta.filter(OfertaVuelo.escalas == 0)
+    if precio_max:
+        consulta = consulta.filter(OfertaVuelo.precio_adulto <= precio_max)
+
+    total = consulta.count()
+    ofertas = (
+        consulta.order_by(*ORDENES_VUELOS[orden], OfertaVuelo.id_oferta)
+        .offset((pagina - 1) * por_pagina)
+        .limit(por_pagina)
+        .all()
+    )
+
+    aerolineas = (
+        base.filter(OfertaVuelo.aerolinea.isnot(None), OfertaVuelo.aerolinea != "")
+        .with_entities(OfertaVuelo.aerolinea, func.count(OfertaVuelo.id_oferta))
+        .group_by(OfertaVuelo.aerolinea)
+        .order_by(func.count(OfertaVuelo.id_oferta).desc(), OfertaVuelo.aerolinea)
+        .all()
+    )
+    destinos = (
+        base.with_entities(OfertaVuelo.destino_ciudad, func.count(OfertaVuelo.id_oferta))
+        .group_by(OfertaVuelo.destino_ciudad)
+        .order_by(func.count(OfertaVuelo.id_oferta).desc(), OfertaVuelo.destino_ciudad)
+        .limit(8)
+        .all()
+    )
+    precio_min, precio_max_base = base.with_entities(
+        func.min(OfertaVuelo.precio_adulto), func.max(OfertaVuelo.precio_adulto)
+    ).one()
+
+    data = jsonable_encoder(
+        {
+            "items": [_enriquecer(db, o) for o in ofertas],
+            "total": total,
+            "pagina": pagina,
+            "por_pagina": por_pagina,
+            "facetas": {
+                "aerolineas": [{"nombre": n, "total": c} for n, c in aerolineas],
+                "destinos": [{"nombre": n, "total": c} for n, c in destinos],
+                "precio_min": float(precio_min) if precio_min is not None else None,
+                "precio_max": float(precio_max_base) if precio_max_base is not None else None,
+            },
+        }
+    )
     set_cached(cache_key, data, ttl_seconds=60)
     return data
 

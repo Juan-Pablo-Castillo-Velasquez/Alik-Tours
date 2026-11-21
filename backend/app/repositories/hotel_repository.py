@@ -1,9 +1,10 @@
 import unicodedata
 from datetime import date
 
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.busqueda import coincide
 from app.core.exceptions import HotelDependencyError, NotFoundError
 from app.models.hotel_model import (
     Caracteristica,
@@ -54,11 +55,9 @@ class HotelRepository:
 
         if q:
             # Búsqueda en la base de datos (panel de admin y buscador): por
-            # nombre, ciudad o país, sin distinguir mayúsculas.
-            patron = f"%{q}%"
-            query = query.filter(
-                or_(Hotel.nombre_hotel.ilike(patron), Hotel.ciudad.ilike(patron), Hotel.pais.ilike(patron))
-            )
+            # nombre, ciudad o país, sin distinguir mayúsculas ni tildes
+            # ("medellin" encuentra "Medellín"; antes ILIKE no lo hacía).
+            query = query.filter(coincide(q, Hotel.nombre_hotel, Hotel.ciudad, Hotel.pais))
 
         if fecha_checkin and fecha_checkout:
             # BUG real corregido: el buscador público (SearchBar/SearchResults)

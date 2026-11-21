@@ -161,7 +161,33 @@ export function hora(h?: string | null): string | null {
   return h ? h.slice(0, 5) : null;
 }
 
+export interface FacetaVuelo { nombre: string; total: number }
+export interface BusquedaVuelos {
+  items: OfertaVuelo[];
+  total: number;
+  pagina: number;
+  por_pagina: number;
+  facetas: { aerolineas: FacetaVuelo[]; destinos: FacetaVuelo[]; precio_min: number | null; precio_max: number | null };
+}
+export type OrdenVuelos = 'fecha' | 'precio' | 'precio_desc';
+export interface FiltrosBusquedaVuelos {
+  q?: string;
+  origen?: string;
+  destino?: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  aerolinea?: string;
+  trayecto?: 'solo_ida' | 'ida_regreso';
+  solo_directos?: boolean;
+  precio_max?: number;
+  orden?: OrdenVuelos;
+  pagina?: number;
+  por_pagina?: number;
+}
+
 export const vueloService = {
+  /** Buscador público: coincide sin tildes ni mayúsculas y trae facetas para los filtros. */
+  buscar: (filtros: FiltrosBusquedaVuelos = {}) => apiFetch<BusquedaVuelos>(`/vuelos/buscar${query({ ...filtros })}`),
   listarPublicas: (filtros: Omit<FiltrosOfertas, 'estado' | 'q' | 'pagina' | 'por_pagina'> & { solo_independientes?: boolean; limit?: number; skip?: number } = {}) =>
     apiFetch<OfertaVuelo[]>(`/vuelos${query(filtros)}`),
   listarAdmin: (filtros: FiltrosOfertas = {}) => apiFetch<PaginaOfertas>(`/vuelos/admin${query({ ...filtros })}`),
