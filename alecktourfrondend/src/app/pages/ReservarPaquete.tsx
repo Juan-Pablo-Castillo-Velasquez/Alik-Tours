@@ -1,10 +1,12 @@
-import { AlertTriangle, ArrowLeft, Baby, Bed, CalendarDays, Check, CheckCircle2, Loader2, Minus, Plane, Plus, Sparkles, User, Users } from "lucide-react";
+import { AlertTriangle, Baby, Bed, CalendarDays, CheckCircle2, Loader2, Minus, Plane, Plus, Sparkles, User, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast, Toaster } from "sonner";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import PagoDeReserva from "../components/payment/PagoDeReserva";
+import AyudaReserva from "../components/reserva/AyudaReserva";
+import CabeceraReserva from "../components/reserva/CabeceraReserva";
 import ResumenCotizacion, { pesos } from "../components/reserva/ResumenCotizacion";
 import { resolveFotoUrl } from "../components/admin/types";
 import { TERMINOS_VERSION } from "../content/terminos";
@@ -270,34 +272,27 @@ export default function ReservarPaquete() {
       <Navbar />
       <Toaster position="top-center" richColors />
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <Link to={`/package/${pkg.id_paquete}`} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Volver al paquete
-        </Link>
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-          {pkg.imagen_url && <img src={resolveFotoUrl(pkg.imagen_url)} alt="" className="h-20 w-28 rounded-xl object-cover" />}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Reservar paquete</p>
-            <h1 className="text-2xl font-bold">{pkg.nombre_paquete}</h1>
-            <p className="text-sm text-muted-foreground">
-              {pkg.duracion_dias ? `${pkg.duracion_dias} días / ${noches} noches` : ""}
-              {pkg.destino_ciudad || pkg.ciudad_destino ? ` · ${pkg.destino_ciudad || pkg.ciudad_destino}` : ""}
-            </p>
-          </div>
-        </div>
-
-        <ol className="mb-6 grid grid-cols-4 gap-2" aria-label="Pasos de la reserva">
-          {PASOS.map((p, i) => (
-            <li key={p} className={`rounded-full px-2 py-1.5 text-center text-xs font-semibold ${i === paso ? "bg-primary text-primary-foreground" : i < paso ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`} aria-current={i === paso ? "step" : undefined}>
-              {i < paso ? <Check className="mr-1 inline h-3 w-3" /> : `${i + 1}. `}{p}
-            </li>
-          ))}
-        </ol>
+        <CabeceraReserva
+          volverA={`/package/${pkg.id_paquete}`}
+          volverTexto="Volver al paquete"
+          etiqueta="Reservar paquete"
+          titulo={pkg.nombre_paquete}
+          imagen={pkg.imagen_url}
+          datos={[
+            pkg.duracion_dias ? `${pkg.duracion_dias} días / ${noches} noches` : null,
+            pkg.destino_ciudad || pkg.ciudad_destino || null,
+            inicio ? `Sale ${fechaLarga(inicio)}` : null,
+            totalViajeros > 0 ? `${totalViajeros} viajero(s)` : null,
+          ].filter(Boolean)}
+          pasos={PASOS}
+          paso={paso}
+        />
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-5">
             {paso === 0 && (
               <>
-                <section className="rounded-2xl border border-border bg-card p-5">
+                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                   <h2 className="mb-3 flex items-center gap-2 font-bold"><CalendarDays className="h-5 w-5 text-primary" /> ¿Cuándo viajas?</h2>
                   {usaSalidas ? (
                     salidas.length === 0 ? (
@@ -330,7 +325,7 @@ export default function ReservarPaquete() {
                   )}
                 </section>
 
-                <section className="rounded-2xl border border-border bg-card p-5">
+                <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                   <h2 className="mb-1 flex items-center gap-2 font-bold"><Users className="h-5 w-5 text-primary" /> ¿Quiénes viajan?</h2>
                   {(pkg.min_viajeros || pkg.max_viajeros) && (
                     <p className="mb-2 text-xs text-muted-foreground">
@@ -359,7 +354,7 @@ export default function ReservarPaquete() {
                 )}
 
                 {pkg.modalidad_alojamiento === "opcional" && (
-                  <section className="rounded-2xl border border-border bg-card p-5">
+                  <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                     <h2 className="mb-1 flex items-center gap-2 font-bold"><Bed className="h-5 w-5 text-primary" /> Alojamiento (opcional)</h2>
                     <p className="mb-3 text-xs text-muted-foreground">Puedes reservar sin hotel. Si quieres, agrega una o varias habitaciones para las {noches} noche(s) del viaje.</p>
                     {hoteles.flatMap((h) => (h.habitaciones ?? []).filter((x: HabitacionResponse) => x.estado === "disponible").map((hab: HabitacionResponse) => {
@@ -381,7 +376,7 @@ export default function ReservarPaquete() {
                 )}
 
                 {modVuelo !== "sin" && (
-                  <section className="rounded-2xl border border-border bg-card p-5">
+                  <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                     <h2 className="mb-1 flex items-center gap-2 font-bold"><Plane className="h-5 w-5 text-primary" /> {ETIQUETA_MODALIDAD_VUELO[modVuelo]}</h2>
                     {modVuelo === "incluido" && (
                       <>
@@ -416,7 +411,7 @@ export default function ReservarPaquete() {
                 )}
 
                 {opcionalesDisponibles.length > 0 && (
-                  <section className="rounded-2xl border border-border bg-card p-5">
+                  <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                     <h2 className="mb-1 flex items-center gap-2 font-bold"><Sparkles className="h-5 w-5 text-primary" /> Actividades opcionales</h2>
                     <p className="mb-3 text-xs text-muted-foreground">No están en el precio base. Se cobran por persona (adultos y niños).</p>
                     {opcionalesDisponibles.map((s) => {
@@ -435,7 +430,7 @@ export default function ReservarPaquete() {
             )}
 
             {paso === 1 && (
-              <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
+              <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <h2 className="font-bold">Datos de los viajeros</h2>
                 <p className="text-xs text-muted-foreground">
                   {llevaVuelo
@@ -477,7 +472,7 @@ export default function ReservarPaquete() {
             )}
 
             {paso === 2 && (
-              <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
+              <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <h2 className="font-bold">Revisa tu reserva</h2>
                 <dl className="grid gap-3 text-sm sm:grid-cols-2">
                   <div><dt className="text-xs text-muted-foreground">Paquete</dt><dd className="font-semibold">{pkg.nombre_paquete}</dd></div>
@@ -511,7 +506,7 @@ export default function ReservarPaquete() {
             )}
 
             {paso === 3 && reserva && (
-              <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
+              <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <p className="flex items-center gap-2 rounded-xl bg-success/10 p-3 text-sm font-semibold text-success">
                   <CheckCircle2 className="h-5 w-5" /> Tu reserva #{reserva.id_reserva} quedó registrada (pendiente de pago).
                 </p>
@@ -541,6 +536,7 @@ export default function ReservarPaquete() {
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <ResumenCotizacion
+              imagen={pkg.imagen_url}
               cotizacion={reserva ? null : cotizacion}
               cargando={cotizando}
               error={reserva ? null : errorCot}
@@ -548,8 +544,9 @@ export default function ReservarPaquete() {
             />
             {reserva && <p className="mt-2 rounded-xl bg-muted/50 p-3 text-sm">Total: <b>{pesos(reserva.precio_total)}</b></p>}
             {!reserva && totalViajeros > 0 && (
-              <p className="mt-2 text-[11px] text-muted-foreground">El precio lo calcula el sistema con las tarifas vigentes. Si cambia antes de confirmar, te avisamos.</p>
+              <p className="mt-2 text-[11px] text-muted-foreground">Si la tarifa cambia antes de confirmar, te avisamos.</p>
             )}
+            <AyudaReserva producto={pkg.nombre_paquete} />
           </aside>
         </div>
       </main>

@@ -10,6 +10,7 @@ import { nuevoClientMsgId } from "../services/mensajeChat.service";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast, Toaster } from "sonner";
 import HalloweenAccentDiscreto from "../components/HalloweenAccentDiscreto";
+import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/AuthContext";
 import { useTema } from "../context/TemaContext";
@@ -1572,6 +1573,7 @@ export default function Checkout() {
           </div>
         </form>
       </div>
+      <Footer />
     </div>
   );
 }

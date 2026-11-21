@@ -1,10 +1,12 @@
-import { ArrowLeft, CheckCircle2, Loader2, Plane } from "lucide-react";
+import { CheckCircle2, Loader2, Plane } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { toast, Toaster } from "sonner";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import PagoDeReserva from "../components/payment/PagoDeReserva";
+import AyudaReserva from "../components/reserva/AyudaReserva";
+import CabeceraReserva from "../components/reserva/CabeceraReserva";
 import ResumenCotizacion from "../components/reserva/ResumenCotizacion";
 import { TERMINOS_VERSION } from "../content/terminos";
 import { useAuth } from "../context/AuthContext";
@@ -123,21 +125,26 @@ export default function ReservarVuelo() {
       <Navbar />
       <Toaster position="top-center" richColors />
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <Link to={`/vuelos/${o.id_oferta}`} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Volver al vuelo</Link>
-        <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Reservar vuelo</p>
-          <h1 className="text-2xl font-bold">{rutaOferta(o)}</h1>
-          <p className="text-sm text-muted-foreground">
-            Ida {fechaVuelo(o.fecha_salida)}{hora(o.hora_salida) ? ` · ${hora(o.hora_salida)}` : ""}
-            {o.fecha_regreso ? ` · Regreso ${fechaVuelo(o.fecha_regreso)}${hora(o.hora_regreso) ? ` · ${hora(o.hora_regreso)}` : ""}` : ""}
-            {o.aerolinea ? ` · ${o.aerolinea}` : ""}
-          </p>
-        </div>
+        <CabeceraReserva
+          volverA={`/vuelos/${o.id_oferta}`}
+          volverTexto="Volver al vuelo"
+          etiqueta="Reservar vuelo"
+          titulo={rutaOferta(o)}
+          imagen={o.imagen_url}
+          datos={[
+            `Ida ${fechaVuelo(o.fecha_salida)}${hora(o.hora_salida) ? ` · ${hora(o.hora_salida)}` : ""}`,
+            o.fecha_regreso ? `Regreso ${fechaVuelo(o.fecha_regreso)}${hora(o.hora_regreso) ? ` · ${hora(o.hora_regreso)}` : ""}` : null,
+            o.aerolinea || null,
+            o.escalas === 0 ? "Directo" : null,
+          ].filter(Boolean)}
+          pasos={["Vuelo", "Pasajeros", "Pago"]}
+          paso={reserva ? 2 : 1}
+        />
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-5">
             {reserva ? (
-              <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
+              <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <p className="flex items-center gap-2 rounded-xl bg-success/10 p-3 text-sm font-semibold text-success">
                   <CheckCircle2 className="h-5 w-5" /> Tu reserva de vuelo #{reserva.id} quedó registrada (pendiente de pago).
                 </p>
@@ -149,7 +156,7 @@ export default function ReservarVuelo() {
               </section>
             ) : (
               <>
-                <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
+                <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
                   <h2 className="flex items-center gap-2 font-bold"><Plane className="h-5 w-5 text-primary" /> Pasajeros</h2>
                   <p className="text-xs text-muted-foreground">
                     Escribe los datos tal como aparecen en el documento con el que va a viajar cada pasajero.
@@ -207,8 +214,9 @@ export default function ReservarVuelo() {
             )}
           </div>
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <ResumenCotizacion cotizacion={reserva ? null : cotizacion} cargando={cargando} error={reserva ? null : error} titulo={reserva ? `Reserva #${reserva.id}` : "Resumen de tu vuelo"} />
+            <ResumenCotizacion imagen={o.imagen_url} cotizacion={reserva ? null : cotizacion} cargando={cargando} error={reserva ? null : error} titulo={reserva ? `Reserva #${reserva.id}` : "Resumen de tu vuelo"} />
             {reserva && <p className="mt-2 rounded-xl bg-muted/50 p-3 text-sm">Total: <b>${Math.round(reserva.total).toLocaleString("es-CO")}</b></p>}
+            <AyudaReserva producto={rutaOferta(o)} />
           </aside>
         </div>
       </main>

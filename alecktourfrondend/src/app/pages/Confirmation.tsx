@@ -1,20 +1,25 @@
-import { Calendar, CheckCircle, DollarSign, MapPin, Users } from "lucide-react";
+import { Calendar, CheckCircle, DollarSign, FileText, Headset, MapPin, UserRound, Users } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
+import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
+import AyudaReserva from "../components/reserva/AyudaReserva";
+
+/** Código que el cliente puede dictar a un asesor: sale del id real de la reserva. */
+export function codigoReserva(id: number) {
+  return `AT-${String(id).padStart(6, "0")}`;
+}
+
+const SIGUIENTES_PASOS = [
+  { icono: UserRound, titulo: "Revisa tu reserva", texto: "Queda en tu perfil, en Mis reservas, con su estado y sus pagos." },
+  { icono: FileText, titulo: "Guarda tu comprobante", texto: "Desde Mis reservas descargas el comprobante de cada pago." },
+  { icono: Headset, titulo: "Te acompañamos", texto: "Un asesor confirma los detalles contigo antes del viaje." },
+];
 
 export default function Confirmation() {
   const location = useLocation();
   const { reserva, hotel, people, totalPrice, paymentAmount, paymentOption, referencia } =
     location.state || {};
-  const [reservationCode, setReservationCode] = useState("");
-
-  useEffect(() => {
-    const code = `COL-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    setReservationCode(code);
-  }, []);
-
   if (!reserva || !hotel) {
     return (
       <div className="min-h-screen bg-background transition-colors duration-200">
@@ -55,8 +60,8 @@ export default function Confirmation() {
           className="bg-primary text-primary-foreground rounded-2xl p-6 md:p-8 mb-6 text-center shadow-md relative overflow-hidden"
         >
           <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2.5s_infinite]" />
-          <span className="text-xs font-bold uppercase tracking-widest opacity-80 block mb-2">Código localizador de reserva</span>
-          <p className="text-3xl md:text-4xl font-extrabold tracking-wider">{reservationCode}</p>
+          <span className="text-xs font-bold uppercase tracking-widest opacity-80 block mb-2">Código de tu reserva</span>
+          <p className="text-3xl md:text-4xl font-extrabold tracking-wider">{codigoReserva(reserva.id_reserva)}</p>
           <div className="mt-4 pt-4 border-t border-primary-foreground/10 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs opacity-90">
             <span>Referencia de pago: <span className="font-mono font-medium">{referencia}</span></span>
           </div>
@@ -145,6 +150,31 @@ export default function Confirmation() {
           </motion.div>
         </div>
 
+        <section className="mt-6 rounded-2xl border border-border bg-card p-6 shadow-xs">
+          <h2 className="text-lg font-semibold">¿Qué sigue?</h2>
+          <ol className="mt-4 grid gap-4 sm:grid-cols-3">
+            {SIGUIENTES_PASOS.map(({ icono: Icono, titulo, texto }, i) => (
+              <motion.li
+                key={titulo}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + i * 0.07 }}
+                className="rounded-xl bg-muted/40 p-4"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Icono className="h-4 w-4" />
+                </span>
+                <p className="mt-2 text-sm font-semibold">{titulo}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{texto}</p>
+              </motion.li>
+            ))}
+          </ol>
+        </section>
+
+        <div className="mt-6">
+          <AyudaReserva producto={hotel.nombre_hotel} />
+        </div>
+
         {/* Botones de acción final */}
         <div className="flex flex-col sm:flex-row gap-3 mt-8">
           <Link to="/profile"
@@ -157,6 +187,7 @@ export default function Confirmation() {
           </Link>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

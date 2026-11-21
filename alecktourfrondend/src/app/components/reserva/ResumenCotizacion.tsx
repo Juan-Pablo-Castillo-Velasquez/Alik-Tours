@@ -1,4 +1,5 @@
-import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, ReceiptText } from "lucide-react";
+import { resolveFotoUrl } from "../admin/types";
 import type { Concepto, Cotizacion } from "../../data/reservaTypes";
 
 export function pesos(n: number) {
@@ -19,6 +20,8 @@ interface Props {
   /** Título opcional (ej. "Resumen de tu reserva"). */
   titulo?: string;
   compacto?: boolean;
+  /** Foto del producto para encabezar el resumen. */
+  imagen?: string | null;
 }
 
 /**
@@ -26,9 +29,10 @@ interface Props {
  * concepto, lo incluido en $0, advertencias (impuestos, cotización) y el
  * total. Es exactamente lo que se cobra: el navegador no calcula precios.
  */
-export default function ResumenCotizacion({ cotizacion, cargando, error, titulo = "Resumen de precio", compacto }: Props) {
+export default function ResumenCotizacion({ cotizacion, cargando, error, titulo = "Resumen de precio", compacto, imagen }: Props) {
   return (
-    <section aria-live="polite" className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+    <section aria-live="polite" className="overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-md">
+      {imagen && <img src={resolveFotoUrl(imagen)} alt="" className="-mx-4 -mt-4 mb-4 h-28 w-[calc(100%+2rem)] max-w-none object-cover" />}
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-bold text-foreground">{titulo}</h3>
         {cargando && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="Calculando" />}
@@ -38,7 +42,10 @@ export default function ResumenCotizacion({ cotizacion, cargando, error, titulo 
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
         </p>
       ) : !cotizacion ? (
-        <p className="text-sm text-muted-foreground">{cargando ? "Calculando..." : "Completa tus opciones para ver el precio."}</p>
+        <div className="flex flex-col items-center gap-2 rounded-xl bg-muted/40 px-4 py-6 text-center">
+          <ReceiptText className="h-7 w-7 text-primary/60" />
+          <p className="text-sm text-muted-foreground">{cargando ? "Calculando..." : "Completa tus opciones para ver el precio."}</p>
+        </div>
       ) : (
         <>
           <ul className={`divide-y divide-border ${cargando ? "opacity-60" : ""}`}>

@@ -1,10 +1,12 @@
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { toast, Toaster } from "sonner";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import PagoDeReserva from "../components/payment/PagoDeReserva";
+import AyudaReserva from "../components/reserva/AyudaReserva";
+import CabeceraReserva from "../components/reserva/CabeceraReserva";
 import ResumenCotizacion, { pesos } from "../components/reserva/ResumenCotizacion";
 import { useAuth } from "../context/AuthContext";
 import { clienteService } from "../services/cliente.service";
@@ -46,13 +48,21 @@ export default function PagarReserva() {
       <Navbar />
       <Toaster position="top-center" richColors />
       <main className="mx-auto max-w-5xl px-4 py-8">
-        <Link to="/profile" state={{ tab: "reservas" }} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Mis reservas
-        </Link>
-        <h1 className="mb-1 text-2xl font-bold">Pagar reserva #{reserva.id_reserva}</h1>
-        <p className="mb-6 text-sm text-muted-foreground">{titulo} · {reserva.fecha_inicio} → {reserva.fecha_fin}</p>
+        <CabeceraReserva
+          volverA="/profile"
+          volverTexto="Mis reservas"
+          etiqueta={`Pagar reserva #${reserva.id_reserva}`}
+          titulo={titulo}
+          datos={[
+            reserva.fecha_inicio ? `${reserva.fecha_inicio} → ${reserva.fecha_fin}` : null,
+            `Total ${pesos(Number(reserva.precio_total ?? 0))}`,
+            `Saldo ${pesos(Number(reserva.saldo_pendiente ?? 0))}`,
+          ].filter(Boolean)}
+          pasos={["Reserva", "Pago", "Confirmación"]}
+          paso={Number(reserva.saldo_pendiente ?? 0) <= 0 ? 2 : 1}
+        />
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-          <section className="rounded-2xl border border-border bg-card p-5">
+          <section className="self-start rounded-2xl border border-border bg-card p-5 shadow-sm">
             {pagable ? (
               <PagoDeReserva
                 idReserva={reserva.id_reserva}
@@ -90,6 +100,7 @@ export default function PagarReserva() {
             <p className="mt-2 text-xs text-muted-foreground">
               Pagado: {pesos(Number(reserva.total_pagado ?? 0))} · Saldo: <b>{pesos(Number(reserva.saldo_pendiente ?? 0))}</b>
             </p>
+            <AyudaReserva producto={titulo} />
           </aside>
         </div>
       </main>
