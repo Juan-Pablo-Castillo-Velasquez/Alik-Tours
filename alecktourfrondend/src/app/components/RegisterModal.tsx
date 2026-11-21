@@ -363,6 +363,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
         goToStep(3);
     };
 
+    // Cuenta creada en un intento anterior de este mismo formulario (ver DEF-17).
+    const cuentaCreadaRef = useRef<{ correo: string; res: Awaited<ReturnType<typeof authService.register>> } | null>(null);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (step !== 3 || !isFormValid) return;
@@ -372,12 +375,21 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
             // username = correo_electronico (mismo valor)
             const username = formData.correo_electronico;
 
-            const res = await authService.register({
-                username,
-                correo_electronico: formData.correo_electronico,
-                password: formData.password,
-                terminos_version: TERMINOS_VERSION,
-            });
+            // Incidencia DEF-17 (issue #61): si el perfil de cliente falla (ej. cédula
+            // repetida) la cuenta YA quedó creada; al reintentar no se vuelve
+            // a registrar (respondería "correo ya registrado" y la persona
+            // quedaría bloqueada): se reutiliza la cuenta del primer intento.
+            const previa = cuentaCreadaRef.current;
+            const res =
+                previa && previa.correo === formData.correo_electronico
+                    ? previa.res
+                    : await authService.register({
+                          username,
+                          correo_electronico: formData.correo_electronico,
+                          password: formData.password,
+                          terminos_version: TERMINOS_VERSION,
+                      });
+            cuentaCreadaRef.current = { correo: formData.correo_electronico, res };
             // Auto-login: el registro devuelve un access_token (rol cliente).
             // Se guarda para que crear/vincular el cliente (que exigen sesión)
             // no fallen con 401. Este token "provisional" queda reemplazado
