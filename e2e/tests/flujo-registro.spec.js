@@ -52,16 +52,13 @@ test.describe('Crear una cuenta', () => {
     await expect(registro.botonCrear).toBeDisabled();
   });
 
-  // INCIDENCIA (hallazgo de la semana 7): el registro crea la CUENTA y
-  // después el PERFIL de cliente en dos peticiones separadas. Si la cédula
-  // ya existe, la cuenta queda creada sin perfil, y al corregir la cédula
-  // el segundo intento falla con "El correo electrónico ya está
-  // registrado": la persona queda bloqueada. Registrar en el repo como
-  // incidencia y reemplazar "#N" por su número. test.fail(): el test
-  // describe el comportamiento CORRECTO y hoy falla; cuando se corrija,
-  // Playwright avisará para quitar la marca.
-  test('una cédula repetida se puede corregir sin que la cuenta quede a medias (incidencia #N)', async ({ page, request }) => {
-    test.fail(true, 'Incidencia #N: el registro deja la cuenta creada sin perfil de cliente');
+  // INCIDENCIA DEF-17 / issue #61 (hallazgo de la semana 7, corregida en la entrega
+  // final): el registro crea la CUENTA y después el PERFIL de cliente en dos
+  // peticiones. Con una cédula repetida la cuenta quedaba creada sin perfil y
+  // al corregir la cédula el segundo intento fallaba con "El correo
+  // electrónico ya está registrado". Ahora el formulario reutiliza la cuenta
+  // del primer intento. Antes este test estaba marcado con test.fail().
+  test('una cédula repetida se puede corregir sin que la cuenta quede a medias (DEF-17, issue #61)', async ({ page, request }) => {
     const cedulaOcupada = cedulaUnica();
     await crearClienteConCedula(request, cedulaOcupada);
     const registro = new ModalRegistro(page);

@@ -84,6 +84,7 @@ flowchart LR
 | HU | Historia | Actor | Módulo |
 | --- | --- | --- | --- |
 | [HU-35](HU-35_rendimiento.md) | Navegar el sitio con rapidez | Visitante / Cliente | Plataforma |
+| [HU-36](HU-36_telemetria_iot.md) | Ver la telemetría de los vehículos de traslado (prototipo IoT) | Administrador · Dispositivo IoT | IoT |
 
 ## Cómo usar estas historias
 

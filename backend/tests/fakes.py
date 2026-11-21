@@ -19,6 +19,9 @@ class RedisEnMemoria:
         self._datos = {}
         self._vence = {}
 
+    def ping(self):
+        return True
+
     def _vivo(self, clave):
         vence = self._vence.get(clave)
         if vence is not None and time.monotonic() >= vence:

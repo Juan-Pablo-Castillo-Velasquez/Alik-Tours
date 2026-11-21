@@ -7,6 +7,7 @@ import {
   Package, Building2, Wallet, Bell, UserPlus, ShieldCheck, Activity,
   Settings, Plane, ChevronLeft, ChevronRight, UserCircle, Megaphone, Palette,
   MessageCircle,
+  Radio,
 } from "lucide-react";
 import type { Module } from "./types";
 import { mensajeChatService } from "../../services/mensajeChat.service";
@@ -85,6 +86,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { id: "usuarios", label: "Usuarios", icon: UserPlus, ready: true },
       { id: "roles", label: "Roles y permisos", icon: ShieldCheck, ready: true },
       { id: "actividad", label: "Actividad del sistema", icon: Activity, ready: true },
+      { id: "iot", label: "Telemetría IoT", icon: Radio, ready: true },
       { id: "configuracion", label: "Configuración", icon: Settings, ready: true },
       { id: "mi-cuenta", label: "Mi cuenta", icon: UserCircle, ready: true },
     ],

@@ -118,11 +118,8 @@ class TestHotelRepository:
         assert ocupado == []
         assert [h.id_hotel for h in libre] == [hotel.id_hotel]
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Incidencia: la búsqueda usa ILIKE, que en PostgreSQL distingue tildes. "
-        "En MySQL (collation *_ai_ci) 'medellin' sí encontraría 'Medellín'.",
-    )
+    # Antes xfail (incidencia: ILIKE en PostgreSQL distingue tildes). Corregido
+    # con app/core/busqueda.py: la búsqueda quita tildes en columna y texto.
     def test_buscar_sin_tilde_encuentra_la_ciudad_con_tilde(self, db_real):
         # Ciudad inventada para no chocar con los hoteles de demostración.
         HotelRepository.create(db_real, {"nombre_hotel": f"{MARCA} Hotel", "ciudad": "Villa Pruebasón"})

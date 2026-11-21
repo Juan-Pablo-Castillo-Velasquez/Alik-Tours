@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core import cache
 from app.core.config import settings
 from app.core.cors import VERCEL_PREVIEW_REGEX, get_cors_origins
 from app.core.database import get_db
@@ -36,6 +37,7 @@ from app.routes.destino_route import router as destino_router
 from app.routes.empresa_route import router as empresa_router
 from app.routes.favorito_route import router as favorito_router
 from app.routes.hotel_route import router as hotel_router
+from app.routes.iot_route import router as iot_router
 from app.routes.mensaje_chat_route import router as mensaje_chat_router
 from app.routes.metodo_pago_guardado_route import router as metodo_pago_guardado_router
 from app.routes.notificacion_route import router as notificacion_router
@@ -122,13 +124,25 @@ def health_check(db: Session = Depends(get_db)):
     """Liveness/readiness check real (consulta la base de datos, no un valor
     fijo) — usado por el HEALTHCHECK del Dockerfile de producción y por
     cualquier balanceador/orquestador que necesite saber si el contenedor
-    está listo para recibir tráfico."""
+    está listo para recibir tráfico.
+
+    Estados: "ok" (todo arriba), "degradado" (la caché Redis no responde:
+    el backend sigue sirviendo, solo sin caché) y "error" (sin base de
+    datos: 503)."""
+    componentes = {"database": "up", "cache": "up"}
     try:
         db.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "up"}
     except Exception as e:
         logger.error(f"Health check falló: {e}")
-        return JSONResponse(status_code=503, content={"status": "error", "database": "down"})
+        componentes["database"] = "down"
+    try:
+        cache.redis_client.ping()
+    except Exception:
+        componentes["cache"] = "down"
+    if componentes["database"] == "down":
+        return JSONResponse(status_code=503, content={"status": "error", **componentes})
+    estado = "ok" if componentes["cache"] == "up" else "degradado"
+    return {"status": estado, **componentes}
 
 
 # ============================================================================
@@ -189,6 +203,7 @@ app.include_router(banner_router)
 app.include_router(tema_router)
 app.include_router(comunidad_router)
 app.include_router(vuelo_router)
+app.include_router(iot_router)
 
 # ============================================================================
 # ARCHIVOS ESTATICOS (fotos de perfil, etc.)

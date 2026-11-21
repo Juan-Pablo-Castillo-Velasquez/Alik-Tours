@@ -78,3 +78,6 @@ htmlcov/
 coverage/
 e2e/playwright-report/
 e2e/test-results/
+
+# Configuración real del ESP32 (WiFi y clave del dispositivo)
+iot/esp32/config.py
