@@ -1,6 +1,6 @@
 # Estrategia de pruebas — AlekTours
 
-**Grupo**: Juan Pablo Castillo · Fernando Gutiérrez · Cristian Sinisterra · **Ficha**: _número_ · **Stack**: React (Vite + TS) + FastAPI + PostgreSQL 16 · **Fecha**: 2026-11-20
+**Grupo**: Juan Pablo Castillo · Fernando Gutiérrez · Cristian Sinisterra · **Ficha**: 3228970 · **Stack**: React (Vite + TS) + FastAPI + PostgreSQL 16 · **Fecha**: 2026-11-20
 
 ## 1. Qué hace la app y qué no puede fallar
 
