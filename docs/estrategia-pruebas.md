@@ -1,6 +1,6 @@
 # Estrategia de pruebas — AlekTours
 
-**Grupo**: Juan Pablo Castillo · Fernando Gutiérrez · Cristian Sinisterra · **Ficha**: _número_ · **Stack**: React (Vite + TS) + FastAPI + PostgreSQL 16 · **Fecha**: _AAAA-MM-DD_
+**Grupo**: Juan Pablo Castillo · Fernando Gutiérrez · Cristian Sinisterra · **Ficha**: _número_ · **Stack**: React (Vite + TS) + FastAPI + PostgreSQL 16 · **Fecha**: 2026-11-20
 
 ## 1. Qué hace la app y qué no puede fallar
 
@@ -59,6 +59,8 @@ AlekTours es la plataforma de la agencia Alik Tours (RNT 224224): las personas b
 
 ## 6. Hallazgos y riesgos conocidos
 
+Todos están registrados como issues con etiquetas de severidad y estado (DEF-01 a DEF-24, issues #45 a #68): ver [`entrega-final/09-ejecucion-y-defectos.md`](entrega-final/09-ejecucion-y-defectos.md).
+
 | Defecto | Capa que lo encontró | Estado |
 |---|---|---|
 | El 500 devolvía CORS con credenciales a cualquier origen | API (S4) | Corregido |
@@ -77,13 +79,13 @@ AlekTours es la plataforma de la agencia Alik Tours (RNT 224224): las personas b
 | Dos handlers de MSW no coincidían con el backend real | Front (S6) | Corregido |
 | 15 tests fallaban según el orden (PRAGMA sin apagar); tablas que existían o no según el orden | Suite (S1, S7) | Corregido |
 | Accesibilidad: login, registro, contacto, pagos sin etiquetas asociadas ni roles | E2E y componentes | Corregido |
-| Cédula repetida en el registro deja la cuenta creada sin perfil | E2E (S7) | **Abierto**: incidencia #N, test con `test.fail()` |
-| La búsqueda distingue tildes en PostgreSQL (`medellin` ≠ `Medellín`) | Integración (S6) | **Abierto**: incidencia #N, test con `xfail(strict=True)` |
+| Cédula repetida en el registro deja la cuenta creada sin perfil | E2E (S7) | Corregido en la entrega final ([#61](https://github.com/Juan-Pablo-Castillo-Velasquez/Alik-Tours/issues/61)); el test ya no lleva `test.fail()` |
+| La búsqueda distingue tildes en PostgreSQL (`medellin` ≠ `Medellín`) | Integración (S6) | Corregido en la entrega final ([#62](https://github.com/Juan-Pablo-Castillo-Velasquez/Alik-Tours/issues/62)); el test ya no lleva `xfail` |
 
 ## 7. Evidencia individual
 
-| Integrante | Capas trabajadas (matriz) | Commits de test (`git shortlog`) |
+| Integrante | Capas trabajadas (matriz) | Commits de test (`git shortlog -sn --all -- backend/tests e2e '*.test.*'`, 20 nov 2026) |
 |---|---|---|
-| Juan Pablo Castillo | E2E, Front, Front, E2E, BD, API, E2E (+ backend 75%), Front | _completar con `git shortlog -sn -- '*tests/*' '*.test.*' 'e2e/*'`_ |
-| Fernando Gutiérrez | E2E, API, Front, BD, E2E, Front, E2E, API | _completar_ |
-| Cristian Sinisterra | E2E, E2E (CI), Front, API, Front, BD, E2E, E2E | _completar_ |
+| Juan Pablo Castillo | E2E, Front, Front, E2E, BD, API, E2E (+ backend 75%), Front | 97 |
+| Fernando Gutiérrez | E2E, API, Front, BD, E2E, Front, E2E, API | 8 |
+| Cristian Sinisterra | E2E, E2E (CI), Front, API, Front, BD, E2E, E2E | 9 |

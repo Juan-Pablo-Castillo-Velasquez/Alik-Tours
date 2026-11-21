@@ -53,6 +53,8 @@ Todo se conecta en un mismo ecosistema de reservas: un paquete puede incluir alo
 
 El proyecto está construido bajo una arquitectura desacoplada entre frontend y backend, utilizando una API REST desarrollada con FastAPI, PostgreSQL como sistema de persistencia y Docker Compose para la administración del entorno.
 
+> **Entrega final (rúbrica):** cada criterio con su evidencia en [`docs/entrega-final/`](docs/entrega-final/README.md) — diagramas, Scrum, despliegue, arquitectura, IoT, plan e informes de pruebas, defectos, front-end, repositorio, equipo y reflexión de backends.
+
 ---
 
 # Stack tecnológico
@@ -102,6 +104,7 @@ El proyecto está construido bajo una arquitectura desacoplada entre frontend y 
 | Infraestructura | Docker Compose                                 |
 | Base de datos   | PostgreSQL                                     |
 | Caché           | Redis                                          |
+| IoT (prototipo) | Telemetría de los vehículos de traslado: dispositivo → `POST /api/iot/lecturas` → panel |
 | Administración  | pgAdmin                                        |
 | Email testing   | Mailpit                                        |
 
@@ -622,6 +625,23 @@ grupo en [`docs/matriz-rotacion.md`](docs/matriz-rotacion.md).
 
 **Cómo ejecutar las pruebas de cada semana (01 a 09) y quién hizo cada una:** [`docs/testing/README.md`](docs/testing/README.md).
 
+## Resultado de la última ejecución (20 nov 2026)
+
+| Suite | Casos | Resultado | Cobertura (umbral) |
+|---|---|---|---|
+| Backend unitarias | 99 | ✅ 99/99 | — |
+| Backend API (SQLite en memoria) | 440 | ✅ 440/440 | — |
+| Backend integración con PostgreSQL 16 | 27 | ✅ 27/27 | — |
+| **Backend total** | **566** | ✅ | **86 %** (81 %) |
+| Frontend (Vitest + Testing Library + MSW) | 356 | ✅ 356/356 | **93 %** líneas (80 %) |
+| E2E (Playwright) | 33 | ✅ 33/33 | — |
+
+Documentos de pruebas:
+
+* [Plan de pruebas](docs/entrega-final/07-plan-de-pruebas.md): alcance, niveles, ambientes (el de pruebas separado del de desarrollo) y criterios.
+* [Informe de pruebas unitarias](docs/entrega-final/08-informe-pruebas-unitarias.md): 27 casos distintos documentados.
+* [Reporte de ejecución y defectos](docs/entrega-final/09-ejecucion-y-defectos.md): 24 defectos registrados como [issues con severidad y estado](https://github.com/Juan-Pablo-Castillo-Velasquez/Alik-Tours/issues?q=label%3Adefecto).
+
 | Parte | Comando | Qué corre |
 |---|---|---|
 | Frontend | `cd alecktourfrondend && pnpm test` | Vitest + Testing Library + MSW, con umbral de cobertura |
@@ -658,6 +678,10 @@ alembic upgrade head; pytest tests/integration
 # API
 
 FastAPI genera automáticamente la documentación OpenAPI.
+
+* **Referencia completa (221 operaciones por módulo):** [`docs/referencia-tecnica/api-referencia-completa.md`](docs/referencia-tecnica/api-referencia-completa.md), generada desde el OpenAPI real con `python scripts/generar_referencia_api.py`.
+* **Esquema importable en Postman/Insomnia:** [`docs/referencia-tecnica/openapi.json`](docs/referencia-tecnica/openapi.json).
+* **Estado del servicio:** `GET /health` → `ok`, `degradado` (sin Redis) o `error` (503, sin base de datos).
 
 ## Swagger UI
 
@@ -812,7 +836,7 @@ docs/
 Documentos principales:
 
 * [`docs/manual-usuario/README.md`](docs/manual-usuario/README.md): **manual de usuario** (clientes y equipo de la agencia).
-* [`docs/historias-usuario/README.md`](docs/historias-usuario/README.md): **historias de usuario** del sistema, una por archivo y en el orden del recorrido del cliente (HU-01 a HU-35).
+* [`docs/historias-usuario/README.md`](docs/historias-usuario/README.md): **historias de usuario** del sistema, una por archivo y en el orden del recorrido del cliente (HU-01 a HU-36).
 * [`CONTRIBUTING.md`](CONTRIBUTING.md)
 * [`SECURITY.md`](SECURITY.md)
 * [`db_schema.sql`](db_schema.sql)
@@ -823,7 +847,7 @@ Referencia técnica (`docs/referencia-tecnica/`):
 * [`tablas.md`](docs/referencia-tecnica/tablas.md): para qué sirve cada tabla de la base de datos.
 * [`database-schema.md`](docs/referencia-tecnica/database-schema.md): esquema detallado, índices y migraciones.
 * [`architecture.md`](docs/referencia-tecnica/architecture.md): arquitectura del sistema.
-* [`api-endpoints.md`](docs/referencia-tecnica/api-endpoints.md): endpoints de la API.
+* [`api-referencia-completa.md`](docs/referencia-tecnica/api-referencia-completa.md): todos los endpoints (generada) y [`api-endpoints.md`](docs/referencia-tecnica/api-endpoints.md) con ejemplos de autenticación.
 * [`design-system.md`](docs/referencia-tecnica/design-system.md): sistema de diseño.
 
 Otras guías:
