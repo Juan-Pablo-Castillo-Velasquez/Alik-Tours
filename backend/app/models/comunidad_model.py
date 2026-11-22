@@ -34,6 +34,9 @@ class PublicacionComunidad(Base):
         index=True,
     )
     motivo_moderacion = Column(String(300), nullable=True)
+    # Publicación de ejemplo para demostraciones: se muestra con la etiqueta
+    # "Ejemplo" (ver scripts/seed_demo_comunidad.py).
+    es_ejemplo = Column(Boolean, nullable=False, default=False, server_default="false")
     id_moderador = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
     fecha_moderacion = Column(TIMESTAMP, nullable=True)

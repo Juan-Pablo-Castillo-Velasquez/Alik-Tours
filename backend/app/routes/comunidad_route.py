@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session, selectinload
 # False con un archivo real y el archivo se descartaba sin error.
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
+from app.core.cache import delete_pattern
 from app.core.database import get_db
 from app.core.deps import (
     get_current_usuario,
@@ -39,6 +40,7 @@ from app.core.file_validation import validar_y_leer_archivo
 from app.core.image_storage import CLOUDINARY_CONFIGURADO, borrar_imagen, guardar_imagen
 from app.core.security import require_admin, require_empleado
 from app.models.comunidad_model import ComentarioComunidad, ImagenPublicacion, PublicacionComunidad, VideoAgencia
+from app.models.resena_model import Resena
 from app.models.reserva_model import Paquete
 from app.models.user_model import Usuario
 from app.schemas.comunidad_schema import (
@@ -52,6 +54,7 @@ from app.schemas.comunidad_schema import (
     VideoAgenciaResponse,
     VideoAgenciaUpdate,
 )
+from app.services import contenido_ejemplo
 from app.services.notificacion_service import crear_notificacion
 
 router = APIRouter(prefix="/api/comunidad", tags=["Comunidad"])
@@ -171,6 +174,7 @@ def _publicacion(
         comentarios=[_comentario(db, c, viewer) for c in comentarios],
         total_comentarios=len(comentarios),
         es_mia=id_cliente_actual is not None and p.id_cliente == id_cliente_actual,
+        es_ejemplo=bool(p.es_ejemplo),
     )
 
 
@@ -744,3 +748,47 @@ def admin_borrar_video(id_video: int, db: Session = Depends(get_db), admin_id: i
     db.delete(v)
     db.commit()
     return {"message": "Video eliminado"}
+
+
+# ===================== CONTENIDO DE EJEMPLO (solo admin) =====================
+
+
+def _limpiar_caches_resenas() -> None:
+    delete_pattern("home:resenas_destacadas")
+    delete_pattern("hotel:*:resenas")
+    delete_pattern("hoteles:*")
+
+
+@router.post("/admin/contenido-ejemplo")
+def admin_cargar_contenido_ejemplo(db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
+    """Carga (o recarga) las publicaciones y reseñas de ejemplo para una
+    demostración. Salen con la etiqueta "Ejemplo" y no cuentan en promedios
+    ni totales (ver app/services/contenido_ejemplo.py)."""
+    conn = db.connection()
+    contenido_ejemplo.borrar(conn)
+    try:
+        resumen = contenido_ejemplo.sembrar(conn)
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    db.commit()
+    _limpiar_caches_resenas()
+    logger.info("Contenido de ejemplo cargado por el admin %s: %s", admin_id, resumen)
+    return resumen
+
+
+@router.delete("/admin/contenido-ejemplo")
+def admin_quitar_contenido_ejemplo(db: Session = Depends(get_db), admin_id: int = Depends(require_admin)):
+    contenido_ejemplo.borrar(db.connection())
+    db.commit()
+    _limpiar_caches_resenas()
+    logger.info("Contenido de ejemplo eliminado por el admin %s", admin_id)
+    return {"ok": True}
+
+
+@router.get("/admin/contenido-ejemplo")
+def admin_estado_contenido_ejemplo(db: Session = Depends(get_db), _: int = Depends(require_admin)):
+    return {
+        "publicaciones": db.query(PublicacionComunidad).filter(PublicacionComunidad.es_ejemplo.is_(True)).count(),
+        "resenas": db.query(Resena).filter(Resena.es_ejemplo.is_(True)).count(),
+    }

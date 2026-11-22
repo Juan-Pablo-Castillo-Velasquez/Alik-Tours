@@ -7,6 +7,7 @@ import {
   PublicacionComunidad,
   resolveMediaComunidad,
 } from "../../services/comunidad.service";
+import EtiquetaEjemplo from "../EtiquetaEjemplo";
 import ComentariosHilo from "./ComentariosHilo";
 import Estrellas from "./Estrellas";
 
@@ -58,7 +59,10 @@ export default function PublicacionCard({ publicacion, puedeComentar, onPedirLog
       <header className="flex items-start gap-3 p-4 sm:p-5">
         <Avatar nombre={p.autor.nombre} foto={p.autor.foto} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">{p.autor.nombre}</p>
+          <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+            {p.autor.nombre}
+            {p.es_ejemplo && <EtiquetaEjemplo />}
+          </p>
           <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2">
             {fecha(p.fecha_creacion)}
             {p.destino && (

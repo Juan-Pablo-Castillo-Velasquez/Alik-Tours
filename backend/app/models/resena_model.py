@@ -22,6 +22,10 @@ class Resena(Base):
     fecha_respuesta = Column(TIMESTAMP, nullable=True)
     # El equipo puede ocultar una reseña (spam, datos personales...).
     visible = Column(Boolean, nullable=False, default=True, server_default="true")
+    # Contenido de ejemplo para demostraciones (scripts/seed_demo_comunidad.py):
+    # se muestra con la etiqueta "Ejemplo" y nunca cuenta en promedios,
+    # totales ni en las páginas de los hoteles.
+    es_ejemplo = Column(Boolean, nullable=False, default=False, server_default="false")
 
     reserva = relationship("Reserva")
     cliente = relationship("Cliente")

@@ -65,7 +65,7 @@ class ResenaRepository:
         return (
             db.query(Resena)
             .options(joinedload(Resena.cliente))
-            .filter(Resena.id_hotel == id_hotel, Resena.visible.is_(True))
+            .filter(Resena.id_hotel == id_hotel, Resena.visible.is_(True), Resena.es_ejemplo.is_(False))
             .order_by(Resena.fecha_creacion.desc())
             .offset(skip)
             .limit(limit)
@@ -79,7 +79,7 @@ class ResenaRepository:
                 func.avg(Resena.calificacion).label("promedio"),
                 func.count(Resena.id_resena).label("total"),
             )
-            .filter(Resena.id_hotel == id_hotel, Resena.visible.is_(True))
+            .filter(Resena.id_hotel == id_hotel, Resena.visible.is_(True), Resena.es_ejemplo.is_(False))
             .first()
         )
 
@@ -94,7 +94,7 @@ class ResenaRepository:
         return (
             db.query(Resena)
             .options(joinedload(Resena.cliente), joinedload(Resena.hotel))
-            .filter(Resena.visible.is_(True))
+            .filter(Resena.visible.is_(True), Resena.es_ejemplo.is_(False))
             .order_by(Resena.calificacion.desc(), Resena.fecha_creacion.desc())
             .limit(limit)
             .all()
@@ -107,7 +107,7 @@ class ResenaRepository:
                 func.avg(Resena.calificacion).label("promedio"),
                 func.count(Resena.id_resena).label("total"),
             )
-            .filter(Resena.visible.is_(True))
+            .filter(Resena.visible.is_(True), Resena.es_ejemplo.is_(False))
             .first()
         )
 
@@ -120,11 +120,13 @@ class ResenaRepository:
 
     @staticmethod
     def get_all(db: Session, skip: int = 0, limit: int = 12, calificacion: int | None = None):
-        """Reseñas visibles (cualquier calificación, o solo una), para la página pública /testimonios."""
+        """Reseñas visibles (cualquier calificación, o solo una), para la página
+        pública /testimonios. Incluye las de ejemplo (llegan con ejemplo=True y
+        el frontend las etiqueta); primero las reales."""
         return (
             ResenaRepository._publicas(db, calificacion)
             .options(joinedload(Resena.cliente), joinedload(Resena.hotel))
-            .order_by(Resena.fecha_creacion.desc(), Resena.id_resena.desc())
+            .order_by(Resena.es_ejemplo.asc(), Resena.fecha_creacion.desc(), Resena.id_resena.desc())
             .offset(skip)
             .limit(limit)
             .all()
@@ -139,7 +141,7 @@ class ResenaRepository:
         """Cuántas reseñas visibles hay de cada calificación (1 a 5)."""
         filas = (
             db.query(Resena.calificacion, func.count(Resena.id_resena))
-            .filter(Resena.visible.is_(True))
+            .filter(Resena.visible.is_(True), Resena.es_ejemplo.is_(False))
             .group_by(Resena.calificacion)
             .all()
         )

@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { apiCrearResena, apiGetResenas, ResenaDestacada } from "../api/v1/api";
+import EtiquetaEjemplo, { AvisoContenidoEjemplo } from "../components/EtiquetaEjemplo";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import RespuestaAgencia from "../components/resenas/RespuestaAgencia";
@@ -309,6 +310,11 @@ export default function Testimonios() {
             </div>
           ) : (
             <>
+              {resenas.some((r) => r.ejemplo) && (
+                <div className="mb-5">
+                  <AvisoContenidoEjemplo />
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {resenas.map((r, i) => (
                   <motion.article
@@ -324,6 +330,7 @@ export default function Testimonios() {
                   >
                     <Quote className="absolute top-5 right-5 w-10 h-10 text-primary opacity-10 dark:opacity-20" />
 
+                    {r.ejemplo && <EtiquetaEjemplo className="mb-3" />}
                     <div className="flex items-center gap-1 mb-4">
                       {Array.from({ length: r.rating }, (_, idx) => (
                         <Star
