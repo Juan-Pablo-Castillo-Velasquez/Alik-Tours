@@ -67,6 +67,7 @@ class ResenaResponse(BaseModel):
     fecha_respuesta: datetime | None = None
     visible: bool = True
     nombre_hotel: str | None = None
+    es_ejemplo: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -140,6 +141,7 @@ def _response(r: Resena, nombre_cliente: str | None = None) -> ResenaResponse:
         fecha_respuesta=r.fecha_respuesta,
         visible=r.visible is not False,
         nombre_hotel=r.hotel.nombre_hotel if r.hotel else None,
+        es_ejemplo=bool(r.es_ejemplo),
     )
 
 

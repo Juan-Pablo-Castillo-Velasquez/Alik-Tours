@@ -65,8 +65,10 @@ class ResenaRepository:
         return (
             db.query(Resena)
             .options(joinedload(Resena.cliente))
-            .filter(Resena.id_hotel == id_hotel, Resena.visible.is_(True), Resena.es_ejemplo.is_(False))
-            .order_by(Resena.fecha_creacion.desc())
+            # Incluye las de ejemplo (el frontend las etiqueta), después de
+            # las reales; el promedio del hotel (get_promedio_hotel) no las cuenta.
+            .filter(Resena.id_hotel == id_hotel, Resena.visible.is_(True))
+            .order_by(Resena.es_ejemplo.asc(), Resena.fecha_creacion.desc())
             .offset(skip)
             .limit(limit)
             .all()

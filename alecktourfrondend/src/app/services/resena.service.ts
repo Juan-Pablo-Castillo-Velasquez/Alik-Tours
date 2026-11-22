@@ -19,6 +19,8 @@ export interface ResenaResponse {
   fecha_edicion?: string | null;
   respuesta_agencia?: string | null;
   fecha_respuesta?: string | null;
+  /** Reseña de demostración: se muestra con la etiqueta "Ejemplo". */
+  es_ejemplo?: boolean;
   visible?: boolean;
   nombre_hotel?: string | null;
 }
