@@ -84,8 +84,8 @@ class Hotel(Base):
         return len(self._resenas_visibles())
 
     def _resenas_visibles(self):
-        # Las reseñas que el equipo oculta no cuentan en lo público.
-        return [r for r in self.resenas if r.visible is not False]
+        # Las reseñas que el equipo oculta y las de ejemplo no cuentan en lo público.
+        return [r for r in self.resenas if r.visible is not False and not r.es_ejemplo]
 
     @property
     def calificacion_promedio(self):

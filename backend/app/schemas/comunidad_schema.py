@@ -37,6 +37,7 @@ class PublicacionResponse(BaseModel):
     comentarios: list[ComentarioResponse] = []
     total_comentarios: int = 0
     es_mia: bool = False
+    es_ejemplo: bool = False
 
 
 class PublicacionesPaginadas(BaseModel):

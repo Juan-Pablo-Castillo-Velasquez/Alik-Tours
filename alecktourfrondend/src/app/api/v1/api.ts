@@ -249,6 +249,8 @@ export interface ResenaDestacada {
   /** Respuesta pública de la agencia. */
   respuesta?: string | null;
   fecha_respuesta?: string | null;
+  /** Reseña de demostración: se muestra con la etiqueta "Ejemplo". */
+  ejemplo?: boolean;
 }
 
 export interface ResenasDestacadasResponse {

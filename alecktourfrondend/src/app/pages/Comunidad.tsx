@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import PublicacionCard from "../components/comunidad/PublicacionCard";
+import { AvisoContenidoEjemplo } from "../components/EtiquetaEjemplo";
 import PublicarModal from "../components/comunidad/PublicarModal";
 import VideoAgenciaCard from "../components/comunidad/VideoAgenciaCard";
 import { BRAND } from "../config/brand";
@@ -163,6 +164,7 @@ export default function Comunidad() {
           </div>
         ) : (
           <div className="space-y-6">
+            {publicaciones.some((p) => p.es_ejemplo) && <AvisoContenidoEjemplo />}
             {publicaciones.map((p) => (
               <PublicacionCard
                 key={`${p.id_publicacion}-${isAuthenticated}`}

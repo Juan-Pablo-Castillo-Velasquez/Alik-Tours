@@ -38,6 +38,8 @@ export interface PublicacionComunidad {
   comentarios: ComentarioComunidad[];
   total_comentarios: number;
   es_mia: boolean;
+  /** Contenido de demostración: se muestra con la etiqueta "Ejemplo". */
+  es_ejemplo?: boolean;
 }
 
 export interface PublicacionesPaginadas {
@@ -191,6 +193,14 @@ export const comunidadService = {
       method: "POST",
       body: { contenido, id_padre: idPadre ?? null },
     }),
+  // Contenido de ejemplo para demostraciones (solo admin).
+  estadoContenidoEjemplo: () =>
+    apiFetch<{ publicaciones: number; resenas: number }>("/comunidad/admin/contenido-ejemplo"),
+  cargarContenidoEjemplo: () =>
+    apiFetch<{ perfiles: number; resenas: number; publicaciones: number }>("/comunidad/admin/contenido-ejemplo", {
+      method: "POST",
+    }),
+  quitarContenidoEjemplo: () => apiFetch<{ ok: boolean }>("/comunidad/admin/contenido-ejemplo", { method: "DELETE" }),
   borrarComentario: (id: number) => apiFetch<{ message: string }>(`/comunidad/comentarios/${id}`, { method: "DELETE" }),
 
   // Moderación (admin / asesor)

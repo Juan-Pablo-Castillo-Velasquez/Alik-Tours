@@ -29,6 +29,7 @@ import {
 import { PaqueteResponse, paqueteService } from "../../services/paquete.service";
 import ComentariosHilo from "../comunidad/ComentariosHilo";
 import Estrellas from "../comunidad/Estrellas";
+import ContenidoEjemplo from "./ContenidoEjemplo";
 import ModerarResenas from "./ModerarResenas";
 import FilterChip from "../shared/FilterChip";
 import EmptyState from "./ui/EmptyState";
@@ -239,6 +240,8 @@ export default function ModuleComunidad() {
         title="Comunidad y videos"
         subtitle="Revisa lo que publican los clientes antes de que salga en el sitio y administra los videos de la agencia"
       />
+
+      <ContenidoEjemplo />
 
       <div className="flex gap-2 flex-wrap">
         <FilterChip selected={pestana === "moderacion"} onClick={() => setPestana("moderacion")} icon={<Users className="w-3.5 h-3.5" />}>

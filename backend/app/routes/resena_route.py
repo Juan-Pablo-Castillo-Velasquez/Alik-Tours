@@ -113,6 +113,7 @@ def _shape_resena(r: Resena) -> dict:
         "editada": r.fecha_edicion is not None,
         "respuesta": r.respuesta_agencia,
         "fecha_respuesta": r.fecha_respuesta.isoformat() if r.fecha_respuesta else None,
+        "ejemplo": bool(r.es_ejemplo),
     }
 
 
