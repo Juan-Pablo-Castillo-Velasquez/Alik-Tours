@@ -25286,21 +25286,24 @@
             "anyOf": [
               {
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 40,
+                  "minLength": 1
                 },
-                "type": "array"
+                "type": "array",
+                "maxItems": 20
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Intereses",
-            "default": []
+            "title": "Intereses"
           },
           "compania": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 40
               },
               {
                 "type": "null"
@@ -25311,7 +25314,8 @@
           "presupuesto": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 40
               },
               {
                 "type": "null"
@@ -25322,7 +25326,8 @@
           "clima": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 40
               },
               {
                 "type": "null"
@@ -25333,7 +25338,8 @@
           "ritmo": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 40
               },
               {
                 "type": "null"
@@ -25344,7 +25350,8 @@
           "transporte": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 40
               },
               {
                 "type": "null"
@@ -26271,6 +26278,17 @@
             ],
             "title": "Vuelo Ruta"
           },
+          "imagen_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imagen Url"
+          },
           "fecha_ultima_actualizacion": {
             "anyOf": [
               {
@@ -26743,6 +26761,17 @@
             ],
             "title": "Vuelo Ruta"
           },
+          "imagen_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imagen Url"
+          },
           "fecha_ultima_actualizacion": {
             "anyOf": [
               {
@@ -27086,6 +27115,17 @@
               }
             ],
             "title": "Vuelo Ruta"
+          },
+          "imagen_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imagen Url"
           },
           "fecha_ultima_actualizacion": {
             "anyOf": [

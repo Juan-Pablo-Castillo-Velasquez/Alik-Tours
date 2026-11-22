@@ -555,6 +555,8 @@ class ReservaResponse(BaseModel):
     hotel_nombre: str | None = None
     # Ruta del vuelo (reservas de vuelo o paquetes con vuelo).
     vuelo_ruta: str | None = None
+    # Foto del paquete, hotel o vuelo (Reserva.imagen_url) para Mis reservas.
+    imagen_url: str | None = None
     # Fecha del último cambio de estado registrado en historial_reservas (o
     # fecha_reserva si aún no hay historial) — ver Reserva.fecha_ultima_actualizacion.
     # Usado por la columna "Última actualización" del panel de admin.

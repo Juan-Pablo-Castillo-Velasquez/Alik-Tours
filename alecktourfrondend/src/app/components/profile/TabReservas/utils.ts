@@ -1,3 +1,4 @@
+import { codigoReserva } from "../../../utils/reservaPresentacion";
 /**
  * Parsea "YYYY-MM-DD" (o timestamps ISO) en horario LOCAL para evitar
  * el desfase de timezone que producía new Date(string) al interpretar
@@ -54,7 +55,7 @@ export function getEstadoViaje(
  */
 export async function compartirReserva(reserva: any): Promise<"compartido" | "copiado" | "cancelado" | "error"> {
   const partes = [
-    `Mi reserva en Alik Tours #ID-${reserva.id_reserva}`,
+    `Mi reserva en Alik Tours ${codigoReserva(reserva.id_reserva)}`,
     reserva.nombre_paquete ?? reserva.hotel_nombre ?? reserva.vuelo_ruta ?? null,
     reserva.fecha_inicio && reserva.fecha_fin
       ? `${fmt(reserva.fecha_inicio)} → ${fmt(reserva.fecha_fin)}`

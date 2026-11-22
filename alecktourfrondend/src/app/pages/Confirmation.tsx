@@ -5,10 +5,9 @@ import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import AyudaReserva from "../components/reserva/AyudaReserva";
 
-/** Código que el cliente puede dictar a un asesor: sale del id real de la reserva. */
-export function codigoReserva(id: number) {
-  return `AT-${String(id).padStart(6, "0")}`;
-}
+import { codigoReserva } from "../utils/reservaPresentacion";
+
+export { codigoReserva };
 
 const SIGUIENTES_PASOS = [
   { icono: UserRound, titulo: "Revisa tu reserva", texto: "Queda en tu perfil, en Mis reservas, con su estado y sus pagos." },

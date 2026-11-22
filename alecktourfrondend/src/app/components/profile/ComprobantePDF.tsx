@@ -12,9 +12,11 @@ import {
 interface Props {
   reservaId: number;
   clienteData: ClienteResponse;
+  /** Botón pequeño en línea (tarjeta de reserva) en vez del ancho completo. */
+  compacto?: boolean;
 }
 
-export default function ComprobantePDF({ reservaId, clienteData }: Props) {
+export default function ComprobantePDF({ reservaId, clienteData, compacto = false }: Props) {
   const [loading, setLoading] = useState(false);
 
   const generarPDF = async () => {
@@ -347,7 +349,12 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
     <button
       onClick={generarPDF}
       disabled={loading}
-      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#7B1E3A] to-[#A13B55] text-white rounded-xl text-xs font-semibold hover:opacity-95 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      type="button"
+      className={
+        compacto
+          ? "inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          : "w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#7B1E3A] to-[#A13B55] text-white rounded-xl text-xs font-semibold hover:opacity-95 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      }
     >
       {loading ? (
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -355,7 +362,7 @@ export default function ComprobantePDF({ reservaId, clienteData }: Props) {
         <Download className="w-3.5 h-3.5" />
       )}
       <span>
-        {loading ? "Generando resumen..." : "Descargar resumen"}
+        {loading ? "Generando resumen..." : compacto ? "Resumen PDF" : "Descargar resumen"}
       </span>
     </button>
   );

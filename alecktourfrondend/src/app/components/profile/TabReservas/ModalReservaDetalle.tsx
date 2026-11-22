@@ -19,7 +19,9 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { toast } from "sonner";
+import { codigoReserva, tituloReserva } from "../../../utils/reservaPresentacion";
 import {
   ReservaDetail,
   reservaDetailService,
@@ -138,7 +140,11 @@ export default function ModalReservaDetalle({ reservaId, onClose }: Props) {
 
   const tituloHeader =
     detalle?.paquete?.nombre_paquete ??
-    (habitaciones[0]?.nombre_hotel ? `Estadía en ${habitaciones[0].nombre_hotel}` : `Reserva #${reservaId}`);
+    (habitaciones[0]?.nombre_hotel
+      ? `Estadía en ${habitaciones[0].nombre_hotel}`
+      : detalle
+        ? tituloReserva({ ...(detalle as any), id_reserva: reservaId })
+        : `Reserva ${codigoReserva(reservaId)}`);
 
   const totalReserva = Number(detalle?.precio_total ?? 0);
   const totalPagado = (detalle?.pagos ?? [])
@@ -169,6 +175,9 @@ export default function ModalReservaDetalle({ reservaId, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <ModalOverlay onClick={onClose} />
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-detalle-reserva"
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -199,11 +208,11 @@ export default function ModalReservaDetalle({ reservaId, onClose }: Props) {
               <Package className="w-6 h-6" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-bold text-lg tracking-tight leading-tight truncate">
+              <h3 id="titulo-detalle-reserva" className="font-bold text-lg tracking-tight leading-tight truncate">
                 {tituloHeader}
               </h3>
               <p className="text-primary-foreground/80 text-xs mt-0.5">
-                Reserva #ID-{reservaId}
+                Reserva {codigoReserva(reservaId)}
               </p>
             </div>
           </div>
@@ -336,6 +345,15 @@ export default function ModalReservaDetalle({ reservaId, onClose }: Props) {
                         ? `${porcentajePagado}% pagado — queda un saldo por cubrir`
                         : "Reserva pagada en su totalidad"}
                     </p>
+                    {saldoPendiente > 0 && (detalle?.estado === "confirmada" || detalle?.estado === "pendiente") && (
+                      <Link
+                        to={`/pagar/${reservaId}`}
+                        onClick={onClose}
+                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
+                      >
+                        {totalPagado > 0 ? "Pagar saldo" : "Pagar reserva"} · {money(saldoPendiente)}
+                      </Link>
+                    )}
                   </div>
                 </section>
               )}
