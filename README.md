@@ -625,16 +625,16 @@ grupo en [`docs/matriz-rotacion.md`](docs/matriz-rotacion.md).
 
 **Cómo ejecutar las pruebas de cada semana (01 a 09) y quién hizo cada una:** [`docs/testing/README.md`](docs/testing/README.md).
 
-## Resultado de la última ejecución (20 nov 2026)
+## Resultado de la última ejecución (21 nov 2026)
 
 | Suite | Casos | Resultado | Cobertura (umbral) |
 |---|---|---|---|
-| Backend unitarias | 99 | ✅ 99/99 | — |
-| Backend API (SQLite en memoria) | 440 | ✅ 440/440 | — |
+| Backend unitarias | 102 | ✅ 102/102 | — |
+| Backend API (SQLite en memoria) | 441 | ✅ 441/441 | — |
 | Backend integración con PostgreSQL 16 | 27 | ✅ 27/27 | — |
-| **Backend total** | **566** | ✅ | **86 %** (81 %) |
-| Frontend (Vitest + Testing Library + MSW) | 356 | ✅ 356/356 | **93 %** líneas (80 %) |
-| E2E (Playwright) | 33 | ✅ 33/33 | — |
+| **Backend total** | **570** | ✅ | **86 %** (81 %) |
+| Frontend (Vitest + Testing Library + MSW) | 366 | ✅ 366/366 | **93 %** líneas (80 %) |
+| E2E (Playwright): incluye reservar hotel, paquete y vuelo, preferencias y Mis reservas | 36 | ✅ 36/36 | — |
 
 Documentos de pruebas:
 

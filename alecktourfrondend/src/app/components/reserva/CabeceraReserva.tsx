@@ -15,13 +15,17 @@ interface Props {
   datos?: ReactNode[];
   pasos?: string[];
   paso?: number;
+  /** Si se pasa, los pasos ya completados se pueden reabrir con un clic. */
+  onIrAPaso?: (indice: number) => void;
+  /** Texto a la derecha del título (p. ej. "Proceso seguro"). */
+  extra?: ReactNode;
 }
 
 /**
  * Encabezado común de los flujos de reserva: foto del producto, qué se está
  * reservando y el avance por pasos con una línea de progreso.
  */
-export default function CabeceraReserva({ volverA, volverTexto, etiqueta, titulo, subtitulo, imagen, datos = [], pasos, paso = 0 }: Props) {
+export default function CabeceraReserva({ volverA, volverTexto, etiqueta, titulo, subtitulo, imagen, datos = [], pasos, paso = 0, onIrAPaso, extra }: Props) {
   const progreso = pasos && pasos.length > 1 ? (Math.min(paso, pasos.length - 1) / (pasos.length - 1)) * 100 : 0;
   return (
     <div className="mb-6">
@@ -39,7 +43,10 @@ export default function CabeceraReserva({ volverA, volverTexto, etiqueta, titulo
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" aria-hidden />
         <div className="relative px-6 py-7 sm:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--gold)]">{etiqueta}</p>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--gold)]">{etiqueta}</p>
+            {extra}
+          </div>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{titulo}</h1>
           {subtitulo && <p className="mt-1 text-sm text-white/85">{subtitulo}</p>}
           {datos.length > 0 && (
@@ -70,6 +77,13 @@ export default function CabeceraReserva({ volverA, volverTexto, etiqueta, titulo
                   const actual = i === paso;
                   return (
                     <li key={p} className="flex flex-col items-center gap-1.5" aria-current={actual ? "step" : undefined}>
+                      <button
+                        type="button"
+                        disabled={!hecho || !onIrAPaso}
+                        onClick={() => onIrAPaso?.(i)}
+                        aria-label={hecho && onIrAPaso ? `Volver al paso ${i + 1}: ${p}` : `Paso ${i + 1}: ${p}`}
+                        className="flex flex-col items-center gap-1.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 enabled:cursor-pointer disabled:cursor-default"
+                      >
                       <span
                         className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all ${
                           hecho
@@ -82,6 +96,7 @@ export default function CabeceraReserva({ volverA, volverTexto, etiqueta, titulo
                         {hecho ? <Check className="h-4 w-4" /> : i + 1}
                       </span>
                       <span className={`text-[11px] font-semibold sm:text-xs ${actual ? "text-white" : "text-white/70"}`}>{p}</span>
+                      </button>
                     </li>
                   );
                 })}

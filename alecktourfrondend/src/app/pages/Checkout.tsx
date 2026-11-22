@@ -12,6 +12,8 @@ import { toast, Toaster } from "sonner";
 import HalloweenAccentDiscreto from "../components/HalloweenAccentDiscreto";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
+import AyudaReserva from "../components/reserva/AyudaReserva";
+import CabeceraReserva from "../components/reserva/CabeceraReserva";
 import { useAuth } from "../context/AuthContext";
 import { useTema } from "../context/TemaContext";
 import { clienteService } from "../services/cliente.service";
@@ -662,66 +664,30 @@ export default function Checkout() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
 
-        {/* Encabezado */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 shrink-0">
-                <Sparkles className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">Completa tu reserva</h1>
-                <p className="text-muted-foreground text-sm">Tu viaje está casi listo. Revisa cada paso antes de confirmar.</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 text-green-500 text-xs font-bold">
-              <ShieldCheck className="w-4 h-4" />
-              Proceso seguro y protegido
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Stepper */}
-        <div className="relative grid grid-cols-4 mb-8">
-          <div className="absolute h-0.5 bg-border top-[15px] left-[12.5%] right-[12.5%]" />
-          <motion.div
-            className="absolute h-0.5 bg-primary top-[15px] left-[12.5%]"
-            initial={false}
-            animate={{ width: `${((step - 1) / (STEPS.length - 1)) * 75}%` }}
-            transition={{ duration: 0.35 }}
-          />
-          {STEPS.map((s) => {
-            // Antes el indicador de progreso se veía clickeable pero no lo
-            // era -- solo se podía retroceder de a un paso con "← Volver".
-            // Ahora un paso ya completado se puede reabrir directo desde
-            // acá; nunca se permite saltar HACIA ADELANTE a un paso que
-            // todavía no se validó.
-            const completado = step > s.n;
-            return (
-              <button
-                key={s.n}
-                type="button"
-                disabled={!completado}
-                onClick={() => { setStep(s.n); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className={`relative z-10 text-center bg-transparent border-0 p-0 focus:outline-none ${completado ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg" : "cursor-default"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full mx-auto mb-1.5 flex items-center justify-center text-xs font-extrabold transition-colors ${completado
-                    ? "bg-green-500 text-white"
-                    : step === s.n
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                    }`}
-                >
-                  {completado ? <CheckCircle2 className="w-4 h-4" /> : s.n}
-                </div>
-                <span className={`text-[10px] font-bold ${step === s.n ? "text-primary" : completado ? "text-foreground" : "text-muted-foreground"}`}>
-                  {s.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <CabeceraReserva
+          volverA={`/hotel/${hotel.id_hotel}`}
+          volverTexto="Volver al hotel"
+          etiqueta="Reservar hotel"
+          titulo={hotel.nombre_hotel}
+          subtitulo={[habitacion.tipo_habitacion?.nombre_tipo, hotel.ciudad].filter(Boolean).join(" · ") || undefined}
+          imagen={hotel.imagen_url}
+          extra={
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold backdrop-blur">
+              <ShieldCheck className="h-3.5 w-3.5" /> Proceso seguro
+            </span>
+          }
+          datos={[
+            fechaInicio && fechaFin ? `${formatFechaCorta(fechaInicio)} → ${formatFechaCorta(fechaFin)}` : null,
+            fechaInicio && fechaFin ? `${nights} ${nights === 1 ? "noche" : "noches"}` : null,
+            `${people + ninos} ${people + ninos === 1 ? "huésped" : "huéspedes"}`,
+          ].filter(Boolean)}
+          pasos={STEPS.map((s) => s.label)}
+          paso={step - 1}
+          onIrAPaso={(i) => {
+            setStep(i + 1);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* Columna principal */}
@@ -1479,9 +1445,9 @@ export default function Checkout() {
           </div>
 
           {/* Sidebar Resumen Desglose */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 lg:sticky lg:top-24 lg:self-start">
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-              className="relative overflow-hidden bg-card rounded-xl border border-border p-6 sticky top-24 shadow-xs">
+              className="relative overflow-hidden bg-card rounded-xl border border-border p-6 shadow-md">
               {esHalloween && (
                 <HalloweenAccentDiscreto variante="murcielago" posicion="top-right" tamano="sm" />
               )}
@@ -1570,6 +1536,7 @@ export default function Checkout() {
                 )}
               </div>
             </motion.div>
+            <AyudaReserva producto={hotel.nombre_hotel} />
           </div>
         </form>
       </div>
