@@ -1,3 +1,4 @@
+import { resolveFotoUrl } from "./admin/types";
 import { ArrowUpRight, Sparkles, Star } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -84,8 +85,8 @@ export default function DestinationsGrid() {
 
                         <img loading="lazy" decoding="async"
                             src={esHalloween ? "/img/imagenpromocional-halloween.png" : "/img/imagenpromocional-removebg-preview.png"}
-                            alt={esHalloween ? "Personajes de Halloween de Alik Tours" : "Viajera promocional"}
-                            className="block h-full w-full object-contain object-bottom drop-shadow-2xl mix-blend-multiply"
+                            alt={esHalloween ? "Personajes de Halloween de Alik Tours" : "Tres amigos con gorros de Navidad celebrando"}
+                            className="block h-full w-full object-contain object-bottom drop-shadow-2xl"
                         />
 
                         <motion.div
@@ -127,7 +128,7 @@ export default function DestinationsGrid() {
                                 <Link to={`/hotel/${d.id}`} className="flex flex-col flex-1 cursor-pointer">
                                     <div className="relative h-48 overflow-hidden shrink-0">
                                         <img loading="lazy" decoding="async"
-                                            src={d.img}
+                                            src={resolveFotoUrl(d.img)}
                                             alt={d.name}
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                         />

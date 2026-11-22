@@ -1,3 +1,4 @@
+import { resolveFotoUrl } from "./admin/types";
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -94,7 +95,7 @@ export default function OffersHighlight() {
                                 className="group relative h-64 rounded-2xl overflow-hidden cursor-pointer block"
                             >
                                 <img loading="lazy" decoding="async"
-                                    src={o.img}
+                                    src={resolveFotoUrl(o.img)}
                                     alt={o.title}
                                     onError={() => marcarImagenRota(o.id)}
                                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -121,7 +122,7 @@ export default function OffersHighlight() {
                                     </h3>
                                     <p className="text-white/75 text-xs mb-2">{o.tag}</p>
                                     <p className="text-sm">
-                                        Desde <b className="text-[var(--chart-2)]">${o.price}</b>
+                                        Desde <b className="text-[var(--chart-2)]">${o.price}</b> <span className="text-white/80">/ noche</span>
                                         {o.oldPrice && (
                                             <span className="line-through text-white/50 text-xs ml-2">
                                                 ${o.oldPrice}

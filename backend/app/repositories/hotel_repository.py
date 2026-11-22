@@ -130,10 +130,16 @@ class HotelRepository:
                 Hotel.ciudad,
                 Hotel.pais,
                 Hotel.calificacion,
+                Hotel.imagen_url,
                 func.min(Habitacion.precio_noche).label("precio_desde"),
             )
             .join(Habitacion, Habitacion.id_hotel == Hotel.id_hotel)
-            .group_by(Hotel.id_hotel, Hotel.nombre_hotel, Hotel.ciudad, Hotel.pais, Hotel.calificacion)
+            # Solo hoteles publicados y con foto propia: antes se promocionaban
+            # también los ocultos y se les ponía una foto de stock ajena.
+            .filter(Hotel.publicado.is_(True), Hotel.imagen_url.isnot(None), Hotel.imagen_url != "")
+            .group_by(
+                Hotel.id_hotel, Hotel.nombre_hotel, Hotel.ciudad, Hotel.pais, Hotel.calificacion, Hotel.imagen_url
+            )
             .order_by(Hotel.calificacion.desc(), func.min(Habitacion.precio_noche).asc())
             .limit(limit)
             .all()
@@ -150,10 +156,16 @@ class HotelRepository:
                 Hotel.ciudad,
                 Hotel.pais,
                 Hotel.calificacion,
+                Hotel.imagen_url,
                 func.min(Habitacion.precio_noche).label("precio_desde"),
             )
             .join(Habitacion, Habitacion.id_hotel == Hotel.id_hotel)
-            .group_by(Hotel.id_hotel, Hotel.nombre_hotel, Hotel.ciudad, Hotel.pais, Hotel.calificacion)
+            # Solo hoteles publicados y con foto propia: antes se promocionaban
+            # también los ocultos y se les ponía una foto de stock ajena.
+            .filter(Hotel.publicado.is_(True), Hotel.imagen_url.isnot(None), Hotel.imagen_url != "")
+            .group_by(
+                Hotel.id_hotel, Hotel.nombre_hotel, Hotel.ciudad, Hotel.pais, Hotel.calificacion, Hotel.imagen_url
+            )
             .order_by(Hotel.calificacion.desc(), func.min(Habitacion.precio_noche).asc())
             .offset(offset)
             .limit(limit)
