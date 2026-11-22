@@ -1,5 +1,7 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
@@ -16,13 +18,17 @@ router = APIRouter(prefix="/api/preferencias-cliente", tags=["Preferencias"])
 
 
 class PreferenciaCreate(BaseModel):
+    # Límites para que nadie guarde listas o textos enormes desde la API
+    # (el cuestionario manda ids cortos como "beach" o "mid").
     id_cliente: int
-    intereses: list[str] | None = []
-    compania: str | None = None
-    presupuesto: str | None = None
-    clima: str | None = None
-    ritmo: str | None = None
-    transporte: str | None = None
+    intereses: list[Annotated[str, Field(min_length=1, max_length=40)]] | None = Field(
+        default_factory=list, max_length=20
+    )
+    compania: str | None = Field(None, max_length=40)
+    presupuesto: str | None = Field(None, max_length=40)
+    clima: str | None = Field(None, max_length=40)
+    ritmo: str | None = Field(None, max_length=40)
+    transporte: str | None = Field(None, max_length=40)
 
 
 class PreferenciaResponse(BaseModel):

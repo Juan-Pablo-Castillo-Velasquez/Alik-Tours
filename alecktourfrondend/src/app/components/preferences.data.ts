@@ -40,3 +40,29 @@ export const transportPrefs = [
   { id: "private", label: "Privado", desc: "Carro/Traslado", icon: Car },
   { id: "public", label: "Aéreo/Local", desc: "Vuelos/Botes", icon: Plane },
 ];
+/** Opción de una pregunta del cuestionario de preferencias. */
+export interface OpcionPreferencia {
+  id: string;
+  label: string;
+  desc?: string;
+  icon: typeof Sun;
+}
+
+/** Campos que guarda el backend (preferencias_route.py) y sus opciones. */
+export const CAMPOS_PREFERENCIA = {
+  intereses: interestCategories as OpcionPreferencia[],
+  compania: travelCompany as OpcionPreferencia[],
+  presupuesto: budgetOptions as OpcionPreferencia[],
+  clima: weatherPrefs as OpcionPreferencia[],
+  ritmo: paceOptions as OpcionPreferencia[],
+  transporte: transportPrefs as OpcionPreferencia[],
+};
+
+export type CampoPreferencia = keyof typeof CAMPOS_PREFERENCIA;
+
+/** Texto legible de un valor guardado ("mid" → "Estándar"). Valores que no
+ * están en el catálogo (datos viejos) se muestran tal cual. */
+export function etiquetaPreferencia(campo: CampoPreferencia, valor: string | null | undefined): string {
+  if (!valor) return "";
+  return CAMPOS_PREFERENCIA[campo].find((o) => o.id === valor)?.label ?? valor;
+}

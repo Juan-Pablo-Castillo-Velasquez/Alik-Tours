@@ -120,3 +120,12 @@ class TestSugerencias:
         assert (
             client.get(f"/api/preferencias-cliente/{otro.id_cliente}/sugerencias-hoteles", headers=h).status_code == 403
         )
+
+
+class TestLimitesDePreferencias:
+    def test_listas_o_textos_enormes_son_422(self, client, cliente):
+        usuario, h = cliente
+        muchos = _preferencia(usuario.id_cliente, intereses=[f"i{n}" for n in range(21)])
+        largo = _preferencia(usuario.id_cliente, compania="x" * 41)
+        assert client.post("/api/preferencias-cliente/", json=muchos, headers=h).status_code == 422
+        assert client.post("/api/preferencias-cliente/", json=largo, headers=h).status_code == 422

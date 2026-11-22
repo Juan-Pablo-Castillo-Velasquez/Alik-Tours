@@ -397,6 +397,21 @@ class Reserva(Base):
         return hotel.nombre_hotel if hotel else None
 
     @property
+    def imagen_url(self):
+        """Foto para la tarjeta de la reserva en Mis reservas: la portada
+        del paquete, si no la del hotel y si no la de la oferta de vuelo.
+        Todas son columnas de relaciones que ya se cargan para `destino`
+        y `vuelo_ruta`, así que no agrega consultas."""
+        if self.paquete and self.paquete.imagen_url:
+            return self.paquete.imagen_url
+        hotel = self._primer_hotel
+        if hotel and hotel.imagen_url:
+            return hotel.imagen_url
+        if self.oferta_vuelo and self.oferta_vuelo.imagen_url:
+            return self.oferta_vuelo.imagen_url
+        return None
+
+    @property
     def fecha_ultima_actualizacion(self):
         """Fecha del cambio de estado más reciente registrado en
         historial_reservas (pago aprobado, confirmación, cancelación...), o

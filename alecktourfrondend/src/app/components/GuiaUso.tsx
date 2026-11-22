@@ -54,8 +54,8 @@ export const PASOS_RESERVA: PasoGuia[] = [
   {
     titulo: "Hotel: fechas y habitación",
     texto:
-      "En la ficha del hotel elige la habitación. El checkout te lleva en 4 pasos: fechas y huéspedes, datos del " +
-      "viajero, revisión y pago. Las fechas ya ocupadas aparecen bloqueadas en el calendario.",
+      "En la ficha del hotel elige la habitación. La reserva va en 4 pasos que ves arriba de la pantalla: datos " +
+      "del viajero, fechas y huéspedes, revisión y pago. Las fechas ya ocupadas aparecen bloqueadas en el calendario.",
     icono: BedDouble,
     enlace: { to: "/search", texto: "Buscar hoteles" },
   },
@@ -78,7 +78,7 @@ export const PASOS_RESERVA: PasoGuia[] = [
     titulo: "Paga tu reserva",
     texto:
       "Paga en línea con Nequi o PayPal, o elige pagar con un asesor: él te contacta y te indica cómo hacerlo. " +
-      "Puedes abonar y completar el saldo después desde Mis Reservas › Pagar. Cuando el pago se confirma, la reserva pasa a Confirmada.",
+      "Puedes abonar y completar el saldo después desde Mis reservas › Por pagar. Cuando el pago se confirma, la reserva pasa a Confirmada.",
     icono: CreditCard,
   },
   {
@@ -95,7 +95,7 @@ export const PASOS_PERFIL: PasoGuia[] = [
   {
     titulo: "Mis Reservas",
     texto:
-      "Todas tus reservas con su estado (pendiente, confirmada, finalizada o cancelada), el detalle de lo que " +
+      "Tus reservas por pestañas (Próximas, Por pagar, Pasadas, Canceladas) con su código, el detalle de lo que " +
       "compraste, lo pagado y el saldo. Desde aquí pagas, ves el calendario del viaje y dejas reseñas.",
     icono: Calendar,
     enlace: { to: "/profile", texto: "Abrir Mis Reservas", state: { tab: "reservas" } },
