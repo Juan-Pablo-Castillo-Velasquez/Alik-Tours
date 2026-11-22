@@ -370,11 +370,24 @@ def delete_hotel(hotel_id: int, db: Session = Depends(get_db), admin_id: int = D
 def get_habitaciones(
     hotel_id: int, skip: int = Query(0, ge=0), limit: int = Query(10, ge=1, le=100), db: Session = Depends(get_db)
 ):
-    """Obtiene habitaciones de un hotel"""
+    """Obtiene habitaciones de un hotel.
+
+    Se cachea 60 s en Redis (lo piden la ficha del hotel y el checkout en
+    cada visita); cualquier escritura de hoteles o habitaciones lo invalida
+    con HOTELES_CACHE_PATTERN."""
+    cache_key = f"hoteles:habitaciones:{hotel_id}:{skip}:{limit}"
+    cached = get_cached(cache_key)
+    if cached is not None:
+        return cached
     hotel = HotelRepository.get_by_id(db, hotel_id)
     if not hotel:
         raise HTTPException(status_code=404, detail="Hotel no encontrado")
-    return HabitacionRepository.get_all(db, hotel_id, skip, limit)
+    data = [
+        HabitacionResponse.model_validate(h).model_dump(mode="json")
+        for h in HabitacionRepository.get_all(db, hotel_id, skip, limit)
+    ]
+    set_cached(cache_key, data, ttl_seconds=60)
+    return data
 
 
 @router.get("/{hotel_id}/habitaciones/disponibles", response_model=list[HabitacionResponse])
@@ -390,11 +403,17 @@ def get_habitaciones_disponibles(
 
 @router.get("/habitaciones/{habitacion_id}", response_model=HabitacionResponse)
 def get_habitacion(habitacion_id: int, db: Session = Depends(get_db)):
-    """Obtiene detalles de una habitación"""
+    """Obtiene detalles de una habitación (cache de 60 s, ver get_habitaciones)."""
+    cache_key = f"hoteles:habitacion:{habitacion_id}"
+    cached = get_cached(cache_key)
+    if cached is not None:
+        return cached
     habitacion = HabitacionRepository.get_by_id(db, habitacion_id)
     if not habitacion:
         raise HTTPException(status_code=404, detail="Habitación no encontrada")
-    return habitacion
+    data = HabitacionResponse.model_validate(habitacion).model_dump(mode="json")
+    set_cached(cache_key, data, ttl_seconds=60)
+    return data
 
 
 @router.post("/{hotel_id}/habitaciones", response_model=HabitacionResponse, status_code=201)
