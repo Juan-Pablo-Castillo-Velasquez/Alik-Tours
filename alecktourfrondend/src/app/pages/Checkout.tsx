@@ -3,7 +3,7 @@ import { esCelularValido } from "../utils/validaciones";
 import { enlaceWhatsAppAgencia } from "../utils/whatsapp";
 import { BRAND } from "../config/brand";
 import { IconoWhatsApp } from "../components/BotonWhatsApp";
-import { Bed, Calendar, CheckCircle2, CreditCard, Eye, EyeOff, IdCard, Lock, Mail, MapPin, Phone, Shield, ShieldCheck, Smartphone, Sparkles, User, Users, Zap } from "lucide-react";
+import { Bed, Calendar, CheckCircle2, CreditCard, Eye, EyeOff, History, IdCard, Lock, Mail, MapPin, Phone, Shield, ShieldCheck, Smartphone, Sparkles, User, Users, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { nuevoClientMsgId } from "../services/mensajeChat.service";
@@ -14,6 +14,8 @@ import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import AyudaReserva from "../components/reserva/AyudaReserva";
 import CabeceraReserva from "../components/reserva/CabeceraReserva";
+import RevisionHotel from "../components/reserva/RevisionHotel";
+import { BorradorCheckoutHotel, borrarBorrador, claveBorradorHotel, guardarBorrador, haceCuanto, leerBorrador } from "../utils/borradorReserva";
 import { useAuth } from "../context/AuthContext";
 import { useTema } from "../context/TemaContext";
 import { clienteService } from "../services/cliente.service";
@@ -96,6 +98,9 @@ export default function Checkout() {
 
   // ── Wizard ──
   const [step, setStep] = useState(1);
+  const claveBorrador = claveBorradorHotel(id ?? 'sin-hotel', idHabitacion);
+  const [borradorListo, setBorradorListo] = useState(false);
+  const [borradorRecuperado, setBorradorRecuperado] = useState<number | null>(null);
 
   // ── Datos del viajero (prellenados desde el cliente real, editables, solo visual) ──
   const [nombres, setNombres] = useState('');
@@ -324,9 +329,59 @@ export default function Checkout() {
           // escrito) — el envío del formulario igual exige
           // usuario?.id_cliente más abajo, así que no se puede pagar sin
           // un cliente real de todas formas.
-        });
+        })
+        // El borrador va DESPUÉS de los datos del perfil: lo que la persona
+        // ya había corregido a mano en este checkout gana.
+        .finally(aplicarBorrador);
+    } else {
+      aplicarBorrador();
     }
   }, [isAuthenticated, usuario?.id_cliente]);
+
+  // ── Borrador en el navegador (utils/borradorReserva.ts) ──
+  // Recargar o volver otro día retoma la reserva donde iba. Nunca guarda
+  // datos de pago. Se guarda 400 ms después del último cambio.
+  function aplicarBorrador() {
+    const b = leerBorrador<BorradorCheckoutHotel>(claveBorrador);
+    if (b) {
+      const d = b.datos;
+      if (d.nombres) setNombres(d.nombres);
+      if (d.apellidos) setApellidos(d.apellidos);
+      if (d.correo) setCorreo(d.correo);
+      if (d.celular) setCelular(d.celular);
+      if (d.cedula) setCedula(d.cedula);
+      if (d.ciudad) setCiudad(d.ciudad);
+      if (d.direccion) setDireccion(d.direccion);
+      // Fechas y huéspedes de la URL (lo que acaba de elegir en la ficha)
+      // mandan sobre las del borrador.
+      if (!searchParams.get('start') && d.fechaInicio) setFechaInicio(d.fechaInicio);
+      if (!searchParams.get('end') && d.fechaFin) setFechaFin(d.fechaFin);
+      if (!searchParams.get('people') && d.adultos) setPeople(d.adultos);
+      if (typeof d.ninos === 'number') setNinos(d.ninos);
+      if (d.modalidad === 'full' || d.modalidad === 'partial') setPaymentOption(d.modalidad);
+      // Nunca se retoma directo en el pago: como mucho en la revisión.
+      if (d.paso > 1) setStep(Math.min(3, d.paso));
+      setBorradorRecuperado(b.guardadoEn);
+    }
+    setBorradorListo(true);
+  }
+
+  useEffect(() => {
+    if (!borradorListo || paymentStatus === 'approved' || paymentStatus === 'pendiente_verificacion') return;
+    const t = window.setTimeout(() => {
+      guardarBorrador<BorradorCheckoutHotel>(claveBorrador, {
+        nombres, apellidos, correo, celular, cedula, ciudad, direccion,
+        adultos: people, ninos, fechaInicio, fechaFin, modalidad: paymentOption, paso: step,
+      });
+    }, 400);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [borradorListo, nombres, apellidos, correo, celular, cedula, ciudad, direccion, people, ninos, fechaInicio, fechaFin, paymentOption, step]);
+
+  const empezarDeNuevo = () => {
+    borrarBorrador(claveBorrador);
+    window.location.reload();
+  };
 
   // Trae la billetera real del cliente (métodos de pago que ya registró) —
   // en checkout solo nos interesa para preseleccionar el que marcó como
@@ -370,6 +425,7 @@ export default function Checkout() {
   // fue aprobado, o muestra el estado de rechazo si no.
   const finalizarPago = (estadoPago: string, reservaFinal: any, pago: any) => {
     if (estadoPago === 'pagado') {
+      borrarBorrador(claveBorrador);
       setPaymentStatus('approved');
       toast.success('¡Reserva confirmada!', { id: 'checkout' });
       setTimeout(() => {
@@ -592,6 +648,7 @@ export default function Checkout() {
   // pendiente hasta que un asesor/admin revise y confirme de verdad (ver
   // confirmar_pago, ahora exclusivo de staff para Nequi).
   const handleConfirmarNequi = () => {
+    borrarBorrador(claveBorrador);
     setPaymentStatus('pendiente_verificacion');
   };
 
@@ -688,6 +745,37 @@ export default function Checkout() {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />
+
+        {borradorRecuperado && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            role="status"
+            className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--gold)]/40 bg-[var(--gold)]/10 px-4 py-3 text-sm"
+          >
+            <span className="flex items-center gap-2 text-foreground">
+              <History className="h-4 w-4 text-[var(--gold)]" />
+              Retomamos tu reserva donde la dejaste ({haceCuanto(borradorRecuperado)}).
+            </span>
+            <span className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={empezarDeNuevo}
+                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                Empezar de nuevo
+              </button>
+              <button
+                type="button"
+                onClick={() => setBorradorRecuperado(null)}
+                aria-label="Cerrar aviso"
+                className="rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted"
+              >
+                Entendido
+              </button>
+            </span>
+          </motion.div>
+        )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* Columna principal */}
@@ -976,128 +1064,31 @@ export default function Checkout() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -15 }}
                   transition={{ duration: 0.25 }}
-                  className="bg-card rounded-xl border border-border p-6 md:p-8 shadow-xs"
+                  className="rounded-xl border border-border bg-muted/20 p-4 md:p-6"
                 >
-                  <h2 className="text-xl font-medium text-foreground mb-1">Revisa tu reserva</h2>
+                  <h2 className="text-xl font-semibold text-foreground mb-1">Revisa tu reserva</h2>
                   <p className="text-xs text-muted-foreground mb-5">Comprueba los datos antes de pasar al pago.</p>
-
-                  <div className="space-y-3">
-                    <div className="border border-border rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <b className="text-xs flex items-center gap-1.5 text-foreground">
-                          <Bed className="w-3.5 h-3.5 text-primary" /> Alojamiento
-                        </b>
-                        <button type="button" onClick={() => setStep(2)} className="text-primary text-[11px] font-bold hover:underline">
-                          Editar
-                        </button>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Hotel</span>
-                        <strong className="text-foreground">{hotel.nombre_hotel}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Ubicación</span>
-                        <strong className="text-foreground">{hotel.ciudad}, {hotel.pais}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Fechas</span>
-                        <strong className="text-foreground">
-                          {new Date(`${fechaInicio}T00:00:00`).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
-                          {" → "}
-                          {new Date(`${fechaFin}T00:00:00`).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}
-                        </strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Noches</span>
-                        <strong className="text-foreground">{nights}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Huéspedes</span>
-                        <strong className="text-foreground">{people} adulto(s){ninos ? `, ${ninos} niño(s)` : ""}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Habitación</span>
-                        <strong className="text-foreground">{habitacion.tipo_habitacion?.nombre_tipo ?? "Habitación"} #{habitacion.numero_habitacion}</strong>
-                      </div>
-                    </div>
-
-                    <div className="border border-border rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <b className="text-xs flex items-center gap-1.5 text-foreground">
-                          <User className="w-3.5 h-3.5 text-primary" /> Viajero principal
-                        </b>
-                        <button type="button" onClick={() => setStep(1)} className="text-primary text-[11px] font-bold hover:underline">
-                          Editar
-                        </button>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Nombre</span>
-                        <strong className="text-foreground">{nombres} {apellidos}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Cédula</span>
-                        <strong className="text-foreground">{cedula}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Correo</span>
-                        <strong className="text-foreground">{correo}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Celular</span>
-                        <strong className="text-foreground">{celular}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Ciudad</span>
-                        <strong className="text-foreground">{ciudad}</strong>
-                      </div>
-                    </div>
-
-                    <div className="border border-border rounded-xl p-4">
-                      <b className="text-xs flex items-center gap-1.5 text-foreground mb-2.5">
-                        <Phone className="w-3.5 h-3.5 text-primary" /> Contacto del hotel
-                      </b>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Dirección</span>
-                        <strong className="text-foreground text-right">{hotel.direccion ?? "—"}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Teléfono</span>
-                        <strong className="text-foreground">{hotel.telefono ?? "—"}</strong>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Correo</span>
-                        <strong className="text-foreground">{hotel.correo_electronico ?? "—"}</strong>
-                      </div>
-                    </div>
-
-                    {/* Antes el precio y el método de pago solo aparecían ya
-                        adentro del Paso 4 -- el cliente llegaba a "revisar" su
-                        reserva sin ver cuánto iba a pagar ni con qué. */}
-                    <div className="border border-border rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <b className="text-xs flex items-center gap-1.5 text-foreground">
-                          <CreditCard className="w-3.5 h-3.5 text-primary" /> Pago
-                        </b>
-                        <button type="button" onClick={() => setStep(4)} className="text-primary text-[11px] font-bold hover:underline">
-                          Editar
-                        </button>
-                      </div>
-                      <div className="flex justify-between text-xs py-1">
-                        <span className="text-muted-foreground">Modalidad</span>
-                        <strong className="text-foreground">{paymentOption === 'full' ? 'Pago completo' : 'Anticipo (50%)'}</strong>
-                      </div>
-                      {metodoSeleccionado && (
-                        <div className="flex justify-between text-xs py-1">
-                          <span className="text-muted-foreground">Método</span>
-                          <strong className="text-foreground">{metodoSeleccionado.nombre_metodo}</strong>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-xs py-1.5 mt-1 border-t border-border/60">
-                        <span className="text-muted-foreground">Total a pagar</span>
-                        <strong className="text-primary text-sm">${paymentAmount.toLocaleString('es-CO')}</strong>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Antes eran listas planas de etiqueta/valor (y "—" donde
+                      el hotel no tenía teléfono o correo). Ver RevisionHotel. */}
+                  <RevisionHotel
+                    hotel={hotel}
+                    habitacion={habitacion}
+                    fechaInicio={fechaInicio}
+                    fechaFin={fechaFin}
+                    noches={nights}
+                    adultos={people}
+                    ninos={ninos}
+                    viajero={{ nombres, apellidos, cedula, correo, celular, ciudad }}
+                    precioNoche={precioPorNoche}
+                    total={totalPrice}
+                    aPagar={paymentAmount}
+                    modalidad={paymentOption}
+                    metodo={metodoSeleccionado?.nombre_metodo}
+                    onEditar={(paso) => {
+                      setStep(paso);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  />
                 </motion.section>
               )}
 

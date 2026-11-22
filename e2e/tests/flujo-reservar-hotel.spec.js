@@ -38,6 +38,15 @@ test('reservar un hotel: avanzar por los 4 pasos y llegar al pago con el total c
     await page.getByRole('button', { name: /^Continuar/ }).click();
     await expect(pasos.locator('[aria-current="step"]')).toContainText('Revisar reserva');
 
+    // La revisión muestra la estadía como un pase: 3 noches y el desglose
+    await expect(page.getByText('$320.000 × 3 noches')).toBeVisible();
+
+    // Recargar retoma la reserva donde iba (borrador en el navegador)
+    await page.waitForTimeout(600);
+    await page.reload();
+    await expect(page.getByRole('status').filter({ hasText: 'Retomamos tu reserva' })).toBeVisible();
+    await expect(pasos.locator('[aria-current="step"]')).toContainText('Revisar reserva');
+
     // Volver al paso 1 desde el encabezado y regresar
     await pasos.getByRole('button', { name: 'Volver al paso 1: Datos del viajero' }).click();
     await expect(pasos.locator('[aria-current="step"]')).toContainText('Datos del viajero');
