@@ -112,13 +112,17 @@ export default function Testimonials() {
             </div>
 
             <div>
-              {ratingPromedio !== null ? (
+              {ratingPromedio !== null && (totalResenas ?? 0) > 0 ? (
                 <>
                   <div className="flex items-center gap-1 mb-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className="w-3.5 h-3.5 fill-[#C9A227] text-[#C9A227]"
+                        className={`w-3.5 h-3.5 ${
+                          star <= Math.round(ratingPromedio)
+                            ? "fill-[#C9A227] text-[#C9A227]"
+                            : "text-muted-foreground/40"
+                        }`}
                       />
                     ))}
                   </div>

@@ -39,7 +39,7 @@ export default function Testimonios() {
   const [totalGlobal, setTotalGlobal] = useState(0);
   const [distribucion, setDistribucion] = useState<Record<string, number>>({});
   const [filtroEstrellas, setFiltroEstrellas] = useState<number | null>(null);
-  const [promedio, setPromedio] = useState(5);
+  const [promedio, setPromedio] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -219,22 +219,32 @@ export default function Testimonios() {
             <span className="text-primary"> con Alik Tours</span>
           </h1>
 
-          <div className="flex items-center justify-center gap-3">
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Star
-                  key={s}
-                  className="w-4 h-4 fill-[#C9A227] text-[#C9A227]"
-                />
-              ))}
+          {totalGlobal > 0 ? (
+            <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center gap-1" aria-hidden="true">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    className={`w-4 h-4 ${
+                      s <= Math.round(promedio)
+                        ? "fill-[#C9A227] text-[#C9A227]"
+                        : "text-muted-foreground/40"
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="text-foreground font-bold text-sm">
+                {promedio.toFixed(1)} / 5.0
+              </p>
+              <span className="text-muted-foreground text-sm">
+                · {totalGlobal} {totalGlobal === 1 ? "reseña" : "reseñas"}
+              </span>
             </div>
-            <p className="text-foreground font-bold text-sm">
-              {promedio.toFixed(1)} / 5.0
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              Aún no hay calificaciones publicadas.
             </p>
-            <span className="text-muted-foreground text-sm">
-              · {totalGlobal} {totalGlobal === 1 ? "reseña" : "reseñas"}
-            </span>
-          </div>
+          )}
         </div>
       </div>
 
