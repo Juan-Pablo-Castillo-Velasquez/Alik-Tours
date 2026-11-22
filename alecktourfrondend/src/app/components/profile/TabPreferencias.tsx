@@ -19,6 +19,7 @@ import { Link } from "react-router";
 import { preferenciasService } from "../../services/preferencias.service";
 import type { HotelDetailResponse } from "../../services/hotel.service";
 import HotelCard from "../HotelCard";
+import { etiquetaPreferencia } from "../preferences.data";
 
 // ── Mapeos de Negocio ──────────────────────────────────────────────────────
 const interesIcons: Record<string, any> = {
@@ -144,19 +145,11 @@ export default function TabPreferencias({ preferencias, idCliente }: Props) {
           {/* Bloque: Requerimientos y Parámetros Logísticos (Estilo Bento Box) */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[
-              { label: "Compañía", value: preferencias.compania, icon: User },
-              {
-                label: "Presupuesto",
-                value: preferencias.presupuesto,
-                icon: CreditCard,
-              },
-              { label: "Clima ideal", value: preferencias.clima, icon: MapPin },
-              { label: "Ritmo", value: preferencias.ritmo, icon: Clock },
-              {
-                label: "Transporte",
-                value: preferencias.transporte,
-                icon: Plane,
-              },
+              { label: "Compañía", value: etiquetaPreferencia("compania", preferencias.compania), icon: User },
+              { label: "Presupuesto", value: etiquetaPreferencia("presupuesto", preferencias.presupuesto), icon: CreditCard },
+              { label: "Clima ideal", value: etiquetaPreferencia("clima", preferencias.clima), icon: MapPin },
+              { label: "Ritmo", value: etiquetaPreferencia("ritmo", preferencias.ritmo), icon: Clock },
+              { label: "Transporte", value: etiquetaPreferencia("transporte", preferencias.transporte), icon: Plane },
             ]
               .filter((item) => item.value)
               .map((item) => {
@@ -177,7 +170,7 @@ export default function TabPreferencias({ preferencias, idCliente }: Props) {
                         >
                           {item.label}
                         </span>
-                        <p className="font-bold text-foreground text-lg capitalize truncate">
+                        <p className="font-bold text-foreground text-lg truncate">
                           {item.value}
                         </p>
                       </div>
