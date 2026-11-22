@@ -234,7 +234,7 @@ docker compose up --build -d
 Para probar las reseñas, los testimonios del inicio y la comunidad con contenido, con los contenedores levantados:
 
 ```bash
-docker compose exec backend python scripts/seed_demo_comunidad.py          # crea 24 reseñas y 22 publicaciones con fotos
+docker compose exec backend python scripts/seed_demo_comunidad.py          # crea 16 perfiles demo, 18 reseñas y 50 publicaciones con fotos y conversaciones
 docker compose exec backend python scripts/seed_demo_comunidad.py --borrar # las quita
 ```
 
