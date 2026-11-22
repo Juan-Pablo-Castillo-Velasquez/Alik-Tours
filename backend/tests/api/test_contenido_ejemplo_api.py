@@ -80,8 +80,14 @@ def test_carga_marcado_como_ejemplo_y_sin_tocar_los_promedios(client, crear_usua
     destacadas = client.get("/api/resenas/destacadas").json()
     assert destacadas["total"] == 1
     assert all(not r["ejemplo"] for r in destacadas["resenas"])
-    # Ni la página del hotel ni su calificación las incluyen.
-    assert len(client.get(f"/api/resenas/hotel/{hotel.id_hotel}").json()) == 1
+    # La página del hotel las muestra etiquetadas, después de la real...
+    del_hotel = client.get(f"/api/resenas/hotel/{hotel.id_hotel}").json()
+    assert del_hotel[0]["es_ejemplo"] is False
+    assert sum(r["es_ejemplo"] for r in del_hotel) == 18
+    # ...pero la calificación del hotel solo cuenta la reseña real.
+    detalle = client.get(f"/api/hoteles/{hotel.id_hotel}").json()
+    assert detalle["total_resenas"] == 1
+    assert detalle["calificacion_promedio"] == 3.0
 
 
 def test_quitarlo_deja_solo_lo_real(client, crear_usuario, hotel, resena_real, db):

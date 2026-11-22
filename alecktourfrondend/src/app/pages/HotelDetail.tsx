@@ -22,6 +22,7 @@ import {
   Waves,
   Wine,
 } from "lucide-react";
+import EtiquetaEjemplo from "../components/EtiquetaEjemplo";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
@@ -839,6 +840,7 @@ export default function HotelDetail() {
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-foreground truncate">
                                 {r.nombre_cliente ?? "Huésped Alik Tours"}
+                                {r.es_ejemplo && <EtiquetaEjemplo className="ml-2 align-middle" />}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {formatFechaResena(r.fecha_creacion)}

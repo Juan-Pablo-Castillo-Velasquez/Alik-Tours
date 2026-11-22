@@ -14,6 +14,7 @@ import {
   Star,
   XCircle,
 } from "lucide-react";
+import EtiquetaEjemplo from "../components/EtiquetaEjemplo";
 import AdornoTarjeta from "../components/temporada/AdornoTarjeta";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
@@ -690,6 +691,7 @@ export default function PackageDetail() {
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-foreground truncate">
                             {r.nombre_cliente ?? "Huésped Alik Tours"}
+                            {r.es_ejemplo && <EtiquetaEjemplo className="ml-2 align-middle" />}
                           </p>
                         </div>
                         <div className="ml-auto flex gap-0.5 shrink-0">
