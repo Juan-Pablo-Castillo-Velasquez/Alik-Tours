@@ -6,6 +6,10 @@ import {
   Check,
   Coffee,
   ChevronRight,
+  Clock,
+  Maximize2,
+  Mountain,
+  ShieldCheck,
   Dice5,
   Dumbbell,
   ExternalLink,
@@ -91,6 +95,18 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
     return `?${p.toString()}`;
   })();
 
+  // Noches de la búsqueda (si la persona ya eligió fechas): permite mostrar
+  // el total de la estadía, no solo la tarifa por noche.
+  const noches = (() => {
+    const start = searchParams.get("start");
+    const end = searchParams.get("end");
+    if (!start || !end) return 0;
+    const n = Math.round(
+      (new Date(`${end}T00:00:00`).getTime() - new Date(`${start}T00:00:00`).getTime()) / 86_400_000
+    );
+    return n > 0 && n < 60 ? n : 0;
+  })();
+
   /*
    * Protección importante:
    * mientras la información del hotel todavía está
@@ -99,8 +115,9 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
    */
   if (!hotel) {
     return (
-      <div className="flex w-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm md:flex-row">
-        <div className="h-[180px] w-full animate-pulse bg-muted md:h-[232px] md:w-[300px]" />
+      <div className="@container w-full">
+      <div className="flex w-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm @2xl:flex-row">
+        <div className="h-[180px] w-full animate-pulse bg-muted @2xl:h-[232px] @2xl:w-[300px]" />
 
         <div className="flex-1 space-y-3 p-5">
           <div className="h-3 w-20 animate-pulse rounded bg-muted" />
@@ -108,6 +125,7 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
           <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
           <div className="h-16 animate-pulse rounded-xl bg-muted" />
         </div>
+      </div>
       </div>
     );
   }
@@ -134,7 +152,7 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
   const caracteristicas =
     hotel.hotel_caracteristicas
       ?.filter((hc) => hc.disponible && hc.caracteristica)
-      .slice(0, 4) ?? [];
+      .slice(0, 5) ?? [];
 
   // Desayuno incluido: derivado de una característica real del hotel (no un
   // badge fijo) — solo aparece si el hotel realmente la tiene registrada.
@@ -196,20 +214,68 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
     `${hotel.nombre_hotel} ${hotel.ciudad ?? ""} ${hotel.pais ?? ""}`
   )}`;
   const enlace = `/hotel/${hotel.id_hotel}${searchQuery}`;
+
+  // Datos útiles para decidir, solo los que el hotel tiene cargados.
+  const hhmm = (h?: string | null) => (h ? h.slice(0, 5) : null);
+  const tiposHabitacion = new Set(habitacionesDisponibles.map((h) => h.id_tipo_habitacion)).size;
+  const precioMax = habitacionesDisponibles.length
+    ? Math.max(...habitacionesDisponibles.map((h) => h.precio_noche))
+    : null;
+  const datosRapidos: { icon: React.ElementType; texto: string; titulo?: string }[] = [];
+  if (hhmm(hotel.hora_checkin) || hhmm(hotel.hora_checkout)) {
+    datosRapidos.push({
+      icon: Clock,
+      texto: [
+        hhmm(hotel.hora_checkin) && `Entrada ${hhmm(hotel.hora_checkin)}`,
+        hhmm(hotel.hora_checkout) && `Salida ${hhmm(hotel.hora_checkout)}`,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    });
+  }
+  if (tiposHabitacion > 1) {
+    datosRapidos.push({
+      icon: BedDouble,
+      texto: `${tiposHabitacion} tipos de habitación${
+        precioMin != null && precioMax != null && precioMax > precioMin
+          ? ` · hasta $${precioMax.toLocaleString("es-CO")}`
+          : ""
+      }`,
+    });
+  }
+  if (hotel.politica_cancelacion) {
+    datosRapidos.push({ icon: ShieldCheck, texto: "Política de cancelación", titulo: hotel.politica_cancelacion });
+  }
+  if (hotel.politica_mascotas) {
+    datosRapidos.push({ icon: PawPrint, texto: "Política de mascotas", titulo: hotel.politica_mascotas });
+  }
+
+  // Detalle de la habitación más económica, si el hotel lo cargó.
+  const detalleHabitacion = [
+    habitacionDestacada?.tamano_m2 ? { icon: Maximize2, texto: `${habitacionDestacada.tamano_m2} m²` } : null,
+    habitacionDestacada?.tipo_cama ? { icon: BedDouble, texto: habitacionDestacada.tipo_cama } : null,
+    habitacionDestacada?.vista ? { icon: Mountain, texto: `Vista ${habitacionDestacada.vista.toLowerCase()}` } : null,
+    habitacionDestacada?.desayuno_incluido ? { icon: Coffee, texto: "Con desayuno" } : null,
+  ].filter(Boolean) as { icon: React.ElementType; texto: string }[];
   const favorito = isFavorito(hotel.id_hotel);
 
+  // @container: la tarjeta se acomoda al ANCHO QUE TIENE (no al de la
+  // pantalla). En el buscador va horizontal; en una columna angosta (p. ej.
+  // "También te puede interesar", 3 por fila) va vertical. Antes usaba md:
+  // y en esas columnas quedaba horizontal y aplastada.
   return (
+    <div className="@container w-full">
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.45, delay: index * 0.06 }}
-      className="group relative flex w-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 md:flex-row"
+      className="group relative flex w-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 @2xl:flex-row"
     >
       {/* ================= FOTO ================= */}
       <Link
         to={enlace}
-        className="relative block h-52 w-full shrink-0 overflow-hidden bg-muted md:h-auto md:min-h-[232px] md:w-[300px]"
+        className="relative block h-52 w-full shrink-0 overflow-hidden bg-muted @2xl:h-auto @2xl:min-h-[232px] @2xl:w-[300px]"
         aria-label={`Ver ${hotel.nombre_hotel}`}
       >
         <img
@@ -248,7 +314,7 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
         type="button"
         onClick={() => toggleFavorito(hotel.id_hotel)}
         disabled={loadingIds.has(hotel.id_hotel)}
-        className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-md transition hover:scale-105 disabled:opacity-60 md:left-[252px] md:right-auto ${
+        className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-md transition hover:scale-105 disabled:opacity-60 @2xl:left-[252px] @2xl:right-auto ${
           favorito ? "text-primary" : "text-neutral-500 hover:text-primary"
         }`}
         aria-label={favorito ? "Quitar de favoritos" : "Agregar a favoritos"}
@@ -261,14 +327,19 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
       <div className="flex min-w-0 flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            {estrellas > 0 && (
-              <div className="mb-1 flex items-center gap-1.5" title={`Hotel de ${estrellas} estrellas`}>
+            {(estrellas > 0 || hotel.tipo_alojamiento) && (
+              <div className="mb-1 flex items-center gap-2">
+                {hotel.tipo_alojamiento && (
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                    {hotel.tipo_alojamiento}
+                  </span>
+                )}
                 <span className="flex gap-0.5" aria-hidden="true">
                   {Array.from({ length: estrellas }, (_, i) => (
                     <Star key={i} className="h-3.5 w-3.5 fill-gold text-gold" />
                   ))}
                 </span>
-                <span className="sr-only">Hotel de {estrellas} estrellas</span>
+                {estrellas > 0 && <span className="sr-only">Hotel de {estrellas} estrellas</span>}
               </div>
             )}
             <Link to={enlace}>
@@ -317,6 +388,21 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
           </a>
         </p>
 
+        {hotel.descripcion && (
+          <p className="mt-2.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{hotel.descripcion}</p>
+        )}
+
+        {datosRapidos.length > 0 && (
+          <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-1.5 text-xs text-foreground/80 @md:grid-cols-2">
+            {datosRapidos.map(({ icon: Icon, texto, titulo }) => (
+              <li key={texto} className="flex min-w-0 items-center gap-1.5" title={titulo}>
+                <Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="truncate">{texto}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
         {caracteristicas.length > 0 && (
           <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Servicios del hotel">
             {caracteristicas.map((hc) => {
@@ -342,7 +428,7 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
 
         {/* -------- Habitación y precio -------- */}
         <div className="mt-auto pt-4">
-          <div className="flex flex-col gap-3 rounded-2xl border border-border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-2xl border border-border bg-muted/30 p-3 @md:flex-row @md:items-center @md:justify-between">
             <div className="min-w-0">
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${disponibilidad.clase}`}
@@ -365,16 +451,31 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
               ) : (
                 <p className="mt-1.5 text-xs text-muted-foreground">Consulta otras fechas o escríbele a un asesor.</p>
               )}
+              {detalleHabitacion.length > 0 && (
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                  {detalleHabitacion.map(({ icon: Icon, texto }) => (
+                    <span key={texto} className="inline-flex items-center gap-1">
+                      <Icon className="h-3 w-3" />
+                      {texto}
+                    </span>
+                  ))}
+                </p>
+              )}
             </div>
 
-            <div className="flex items-end justify-between gap-4 sm:justify-end">
+            <div className="flex items-end justify-between gap-4 @md:justify-end">
               {precioMin != null && (
-                <div className="text-left sm:text-right">
+                <div className="text-left @md:text-right">
                   <p className="text-[11px] text-muted-foreground">Desde</p>
                   <p className="text-2xl font-extrabold leading-none tracking-tight text-foreground">
                     ${precioMin.toLocaleString("es-CO")}
                   </p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">por noche</p>
+                  {noches > 0 && (
+                    <p className="mt-1 text-[11px] font-semibold text-foreground">
+                      {noches} {noches === 1 ? "noche" : "noches"}: ${(precioMin * noches).toLocaleString("es-CO")}
+                    </p>
+                  )}
                 </div>
               )}
               <Link
@@ -389,5 +490,6 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
         </div>
       </div>
     </motion.article>
+    </div>
   );
 }
