@@ -25,6 +25,7 @@ import { ReservaResponse } from "../data/reservaTypes";
 import { resenaService, ResenaResponse } from "../services/resena.service";
 import { reservaService } from "../services/services";
 import { confirmar } from "../utils/confirmar";
+import ContadorCaracteres from "../components/ui/ContadorCaracteres";
 
 const PAGE_SIZE = 9;
 
@@ -481,6 +482,7 @@ export default function Testimonios() {
                     placeholder="Cuéntanos cómo estuvo tu experiencia..."
                     className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
+                  <ContadorCaracteres valor={comentario} max={1000} />
                 </div>
 
                 {mensaje && (
@@ -541,6 +543,7 @@ export default function Testimonios() {
                           aria-label="Editar mi reseña"
                           className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/40"
                         />
+                        <ContadorCaracteres valor={edicion.comentario} max={1000} />
                         <div className="flex gap-2">
                           <button
                             onClick={() => guardarEdicion(r)}

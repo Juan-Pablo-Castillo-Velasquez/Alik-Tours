@@ -19,6 +19,7 @@ import { nuevoClientMsgId } from "../services/mensajeChat.service";
 import { ETIQUETA_MODALIDAD_VUELO, PaqueteDetalleResponse, paqueteService } from "../services/paquete.service";
 import { reservaService } from "../services/reserva.service";
 import { ETIQUETA_CLASE, hora, OfertaVuelo, rutaOferta } from "../services/vuelo.service";
+import ContadorCaracteres from "../components/ui/ContadorCaracteres";
 
 const PASOS = ["Tu viaje", "Viajeros", "Revisión", "Pago"];
 const HOY = new Date().toISOString().slice(0, 10);
@@ -465,6 +466,7 @@ export default function ReservarPaquete() {
                 <label className="block text-sm">
                   <span className="mb-1 block font-medium">Solicitudes especiales (opcional)</span>
                   <textarea value={solicitudes} onChange={(e) => setSolicitudes(e.target.value)} maxLength={2000} rows={3} placeholder="Ej: cama adicional, dieta especial, celebración..." className="w-full rounded-xl border border-border bg-input-background px-3 py-2.5" />
+                  <ContadorCaracteres valor={solicitudes} max={2000} />
                   <span className="text-[11px] text-muted-foreground">Las revisa la agencia; no se garantizan hasta que te las confirmen.</span>
                 </label>
               </section>

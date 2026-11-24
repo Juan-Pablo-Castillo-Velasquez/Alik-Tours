@@ -145,7 +145,7 @@ export default function Packages() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div className="relative w-full sm:max-w-xs">
               <MapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
+              <input maxLength={100}
                 type="text"
                 value={filtroDestino}
                 onChange={(e) => {

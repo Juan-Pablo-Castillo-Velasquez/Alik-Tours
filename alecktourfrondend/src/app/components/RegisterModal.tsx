@@ -607,7 +607,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 className="space-y-4"
                                             >
                                                 <Field label="Correo electrónico" icon={<Mail className="w-4 h-4" />} error={fieldError("correo_electronico")}>
-                                                    <input
+                                                    <input maxLength={120}
                                                         type="email"
                                                         name="correo_electronico"
                                                         value={formData.correo_electronico}
@@ -634,7 +634,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                             </button>
                                                         }
                                                     >
-                                                        <input
+                                                        <input maxLength={72}
                                                             type={showPassword ? "text" : "password"}
                                                             name="password"
                                                             value={formData.password}
@@ -661,7 +661,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                             </button>
                                                         }
                                                     >
-                                                        <input
+                                                        <input maxLength={72}
                                                             type={showConfirmPassword ? "text" : "password"}
                                                             name="confirmPassword"
                                                             value={formData.confirmPassword}
@@ -712,12 +712,12 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                             >
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <Field label="Nombre" icon={<User className="w-4 h-4" />}>
-                                                        <input type="text" name="nombre" value={formData.nombre}
+                                                        <input maxLength={80} type="text" name="nombre" value={formData.nombre}
                                                             onChange={handleChange} onBlur={handleBlur}
                                                             placeholder="Ej. Juan Pablo" autoComplete="given-name" required className={inputBase("nombre")} />
                                                     </Field>
                                                     <Field label="Apellido" icon={<User className="w-4 h-4" />}>
-                                                        <input type="text" name="apellido" value={formData.apellido}
+                                                        <input maxLength={80} type="text" name="apellido" value={formData.apellido}
                                                             onChange={handleChange} onBlur={handleBlur}
                                                             placeholder="Ej. Castillo" autoComplete="family-name" required className={inputBase("apellido")} />
                                                     </Field>
@@ -725,13 +725,13 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <Field label="Cédula" icon={<CreditCard className="w-4 h-4" />} error={fieldError("cedula")}>
-                                                        <input type="text" name="cedula" value={formData.cedula}
+                                                        <input maxLength={20} type="text" name="cedula" value={formData.cedula}
                                                             onChange={handleChange} onBlur={handleBlur}
                                                             placeholder="1020304050" required inputMode="numeric"
                                                             className={inputBase("cedula")} />
                                                     </Field>
                                                     <Field label="Celular" icon={<Phone className="w-4 h-4" />} error={fieldError("celular")}>
-                                                        <input type="tel" name="celular" value={formData.celular}
+                                                        <input maxLength={20} type="tel" name="celular" value={formData.celular}
                                                             onChange={handleChange} onBlur={handleBlur}
                                                             placeholder="3001234567" inputMode="tel" autoComplete="tel" required
                                                             className={inputBase("celular")} />
@@ -769,7 +769,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 </div>
 
                                                 <Field label="Dirección" icon={<MapPin className="w-4 h-4" />} error={fieldError("direccion")} optional>
-                                                    <input type="text" name="direccion" value={formData.direccion}
+                                                    <input maxLength={150} type="text" name="direccion" value={formData.direccion}
                                                         onChange={handleChange} onBlur={handleBlur}
                                                         placeholder="Ej. Calle 45 #12-34"
                                                         autoComplete="street-address"
@@ -778,7 +778,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <Field label="Barrio / Localidad" icon={<Building2 className="w-4 h-4" />} optional>
-                                                        <input type="text" name="barrio" value={formData.barrio}
+                                                        <input maxLength={80} type="text" name="barrio" value={formData.barrio}
                                                             onChange={handleChange}
                                                             placeholder="Ej. Chapinero"
                                                             className={inputBase("barrio")} />

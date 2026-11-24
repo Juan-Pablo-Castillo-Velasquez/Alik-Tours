@@ -217,7 +217,7 @@ export default function SearchBar() {
         {/* DESTINO — presente en ambos modos */}
         <div ref={destinoWrapperRef} className="relative flex-[1.3] min-w-0">
           <Segment label="Destino" icon={MapPin}>
-            <input
+            <input maxLength={80}
               type="text"
               value={destination}
               onFocus={() => setShowDestinations(true)}

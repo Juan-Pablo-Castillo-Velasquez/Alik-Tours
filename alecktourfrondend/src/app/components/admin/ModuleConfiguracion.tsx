@@ -187,7 +187,7 @@ export default function ModuleConfiguracion() {
           {!editing && (
             <div>
               <label className={labelCls}>Clave</label>
-              <input
+              <input maxLength={100}
                 value={form.clave}
                 onChange={e => setForm({ ...form, clave: e.target.value })}
                 placeholder="ej. contacto_whatsapp"
@@ -197,7 +197,7 @@ export default function ModuleConfiguracion() {
           )}
           <div>
             <label className={labelCls}>Valor</label>
-            <input
+            <input maxLength={80}
               value={form.valor}
               onChange={e => setForm({ ...form, valor: e.target.value })}
               className="mt-1 w-full px-3 py-2 border border-border rounded-lg text-sm bg-card text-foreground outline-none focus:ring-2 focus:ring-primary/40"
@@ -205,7 +205,7 @@ export default function ModuleConfiguracion() {
           </div>
           <div>
             <label className={labelCls}>Descripción (opcional)</label>
-            <input
+            <input maxLength={80}
               value={form.descripcion}
               onChange={e => setForm({ ...form, descripcion: e.target.value })}
               className="mt-1 w-full px-3 py-2 border border-border rounded-lg text-sm bg-card text-foreground outline-none focus:ring-2 focus:ring-primary/40"

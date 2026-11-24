@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { comunidadService, duracionVideo, LIMITES_COMUNIDAD, PublicacionComunidad } from "../../services/comunidad.service";
 import ModalBackdrop from "../ui/ModalBackdrop";
 import Estrellas from "./Estrellas";
+import ContadorCaracteres from "../ui/ContadorCaracteres";
 
 interface Props {
   abierto: boolean;
@@ -203,6 +204,7 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
           <label htmlFor="pub-contenido" className="text-xs font-semibold text-muted-foreground">Tu reseña</label>
           <textarea id="pub-contenido" value={contenido} onChange={(e) => setContenido(e.target.value)} maxLength={3000}
             rows={4} className={`${inputCls} resize-none`} placeholder="¿Qué fue lo mejor del viaje? ¿Lo recomendarías?" required />
+          <ContadorCaracteres valor={contenido} max={3000} />
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-muted-foreground">Calificación (opcional)</span>

@@ -202,7 +202,7 @@ export default function ModuleMiCuenta({ usuario, onFotoActualizada }: Props) {
           <div>
             <label className={labelCls}>Contraseña actual</label>
             <div className="relative">
-              <input
+              <input maxLength={72}
                 type={verActual ? "text" : "password"}
                 value={contrasenaActual}
                 onChange={e => setContrasenaActual(e.target.value)}
@@ -224,7 +224,7 @@ export default function ModuleMiCuenta({ usuario, onFotoActualizada }: Props) {
             <div>
               <label className={labelCls}>Nueva contraseña</label>
               <div className="relative">
-                <input
+                <input maxLength={72}
                   type={verNueva ? "text" : "password"}
                   value={nuevaContrasena}
                   onChange={e => setNuevaContrasena(e.target.value)}
@@ -243,7 +243,7 @@ export default function ModuleMiCuenta({ usuario, onFotoActualizada }: Props) {
             </div>
             <div>
               <label className={labelCls}>Confirmar nueva contraseña</label>
-              <input
+              <input maxLength={72}
                 type={verNueva ? "text" : "password"}
                 value={confirmarContrasena}
                 onChange={e => setConfirmarContrasena(e.target.value)}

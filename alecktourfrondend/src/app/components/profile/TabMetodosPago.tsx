@@ -346,7 +346,7 @@ export default function TabMetodosPago({ obligatorio = false, onMetodosChange }:
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground">Alias</label>
-                <input
+                <input maxLength={40}
                   type="text"
                   value={formMetodo.alias}
                   onChange={(e) => setFormMetodo((f) => ({ ...f, alias: e.target.value }))}

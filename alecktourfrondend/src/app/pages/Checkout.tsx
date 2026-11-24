@@ -823,7 +823,7 @@ export default function Checkout() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="checkout-nombres" className="block text-xs font-semibold text-muted-foreground mb-1.5">Nombres</label>
-                        <input
+                        <input maxLength={80}
                           id="checkout-nombres"
                           value={nombres}
                           onChange={(e) => setNombres(e.target.value)}
@@ -832,7 +832,7 @@ export default function Checkout() {
                       </div>
                       <div>
                         <label htmlFor="checkout-apellidos" className="block text-xs font-semibold text-muted-foreground mb-1.5">Apellidos</label>
-                        <input
+                        <input maxLength={80}
                           id="checkout-apellidos"
                           value={apellidos}
                           onChange={(e) => setApellidos(e.target.value)}
@@ -843,7 +843,7 @@ export default function Checkout() {
                         <label htmlFor="checkout-correo" className="block text-xs font-semibold text-muted-foreground mb-1.5">Correo electrónico</label>
                         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-input-background">
                           <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <input
+                          <input maxLength={120}
                             id="checkout-correo"
                             value={correo}
                             onChange={(e) => setCorreo(e.target.value)}
@@ -855,7 +855,7 @@ export default function Checkout() {
                         <label htmlFor="checkout-celular" className="block text-xs font-semibold text-muted-foreground mb-1.5">Celular</label>
                         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-input-background">
                           <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <input
+                          <input maxLength={20}
                             id="checkout-celular"
                             value={celular}
                             onChange={(e) => setCelular(e.target.value)}
@@ -867,7 +867,7 @@ export default function Checkout() {
                         <label htmlFor="checkout-cedula" className="block text-xs font-semibold text-muted-foreground mb-1.5">Cédula</label>
                         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-input-background">
                           <IdCard className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <input
+                          <input maxLength={20}
                             id="checkout-cedula"
                             value={cedula}
                             onChange={(e) => setCedula(e.target.value)}
@@ -879,7 +879,7 @@ export default function Checkout() {
                         <label htmlFor="checkout-ciudad" className="block text-xs font-semibold text-muted-foreground mb-1.5">Ciudad</label>
                         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-input-background">
                           <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <input
+                          <input maxLength={80}
                             id="checkout-ciudad"
                             value={ciudad}
                             onChange={(e) => setCiudad(e.target.value)}
@@ -889,7 +889,7 @@ export default function Checkout() {
                       </div>
                       <div className="sm:col-span-2">
                         <label htmlFor="checkout-direccion" className="block text-xs font-semibold text-muted-foreground mb-1.5">Dirección</label>
-                        <input
+                        <input maxLength={150}
                           id="checkout-direccion"
                           value={direccion}
                           onChange={(e) => setDireccion(e.target.value)}

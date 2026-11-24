@@ -82,7 +82,7 @@ export default function FAQ() {
             className="relative max-w-xl mx-auto mb-10"
           >
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 w-5 h-5" />
-            <input
+            <input maxLength={100}
               type="text"
               placeholder="Buscar pregunta o palabra clave..."
               value={searchTerm}

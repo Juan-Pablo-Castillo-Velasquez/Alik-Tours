@@ -303,7 +303,7 @@ export default function Vuelos() {
         </label>
         <div className="relative mt-2">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
+          <input maxLength={100}
             id="vuelos-texto"
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
@@ -440,7 +440,7 @@ export default function Vuelos() {
               Origen
               <span className="relative mt-1 block">
                 <PlaneTakeoff className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
-                <input value={origen} onChange={(e) => setOrigen(e.target.value)} placeholder="Ciudad o código (BOG)" className={campo} />
+                <input maxLength={80} value={origen} onChange={(e) => setOrigen(e.target.value)} placeholder="Ciudad o código (BOG)" className={campo} />
               </span>
             </label>
             <button
@@ -455,7 +455,7 @@ export default function Vuelos() {
               Destino
               <span className="relative mt-1 block">
                 <PlaneLanding className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
-                <input value={destino} onChange={(e) => setDestino(e.target.value)} placeholder="Ciudad o código (CTG)" className={campo} />
+                <input maxLength={80} value={destino} onChange={(e) => setDestino(e.target.value)} placeholder="Ciudad o código (CTG)" className={campo} />
               </span>
             </label>
             <label className="text-xs font-medium text-muted-foreground">

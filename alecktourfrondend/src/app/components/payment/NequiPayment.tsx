@@ -48,7 +48,7 @@ export default function NequiPayment({
       </div>
       <div>
         <label htmlFor="nequi-celular" className="block text-xs font-medium text-muted-foreground mb-1.5">Tu número de celular Nequi (desde el que enviaste)</label>
-        <input
+        <input maxLength={20}
           id="nequi-celular"
           type="text"
           inputMode="numeric"

@@ -189,7 +189,7 @@ export default function ModuleRoles({
           {msg && <div className="p-3 rounded-xl text-sm font-medium bg-destructive/10 text-destructive">{msg.text}</div>}
           <div>
             <label className={labelCls}>Nombre del rol</label>
-            <input
+            <input maxLength={80}
               value={nombreNuevo}
               onChange={(e) => setNombreNuevo(e.target.value)}
               className={inputCls}

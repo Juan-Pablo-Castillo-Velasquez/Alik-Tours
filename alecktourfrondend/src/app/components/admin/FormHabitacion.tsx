@@ -202,7 +202,7 @@ export default function FormHabitacion({ idHotel, habitacion, tipos, onCambio, o
             </option>
           ))}
         </select>
-        <input value={form.numero_habitacion} onChange={(e) => set("numero_habitacion", e.target.value)} className={inputCls} required placeholder="Número (ej: 204)" aria-label="Número de habitación" />
+        <input maxLength={80} value={form.numero_habitacion} onChange={(e) => set("numero_habitacion", e.target.value)} className={inputCls} required placeholder="Número (ej: 204)" aria-label="Número de habitación" />
         <input type="number" min="0" step="1000" value={form.precio_noche} onChange={(e) => set("precio_noche", e.target.value)} className={inputCls} required placeholder="Precio/noche" aria-label="Precio por noche" />
         <select value={form.estado} onChange={(e) => set("estado", e.target.value)} className={inputCls} aria-label="Estado">
           <option value="disponible">Disponible</option>

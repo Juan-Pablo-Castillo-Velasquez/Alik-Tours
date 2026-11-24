@@ -215,7 +215,7 @@ export default function ModuleUsuarios({ usuarios, roles, onDelete, onSubmit, on
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
+          <input maxLength={120}
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por usuario, correo o nombre..."
@@ -383,18 +383,18 @@ export default function ModuleUsuarios({ usuarios, roles, onDelete, onSubmit, on
           )}
           <div>
             <label className={labelCls}>Usuario</label>
-            <input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })}
+            <input maxLength={80} value={form.username} onChange={e => setForm({ ...form, username: e.target.value })}
               className={inputCls} required placeholder="nuevo.usuario" minLength={3} />
           </div>
           <div>
             <label className={labelCls}>Correo</label>
-            <input type="email" value={form.correo_electronico}
+            <input maxLength={120} type="email" value={form.correo_electronico}
               onChange={e => setForm({ ...form, correo_electronico: e.target.value })}
               className={inputCls} required placeholder="usuario@alektours.com" />
           </div>
           <div>
             <label className={labelCls}>Contraseña</label>
-            <input type="password" value={form.password}
+            <input maxLength={72} type="password" value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
               className={inputCls} required minLength={8} placeholder="Mínimo 8 caracteres" />
           </div>

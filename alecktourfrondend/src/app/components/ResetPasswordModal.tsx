@@ -108,7 +108,7 @@ export default function ResetPasswordModal({ isOpen, onClose, token }: ResetPass
                                 <div className="space-y-4 mb-6">
                                     <div>
                                         <label className="block text-xs text-muted-foreground mb-1">Nueva contraseña</label>
-                                        <input
+                                        <input maxLength={72}
                                             type="password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
@@ -119,7 +119,7 @@ export default function ResetPasswordModal({ isOpen, onClose, token }: ResetPass
                                     </div>
                                     <div>
                                         <label className="block text-xs text-muted-foreground mb-1">Confirmar contraseña</label>
-                                        <input
+                                        <input maxLength={72}
                                             type="password"
                                             value={confirm}
                                             onChange={(e) => setConfirm(e.target.value)}

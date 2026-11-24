@@ -371,7 +371,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
                 <Paperclip className="w-4 h-4" />
               </button>
               <div className="flex-1 flex flex-col gap-1">
-                <textarea
+                <textarea maxLength={2000}
                   ref={textareaRef}
                   value={texto}
                   onChange={(e) => setTexto(e.target.value)}

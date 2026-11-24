@@ -16,6 +16,7 @@ import { motion } from "motion/react";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import { empresaService } from "../services/empresa.service";
+import ContadorCaracteres from "../components/ui/ContadorCaracteres";
 
 export default function Corporate() {
   // El formulario de acá abajo antes era decorativo (sin onSubmit, sin
@@ -446,6 +447,7 @@ export default function Corporate() {
                       className="w-full px-4 py-4 bg-background text-foreground border-2 border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-none placeholder:text-muted-foreground/60"
                       placeholder="Cuéntanos más sobre tus necesidades..."
                     />
+                    <ContadorCaracteres valor={form.mensaje} max={2000} />
                       <div className="mt-1"><ErrorCampo id="corp-mensaje-error" mensaje={errores.mensaje} /></div>
                   </div>
 

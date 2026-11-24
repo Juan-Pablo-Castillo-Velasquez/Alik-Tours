@@ -334,7 +334,7 @@ export default function FormPaquete({ paquete, hoteles, loading, onSubmit, onCer
                 <L t="Noches" ayuda={f.duracion_dias && f.noches === "" ? `Si lo dejas vacío: ${Math.max(Number(f.duracion_dias) - 1, 0)}` : undefined}><input type="number" min={0} {...txt("noches")} className={inputCls} /></L>
                 <L t="Vigente desde"><input type="date" {...txt("vigencia_desde")} className={inputCls} /></L>
                 <L t="Vigente hasta"><input type="date" {...txt("vigencia_hasta")} className={inputCls} /></L>
-                <L t="Descripción comercial" className="sm:col-span-2"><textarea {...txt("descripcion")} rows={4} className={inputCls} /></L>
+                <L t="Descripción comercial" className="sm:col-span-2"><textarea maxLength={5000} {...txt("descripcion")} rows={4} className={inputCls} /></L>
                 <L t="Foto de portada" className="sm:col-span-2">
                   <label className="flex h-28 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-border bg-muted/40 hover:border-primary/40">
                     {preview ? <img src={preview} alt="" className="h-full w-full object-cover" /> : (
@@ -366,9 +366,9 @@ export default function FormPaquete({ paquete, hoteles, loading, onSubmit, onCer
                       <input value={d.lugar ?? ""} onChange={(e) => setDia(i, "lugar", e.target.value)} maxLength={150} className={inputCls} placeholder="Lugar" />
                       <input value={d.horario ?? ""} onChange={(e) => setDia(i, "horario", e.target.value)} maxLength={120} className={inputCls} placeholder="Horario (si está definido)" />
                     </div>
-                    <textarea value={d.descripcion ?? ""} onChange={(e) => setDia(i, "descripcion", e.target.value)} rows={2} className={inputCls} placeholder="Descripción del día" />
-                    <textarea value={d.actividades ?? ""} onChange={(e) => setDia(i, "actividades", e.target.value)} rows={2} className={inputCls} placeholder="Actividades, una por línea" />
-                    <input value={d.informacion_adicional ?? ""} onChange={(e) => setDia(i, "informacion_adicional", e.target.value)} className={inputCls} placeholder="Información adicional" />
+                    <textarea maxLength={5000} value={d.descripcion ?? ""} onChange={(e) => setDia(i, "descripcion", e.target.value)} rows={2} className={inputCls} placeholder="Descripción del día" />
+                    <textarea maxLength={5000} value={d.actividades ?? ""} onChange={(e) => setDia(i, "actividades", e.target.value)} rows={2} className={inputCls} placeholder="Actividades, una por línea" />
+                    <input maxLength={300} value={d.informacion_adicional ?? ""} onChange={(e) => setDia(i, "informacion_adicional", e.target.value)} className={inputCls} placeholder="Información adicional" />
                   </fieldset>
                 ))}
                 <button type="button" onClick={() => set("itinerario", [...f.itinerario, { dia: String(f.itinerario.length + 1), titulo: "" }])} className="flex items-center gap-1.5 rounded-xl border border-dashed border-border px-4 py-2 text-sm hover:border-primary/40">
@@ -416,7 +416,7 @@ export default function FormPaquete({ paquete, hoteles, loading, onSubmit, onCer
                 </div>
                 {f.no_incluye && (
                   <L t="Texto anterior de 'no incluye'" ayuda="Se muestra mientras no agregues ítems de 'No incluye'. Puedes pasarlos arriba y borrarlo.">
-                    <textarea {...txt("no_incluye")} rows={3} className={inputCls} />
+                    <textarea maxLength={5000} {...txt("no_incluye")} rows={3} className={inputCls} />
                   </L>
                 )}
                 <section>

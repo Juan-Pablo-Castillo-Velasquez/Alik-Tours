@@ -17,6 +17,7 @@ import { nuevoClientMsgId } from "../services/mensajeChat.service";
 import { reservaService } from "../services/reserva.service";
 import { hora, OfertaVuelo, rutaOferta, vueloService } from "../services/vuelo.service";
 import { fechaVuelo } from "./Vuelos";
+import ContadorCaracteres from "../components/ui/ContadorCaracteres";
 
 type Pasajero = ViajeroInput & { clave: string };
 const HOY = new Date().toISOString().slice(0, 10);
@@ -189,6 +190,7 @@ export default function ReservarVuelo() {
                   <label className="block text-sm">
                     <span className="mb-1 block font-medium">Solicitudes especiales (opcional)</span>
                     <textarea value={solicitudes} onChange={(e) => setSolicitudes(e.target.value)} maxLength={2000} rows={2} placeholder="Ej: asistencia en aeropuerto, comida especial..." className={campo} />
+                    <ContadorCaracteres valor={solicitudes} max={2000} />
                     <span className="text-[11px] text-muted-foreground">Las gestiona la agencia con la aerolínea; no se garantizan hasta que te las confirmen.</span>
                   </label>
                 </section>

@@ -386,7 +386,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                                     <label htmlFor="login-correo" className="block text-sm font-medium text-foreground mb-1.5">Correo electrónico</label>
                                                     <div className="relative group">
                                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                                        <input
+                                                        <input maxLength={120}
                                                             id="login-correo"
                                                             type="email"
                                                             name="username"
@@ -427,7 +427,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                                     </div>
                                                     <div className="relative group">
                                                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                                        <input
+                                                        <input maxLength={72}
                                                             id="login-password"
                                                             type={showPassword ? "text" : "password"}
                                                             name="password"
@@ -525,7 +525,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
                                             <>
                                                 <div className="relative mb-4 group">
                                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                                    <input
+                                                    <input maxLength={120}
                                                         type="email"
                                                         placeholder="tu@correo.com"
                                                         value={forgotEmail}

@@ -34,7 +34,7 @@ export default function PSEPayment({
       </div>
       <div>
         <label htmlFor="pse-documento" className="block text-xs font-medium text-muted-foreground mb-1.5">Número de documento</label>
-        <input
+        <input maxLength={20}
           id="pse-documento"
           type="text"
           inputMode="numeric"

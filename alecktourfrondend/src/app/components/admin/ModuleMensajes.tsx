@@ -433,7 +433,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
           <div className="p-3 border-b border-border space-y-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <input
+              <input maxLength={120}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Buscar por nombre o correo..."
@@ -818,7 +818,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                 <div className="px-5 pt-2.5 flex items-center gap-2 flex-wrap border-t border-border/60">
                   <span className="text-[11px] text-muted-foreground">¿De qué reserva hablas? (opcional)</span>
                   {reservasDelClienteActivo.length > 3 && (
-                    <input
+                    <input maxLength={100}
                       type="text"
                       value={busquedaReserva}
                       onChange={(e) => setBusquedaReserva(e.target.value)}
@@ -878,7 +878,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                   <Paperclip className="w-4 h-4" />
                 </button>
                 <div className="flex-1 flex flex-col gap-1">
-                  <textarea
+                  <textarea maxLength={5000}
                     value={texto}
                     onChange={(e) => setTexto(e.target.value)}
                     onKeyDown={(e) => {

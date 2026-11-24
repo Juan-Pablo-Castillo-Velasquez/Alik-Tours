@@ -76,7 +76,7 @@ function Caja({
   return (
     <div className="flex items-end gap-2">
       <div className="flex-1 min-w-0">
-        <textarea
+        <textarea maxLength={2000}
           value={texto}
           autoFocus={autoFocus}
           onChange={(e) => setTexto(e.target.value.slice(0, LIMITES_COMUNIDAD.comentarioMax))}

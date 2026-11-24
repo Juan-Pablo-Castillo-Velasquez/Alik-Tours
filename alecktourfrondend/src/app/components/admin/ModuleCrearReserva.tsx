@@ -300,7 +300,7 @@ export default function ModuleCrearReserva({ clientes, paquetes, hoteles, onSubm
             ) : nuevoCliente ? (
               <div className="grid gap-2 sm:grid-cols-2">
                 {(["nombre", "apellido", "cedula", "celular", "correo"] as const).map((k) => (
-                  <input key={k} value={nuevoCliente[k]} onChange={(e) => setNuevoCliente({ ...nuevoCliente, [k]: e.target.value })} placeholder={`${k[0].toUpperCase()}${k.slice(1)}${k === "correo" ? "" : " *"}`} aria-label={k} className={inputCls} />
+                  <input maxLength={k === "correo" ? 120 : k === "cedula" || k === "celular" ? 20 : 80} key={k} value={nuevoCliente[k]} onChange={(e) => setNuevoCliente({ ...nuevoCliente, [k]: e.target.value })} placeholder={`${k[0].toUpperCase()}${k.slice(1)}${k === "correo" ? "" : " *"}`} aria-label={k} className={inputCls} />
                 ))}
                 <div className="flex gap-2 sm:col-span-2">
                   <button type="button" onClick={crearCliente} disabled={guardandoCliente || !nuevoCliente.nombre || !nuevoCliente.apellido || !nuevoCliente.cedula || !nuevoCliente.celular} className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
@@ -313,7 +313,7 @@ export default function ModuleCrearReserva({ clientes, paquetes, hoteles, onSubm
               <>
                 <div className="relative mb-2">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input value={busquedaCliente} onChange={(e) => setBusquedaCliente(e.target.value)} placeholder="Buscar por nombre, cédula, correo o celular" aria-label="Buscar cliente" className={inputCls + " pl-9"} />
+                  <input maxLength={120} value={busquedaCliente} onChange={(e) => setBusquedaCliente(e.target.value)} placeholder="Buscar por nombre, cédula, correo o celular" aria-label="Buscar cliente" className={inputCls + " pl-9"} />
                 </div>
                 <ul className="max-h-60 divide-y divide-border overflow-y-auto rounded-xl border border-border">
                   {clientesFiltrados.map((c) => (
@@ -452,13 +452,13 @@ export default function ModuleCrearReserva({ clientes, paquetes, hoteles, onSubm
               {viajeros.map((v, i) => (
                 <div key={v.clave} className="grid grid-cols-2 gap-2 rounded-xl border border-border p-2 sm:grid-cols-[90px_1fr_1fr_130px_70px_1fr]">
                   <span className="self-center text-xs font-semibold text-muted-foreground">{v.es_titular ? "Titular" : v.tipo === "adulto" ? "Adulto" : v.tipo === "nino" ? "Niño" : "Infante"}</span>
-                  <input value={v.nombres} onChange={(e) => setViajeros((vs) => vs.map((x, j) => j === i ? { ...x, nombres: e.target.value } : x))} placeholder="Nombres" aria-label="Nombres" className={inputCls} />
-                  <input value={v.apellidos} onChange={(e) => setViajeros((vs) => vs.map((x, j) => j === i ? { ...x, apellidos: e.target.value } : x))} placeholder="Apellidos" aria-label="Apellidos" className={inputCls} />
+                  <input maxLength={80} value={v.nombres} onChange={(e) => setViajeros((vs) => vs.map((x, j) => j === i ? { ...x, nombres: e.target.value } : x))} placeholder="Nombres" aria-label="Nombres" className={inputCls} />
+                  <input maxLength={80} value={v.apellidos} onChange={(e) => setViajeros((vs) => vs.map((x, j) => j === i ? { ...x, apellidos: e.target.value } : x))} placeholder="Apellidos" aria-label="Apellidos" className={inputCls} />
                   <input type="date" value={v.fecha_nacimiento ?? ""} onChange={(e) => setViajeros((vs) => vs.map((x, j) => j === i ? { ...x, fecha_nacimiento: e.target.value } : x))} aria-label="Fecha de nacimiento" className={inputCls} />
                   <select value={v.tipo_documento ?? "CC"} onChange={(e) => setViajeros((vs) => vs.map((x, j) => j === i ? { ...x, tipo_documento: e.target.value } : x))} aria-label="Tipo de documento" className={inputCls}>
                     {["CC", "TI", "RC", "CE", "PA"].map((t) => <option key={t}>{t}</option>)}
                   </select>
-                  <input value={v.numero_documento ?? ""} onChange={(e) => setViajeros((vs) => vs.map((x, j) => j === i ? { ...x, numero_documento: e.target.value.replace(/[^A-Za-z0-9.\- ]/g, "") } : x))} placeholder="Documento" aria-label="Documento" className={inputCls} />
+                  <input maxLength={20} value={v.numero_documento ?? ""} onChange={(e) => setViajeros((vs) => vs.map((x, j) => j === i ? { ...x, numero_documento: e.target.value.replace(/[^A-Za-z0-9.\- ]/g, "") } : x))} placeholder="Documento" aria-label="Documento" className={inputCls} />
                 </div>
               ))}
             </div>

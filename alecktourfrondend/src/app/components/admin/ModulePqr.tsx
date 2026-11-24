@@ -34,6 +34,7 @@ import { codigoReserva } from "../../utils/reservaPresentacion";
 import { EstadoPqrBadge, EtiquetaEjemplo, HiloPqr, PlazoCorto, PlazoDetalle } from "../pqr/PqrPiezas";
 import Pagination from "../ui/pagination";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../ui/dialog";
+import ContadorCaracteres from "../ui/ContadorCaracteres";
 import AdminModal from "./ui/AdminModal";
 import ClienteCombobox, { type ClienteBusqueda } from "./ui/ClienteCombobox";
 import EmptyState from "./ui/EmptyState";
@@ -237,6 +238,7 @@ export default function ModulePqr({
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
+              maxLength={100}
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Radicado, asunto, cliente o cédula"
@@ -531,6 +533,15 @@ function DetalleGestion({
     respuesta: decision === "parcial" || decision === "desfavorable" ? 80 : 30,
     cierre: 10,
   };
+  // Mismos máximos que el backend (schemas/pqr_schema.py).
+  const maximo: Record<Accion, number> = {
+    mensaje: 3000,
+    nota: 3000,
+    informacion: 2000,
+    prorroga: 2000,
+    respuesta: 8000,
+    cierre: 1000,
+  };
   const tipificada = !!pqr.categoria;
   const listo =
     (actual ? texto.trim().length >= minimo[actual] : false) && (actual !== "respuesta" || tipificada);
@@ -805,6 +816,7 @@ function DetalleGestion({
               Texto
             </label>
             <textarea
+              maxLength={maximo[actual]}
               id="pqr-texto"
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
@@ -814,7 +826,9 @@ function DetalleGestion({
             />
             <div className="mt-3 flex items-center justify-between gap-3">
               <span className={`text-xs ${listo ? "text-muted-foreground" : "text-muted-foreground/80"}`}>
-                {texto.trim().length < minimo[actual] ? `Mínimo ${minimo[actual]} caracteres` : `${texto.trim().length} caracteres`}
+                {texto.trim().length < minimo[actual]
+                  ? `Mínimo ${minimo[actual]} caracteres · ${texto.length}/${maximo[actual].toLocaleString("es-CO")}`
+                  : `${texto.length.toLocaleString("es-CO")}/${maximo[actual].toLocaleString("es-CO")}`}
               </span>
               <button
                 type="button"
@@ -947,24 +961,28 @@ function RadicarPorCliente({
             Lo que cuenta el cliente
           </label>
           <textarea
+            maxLength={4000}
             id="rad-desc"
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             rows={4}
             className={`${inputCls} resize-y`}
           />
+          <ContadorCaracteres valor={descripcion} max={4000} />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="rad-pret" className={labelCls}>
             Lo que pide {tipo === "reclamo" ? "(obligatorio en reclamos)" : "(opcional)"}
           </label>
           <textarea
+            maxLength={2000}
             id="rad-pret"
             value={pretension}
             onChange={(e) => setPretension(e.target.value)}
             rows={2}
             className={`${inputCls} resize-y`}
           />
+          <ContadorCaracteres valor={pretension} max={2000} />
         </div>
         <label className="flex items-start gap-2 text-sm text-foreground sm:col-span-2">
           <input type="checkbox" checked={autoriza} onChange={(e) => setAutoriza(e.target.checked)} className="mt-0.5" />

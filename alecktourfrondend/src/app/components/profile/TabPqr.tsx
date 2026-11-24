@@ -19,6 +19,7 @@ import { pqrService, type PqrDetalle, type PqrResumen, type TipoPqr } from "../.
 import { DECISION_PQR, fechaCorta, TIPOS_PQR } from "../../utils/pqr";
 import { codigoReserva, tituloReserva } from "../../utils/reservaPresentacion";
 import { EstadoPqrBadge, EtiquetaEjemplo, HiloPqr, PlazoCorto, PlazoDetalle } from "../pqr/PqrPiezas";
+import ContadorCaracteres from "../ui/ContadorCaracteres";
 import Pagination from "../ui/pagination";
 import EncabezadoTab, { PanelPerfil, VacioPerfil } from "./EncabezadoTab";
 
@@ -425,6 +426,7 @@ function FormularioPqr({
                 placeholder="Ej.: Que me reembolsen la noche que no se prestó."
                 className={`${campo} resize-y`}
               />
+              <ContadorCaracteres valor={pretension} max={2000} />
               {tipo === "reclamo" && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   En un reclamo es obligatorio: te diremos de forma expresa si accedemos o no y por qué.
@@ -626,6 +628,7 @@ function DetallePqr({ id, onVolver }: { id: number; onVolver: () => void }) {
             placeholder="Comentario (opcional)"
             className={`${campo} mt-3`}
           />
+          <ContadorCaracteres valor={comentario} max={1000} />
           <div className="mt-3 flex justify-end">
             <button
               type="button"
@@ -681,6 +684,7 @@ function DetallePqr({ id, onVolver }: { id: number; onVolver: () => void }) {
               placeholder="Escribe un mensaje para el equipo…"
               className={`${campo} resize-y`}
             />
+            <ContadorCaracteres valor={texto} max={3000} />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               {confirmarDesistir ? (
                 <span className="flex flex-wrap items-center gap-2 text-sm">
