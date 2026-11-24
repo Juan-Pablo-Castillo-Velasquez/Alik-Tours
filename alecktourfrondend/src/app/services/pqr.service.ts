@@ -50,6 +50,10 @@ export interface PqrResumen {
   decision: DecisionPqr | null;
   fecha_respuesta: string | null;
   satisfaccion: number | null;
+  categoria: string | null;
+  categoria_nombre: string | null;
+  motivo: string | null;
+  es_ejemplo: boolean;
   ultima_actividad: string | null;
 }
 
@@ -96,6 +100,15 @@ export interface PqrResumenGestion {
   respondidas: number;
   a_tiempo_pct: number | null;
   satisfaccion_promedio: number | null;
+  sin_tipificar: number;
+  ejemplos: number;
+  por_categoria: { categoria: string; nombre: string; total: number }[];
+}
+
+export interface PqrCategoria {
+  categoria: string;
+  nombre: string;
+  motivos: string[];
 }
 
 export interface PqrPagina {
@@ -109,6 +122,7 @@ export interface PqrPagina {
 export interface FiltrosGestionPqr {
   estado?: string;
   tipo?: string;
+  categoria?: string;
   responsable?: string;
   plazo?: string;
   q?: string;
@@ -141,7 +155,20 @@ export const pqrService = {
   gestion: (f: FiltrosGestionPqr) => apiFetch<PqrPagina>(`/pqr/gestion${query(f)}`),
   responsables: () => apiFetch<{ id_usuario: number; nombre: string }[]>('/pqr/gestion/responsables'),
   deCliente: (idCliente: number) => apiFetch<PqrResumen[]>(`/pqr/gestion/cliente/${idCliente}`),
-  actualizar: (id: number, data: { estado?: 'en_tramite'; prioridad?: 'normal' | 'alta'; id_responsable?: number }) =>
+  tipificaciones: () => apiFetch<PqrCategoria[]>('/pqr/gestion/tipificaciones'),
+  cargarEjemplos: (id_cliente: number) =>
+    apiFetch<{ creadas: number }>('/pqr/gestion/ejemplos', { method: 'POST', body: { id_cliente } }),
+  borrarEjemplos: () => apiFetch<{ borradas: number }>('/pqr/gestion/ejemplos', { method: 'DELETE' }),
+  actualizar: (
+    id: number,
+    data: {
+      estado?: 'en_tramite';
+      prioridad?: 'normal' | 'alta';
+      id_responsable?: number;
+      categoria?: string;
+      motivo?: string;
+    },
+  ) =>
     apiFetch<PqrDetalle>(`/pqr/${id}/gestion`, { method: 'PATCH', body: data }),
   solicitarInformacion: (id: number, texto: string) =>
     apiFetch<PqrDetalle>(`/pqr/${id}/solicitar-informacion`, { method: 'POST', body: { texto } }),

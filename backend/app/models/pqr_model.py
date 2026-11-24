@@ -56,6 +56,16 @@ class Pqr(Base):
     id_usuario_responde = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
     respondida_a_tiempo = Column(Boolean, nullable=True)
 
+    # Tipificación: la clasifica el asesor (categoría y motivo, ver
+    # pqr_service.TIPIFICACION). Es obligatoria para dar la respuesta.
+    categoria = Column(String(30), nullable=True, index=True)
+    motivo = Column(String(80), nullable=True)
+    id_usuario_tipifica = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
+    fecha_tipificacion = Column(TIMESTAMP, nullable=True)
+    # PQR de ejemplo para demostraciones: se marcan en pantalla, no cuentan en
+    # los indicadores y se pueden borrar todas juntas.
+    es_ejemplo = Column(Boolean, nullable=False, default=False, server_default="false")
+
     satisfaccion = Column(Integer, nullable=True)
     comentario_satisfaccion = Column(Text, nullable=True)
     fecha_cierre = Column(TIMESTAMP, nullable=True)

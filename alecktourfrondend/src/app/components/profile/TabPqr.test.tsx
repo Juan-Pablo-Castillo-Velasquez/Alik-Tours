@@ -26,6 +26,10 @@ const resumen: PqrResumen = {
   decision: null,
   fecha_respuesta: null,
   satisfaccion: null,
+  categoria: null,
+  categoria_nombre: null,
+  motivo: null,
+  es_ejemplo: false,
   ultima_actividad: "2026-11-24T15:00:00Z",
 };
 

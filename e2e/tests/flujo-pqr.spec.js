@@ -2,7 +2,7 @@
 // asesor lo encuentra en el panel y da la respuesta de fondo, y el cliente
 // la ve en su perfil y califica la atención.
 import { test, expect } from './fixtures.js';
-import { API_URL, abrirSesionEnNavegador, crearClienteConPerfil, sesionAdmin, unico } from './support/api.js';
+import { API_URL, MAILPIT_URL, abrirSesionEnNavegador, crearClienteConPerfil, sesionAdmin, unico } from './support/api.js';
 
 async function guardarMedioDePago(request, sesion) {
   const r = await request.post(`${API_URL}/api/metodos-pago-guardados`, {
@@ -12,8 +12,27 @@ async function guardarMedioDePago(request, sesion) {
   expect(r.ok(), `medio de pago: ${r.status()} ${await r.text()}`).toBeTruthy();
 }
 
+/** Espera en Mailpit el correo con ese asunto y devuelve su texto. */
+async function correoCon(request, para, asunto) {
+  let texto = null;
+  await expect
+    .poll(
+      async () => {
+        const r = await request.get(`${MAILPIT_URL}/api/v1/search`, { params: { query: `to:${para}` } });
+        const { messages = [] } = await r.json();
+        const m = messages.find((x) => (x.Subject ?? '').includes(asunto));
+        if (!m) return null;
+        texto = (await (await request.get(`${MAILPIT_URL}/api/v1/message/${m.ID}`)).json()).Text ?? '';
+        return texto;
+      },
+      { message: `No llegó el correo «${asunto}» a ${para}`, timeout: 15_000 },
+    )
+    .not.toBeNull();
+  return texto;
+}
+
 test('reclamo: el cliente radica, el asesor responde y el cliente califica', async ({ page, browser, request }) => {
-  const { sesion, cliente } = await crearClienteConPerfil(request);
+  const { sesion, cliente, correo } = await crearClienteConPerfil(request);
   await guardarMedioDePago(request, sesion);
   const asunto = unico('Cobro doble');
 
@@ -34,6 +53,8 @@ test('reclamo: el cliente radica, el asesor responde y el cliente califica', asy
   await expect(page.getByRole('heading', { name: asunto })).toBeVisible();
   const radicado = (await page.getByRole('button', { name: /Copiar radicado/ }).textContent()).trim();
   expect(radicado).toMatch(/^PQR-\d{4}-\d{6}$/);
+  // Acuse de recibo por correo con el radicado y la fecha límite.
+  expect(await correoCon(request, correo, `Recibimos tu solicitud · ${radicado}`)).toContain('Te respondemos a más tardar el');
   await expect(page.getByText('Respuesta a más tardar el')).toBeVisible();
   await expect(page.getByText(/15 días hábiles/).first()).toBeVisible();
 
@@ -51,6 +72,12 @@ test('reclamo: el cliente radica, el asesor responde y el cliente califica', asy
   await panel.getByLabel('Buscar PQR').fill(radicado);
   await panel.getByText(asunto).click();
   await panel.getByRole('tab', { name: /Respuesta de fondo/ }).click();
+  // Sin tipificar no deja responder: el asesor clasifica la PQR.
+  await expect(panel.getByText('Primero tipifica la PQR')).toBeVisible();
+  await panel.getByLabel('Categoría', { exact: true }).last().selectOption('pagos');
+  await panel.getByLabel('Motivo').selectOption('Cobro doble');
+  await panel.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(panel.getByText('Primero tipifica la PQR')).toBeHidden();
   await panel.getByLabel(/Decisión/).selectOption('favorable');
   await panel
     .getByLabel('Texto')
@@ -59,6 +86,11 @@ test('reclamo: el cliente radica, el asesor responde y el cliente califica', asy
   await expect(panel.getByRole('dialog').getByText('Respondida', { exact: true })).toBeVisible();
   await expect(panel.getByRole('dialog').locator('p', { hasText: /^Accedemos a lo que pediste$/ })).toBeVisible();
   await ctx.close();
+
+  // El cliente recibe la respuesta por correo.
+  const respuesta = await correoCon(request, correo, `Respondimos tu solicitud · ${radicado}`);
+  expect(respuesta).toContain('Accedemos a lo que pediste.');
+  expect(respuesta).toContain('ya ordenamos la devolución');
 
   // 3. El cliente ve la respuesta y califica; la solicitud queda cerrada.
   await page.goto('/profile?tab=pqr');

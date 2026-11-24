@@ -878,7 +878,7 @@ export default function AdminDashboard() {
         soloEmpleado={soloEmpleado}
       />
     ),
-    pqr: <ModulePqr clientes={clientes} usuarioId={usuario?.user_id} />,
+    pqr: <ModulePqr clientes={clientes} usuarioId={usuario?.user_id} esAdmin={isAdmin} />,
     empresas: (
       <ModuleEmpresas
         solicitudes={solicitudesCorporativas}

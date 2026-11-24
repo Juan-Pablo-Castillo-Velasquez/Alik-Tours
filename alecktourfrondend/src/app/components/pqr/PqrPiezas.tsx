@@ -14,6 +14,15 @@ import type { ElementType } from "react";
 import type { EstadoPqr, PqrActuacion, PqrResumen } from "../../services/pqr.service";
 import { avancePlazo, ESTADO_PQR, ESTADO_PQR_EQUIPO, fechaCorta, fechaHora, textoPlazo } from "../../utils/pqr";
 
+/** Marca de las PQR de demostración (no son de un cliente real). */
+export function EtiquetaEjemplo() {
+  return (
+    <span className="inline-flex items-center rounded-md border border-dashed border-muted-foreground/50 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      Ejemplo
+    </span>
+  );
+}
+
 export function EstadoPqrBadge({ estado, vista = "cliente" }: { estado: EstadoPqr; vista?: "cliente" | "equipo" }) {
   const e = ESTADO_PQR[estado];
   const texto = vista === "equipo" ? ESTADO_PQR_EQUIPO[estado] : e.texto;

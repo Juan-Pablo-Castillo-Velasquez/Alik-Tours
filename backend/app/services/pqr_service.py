@@ -74,6 +74,65 @@ TIPOS: dict[str, dict] = {
     },
 }
 
+# Tipificación: categoría → motivos. La elige el asesor; es obligatoria para
+# responder y alimenta el reporte de motivos más frecuentes.
+TIPIFICACION: dict[str, dict] = {
+    "pagos": {
+        "nombre": "Pagos y cobros",
+        "motivos": [
+            "Cobro doble",
+            "Cobro no reconocido",
+            "Reembolso pendiente",
+            "Medio de pago rechazado",
+            "Comprobante o factura",
+        ],
+    },
+    "hotel": {
+        "nombre": "Hotel y alojamiento",
+        "motivos": [
+            "Habitación distinta a la reservada",
+            "Reserva no encontrada en el hotel",
+            "Limpieza o estado de la habitación",
+            "Servicio incluido no prestado",
+            "Check-in o check-out",
+        ],
+    },
+    "vuelos": {
+        "nombre": "Vuelos",
+        "motivos": ["Cambio de itinerario", "Vuelo cancelado o retrasado", "Equipaje", "Tiquete no emitido"],
+    },
+    "paquetes": {
+        "nombre": "Paquetes y tours",
+        "motivos": ["Tour no realizado", "Guía o transporte", "Itinerario distinto al ofrecido", "Alimentación"],
+    },
+    "cambios": {
+        "nombre": "Cambios y cancelaciones",
+        "motivos": ["Cambio de fecha", "Cancelación y penalidad", "Reprogramación"],
+    },
+    "atencion": {
+        "nombre": "Atención del equipo",
+        "motivos": ["Demora en la respuesta", "Trato del asesor", "Información incorrecta", "Felicitación al asesor"],
+    },
+    "plataforma": {
+        "nombre": "Plataforma web",
+        "motivos": ["Error al reservar o pagar", "Cuenta y acceso", "Información publicada"],
+    },
+    "documentos": {
+        "nombre": "Documentos e información",
+        "motivos": ["Certificado de reserva", "Copia de comprobante", "Información general"],
+    },
+    "mejoras": {
+        "nombre": "Sugerencias de mejora",
+        "motivos": ["Nuevos destinos o servicios", "Mejora de la plataforma", "Mejora del servicio"],
+    },
+    "otro": {"nombre": "Otro", "motivos": ["Otro motivo"]},
+}
+
+
+def tipificacion_valida(categoria: str, motivo: str) -> bool:
+    return categoria in TIPIFICACION and motivo in TIPIFICACION[categoria]["motivos"]
+
+
 ABIERTAS = ("radicada", "en_tramite", "esperando_cliente")
 FINALES = ("respondida", "cerrada", "desistida")
 DIAS_POR_VENCER = 3
@@ -216,6 +275,10 @@ def serializar_resumen(pqr: Pqr, hoy: date | None = None) -> dict:
         "decision": pqr.decision,
         "fecha_respuesta": utc(pqr.fecha_respuesta),
         "satisfaccion": pqr.satisfaccion,
+        "categoria": pqr.categoria,
+        "categoria_nombre": TIPIFICACION[pqr.categoria]["nombre"] if pqr.categoria in TIPIFICACION else None,
+        "motivo": pqr.motivo,
+        "es_ejemplo": bool(pqr.es_ejemplo),
         "ultima_actividad": utc(ultima),
     }
 
