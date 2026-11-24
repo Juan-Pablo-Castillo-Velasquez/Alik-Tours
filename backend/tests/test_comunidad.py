@@ -337,3 +337,59 @@ def test_admin_asocia_y_quita_el_paquete_de_un_video(db):
     with pytest.raises(HTTPException) as exc:
         comunidad_route.admin_editar_video(v.id_video, VideoAgenciaUpdate(id_paquete=9999), db=db, admin_id=1)
     assert exc.value.status_code == 422
+
+
+def _publicar_de_reserva(db, usuario, id_reserva):
+    return asyncio.run(
+        comunidad_route.crear_publicacion(
+            titulo="Así nos fue en el paquete",
+            contenido="Todo salió perfecto, el hotel y los traslados a tiempo.",
+            calificacion=5,
+            destino=None,
+            video=None,
+            imagenes=None,
+            id_reserva=id_reserva,
+            db=db,
+            current_user=usuario,
+        )
+    )
+
+
+def test_la_publicacion_lleva_el_paquete_que_se_reservo(db):
+    from app.models.reserva_model import Paquete, Reserva
+
+    cliente, usuario = _cliente_con_usuario(db, "2000000901")
+    paquete = Paquete(nombre_paquete="Magia del Caribe", precio_base=1200000, destino_ciudad="Cartagena", activo=True)
+    db.add(paquete)
+    db.commit()
+    reserva = Reserva(
+        id_cliente=cliente.id_cliente, id_paquete=paquete.id_paquete, numero_personas=2, estado="finalizada"
+    )
+    db.add(reserva)
+    db.commit()
+
+    pub = _publicar_de_reserva(db, usuario, reserva.id_reserva)
+
+    assert pub.viaje is not None
+    assert (pub.viaje.tipo, pub.viaje.id, pub.viaje.nombre) == ("paquete", paquete.id_paquete, "Magia del Caribe")
+    assert pub.viaje.precio_desde == 1200000
+
+    # Si el paquete deja de venderse, la publicación ya no lo promociona.
+    paquete.activo = False
+    db.commit()
+    p = db.get(comunidad_route.PublicacionComunidad, pub.id_publicacion)
+    assert comunidad_route._viaje(p) is None
+
+
+def test_no_se_asocia_la_reserva_de_otra_persona(db):
+    from app.models.reserva_model import Reserva
+
+    otro, _ = _cliente_con_usuario(db, "2000000902", nombre="Luis")
+    _, usuario = _cliente_con_usuario(db, "2000000903")
+    ajena = Reserva(id_cliente=otro.id_cliente, numero_personas=1, estado="confirmada")
+    db.add(ajena)
+    db.commit()
+
+    with pytest.raises(HTTPException) as e:
+        _publicar_de_reserva(db, usuario, ajena.id_reserva)
+    assert e.value.status_code == 422

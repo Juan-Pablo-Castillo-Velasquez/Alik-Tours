@@ -37,11 +37,19 @@ class PublicacionComunidad(Base):
     # Publicación de ejemplo para demostraciones: se muestra con la etiqueta
     # "Ejemplo" (ver scripts/seed_demo_comunidad.py).
     es_ejemplo = Column(Boolean, nullable=False, default=False, server_default="false")
+    # Viaje del que habla la publicación: la reserva del autor y, a partir de
+    # ella, el paquete o el hotel, para que otros viajeros puedan reservarlo
+    # desde la comunidad ("Reservar este viaje").
+    id_reserva = Column(Integer, ForeignKey("reservas.id_reserva", ondelete="SET NULL"), nullable=True)
+    id_paquete = Column(Integer, ForeignKey("paquetes.id_paquete", ondelete="SET NULL"), nullable=True, index=True)
+    id_hotel = Column(Integer, ForeignKey("hoteles.id_hotel", ondelete="SET NULL"), nullable=True, index=True)
     id_moderador = Column(Integer, ForeignKey("usuarios.id_usuario", ondelete="SET NULL"), nullable=True)
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
     fecha_moderacion = Column(TIMESTAMP, nullable=True)
 
     cliente = relationship("Cliente")
+    paquete = relationship("Paquete")
+    hotel = relationship("Hotel")
     imagenes = relationship(
         "ImagenPublicacion",
         back_populates="publicacion",

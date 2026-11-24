@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import type { PublicacionComunidad } from "../../services/comunidad.service";
 import PublicacionCard from "./PublicacionCard";
@@ -29,5 +30,31 @@ describe("PublicacionCard", () => {
   it("no marca las publicaciones reales", () => {
     render(<PublicacionCard publicacion={base} puedeComentar={false} onPedirLogin={vi.fn()} />);
     expect(screen.queryByText("Ejemplo")).not.toBeInTheDocument();
+  });
+
+  it("enlaza el paquete con el que viajó el autor para reservarlo", () => {
+    render(
+      <MemoryRouter>
+        <PublicacionCard
+          publicacion={{
+            ...base,
+            viaje: {
+              tipo: "paquete",
+              id: 7,
+              nombre: "Magia del Caribe",
+              destino: "Cartagena",
+              imagen_url: null,
+              precio_desde: 1200000,
+              unidad_precio: "por_persona",
+            },
+          }}
+          puedeComentar={false}
+          onPedirLogin={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Magia del Caribe")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Magia del Caribe/ })).toHaveAttribute("href", "/package/7");
+    expect(screen.getByText(/por persona/)).toBeInTheDocument();
   });
 });

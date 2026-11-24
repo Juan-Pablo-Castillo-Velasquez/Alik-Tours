@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import datetime as dt
 import random
+import unicodedata
 
 import sqlalchemy as sa
 
@@ -312,16 +313,47 @@ def sembrar(conn) -> dict:
             },
         ).scalar_one()  # fmt: skip
 
+    # Cada publicación de ejemplo se asocia a un paquete (o, si no hay, a un
+    # hotel) del mismo destino que esté a la venta, para mostrar el botón
+    # "Reservar este viaje". Si no hay nada en ese destino, queda sin viaje.
+    def _norm(t: str | None) -> str:
+        t = unicodedata.normalize("NFKD", t or "").encode("ascii", "ignore").decode()
+        return t.strip().lower()
+
+    paquetes = conn.execute(
+        sa.text("SELECT id_paquete, destino_ciudad FROM paquetes WHERE activo IS NOT FALSE ORDER BY id_paquete")
+    ).all()
+    hoteles_pub = conn.execute(sa.text("SELECT id_hotel, ciudad FROM hoteles WHERE publicado ORDER BY id_hotel")).all()
+
+    def _viaje(destino: str) -> tuple[int | None, int | None]:
+        d = _norm(destino)
+        for pq in paquetes:
+            if _norm(pq.destino_ciudad) == d:
+                return pq.id_paquete, None
+        for h in hoteles_pub:
+            if _norm(h.ciudad) == d:
+                return None, h.id_hotel
+        return None, None
+
     for i, (titulo, destino, calificacion, contenido, fotos) in enumerate(PUBLICACIONES):
         autor = clientes[(i * 5) % len(clientes)]
         fecha = dt.datetime.combine(hoy - dt.timedelta(days=1 + i * 3), dt.time(9 + i % 10, 15))
         id_pub = conn.execute(
             sa.text(
                 "INSERT INTO publicaciones_comunidad (id_cliente, titulo, contenido, calificacion, destino, estado, "
-                "fecha_creacion, fecha_moderacion, es_ejemplo) VALUES (:c, :t, :co, :cal, :d, 'aprobada', :f, :f, true) "
-                "RETURNING id_publicacion"
+                "fecha_creacion, fecha_moderacion, es_ejemplo, id_paquete, id_hotel) "
+                "VALUES (:c, :t, :co, :cal, :d, 'aprobada', :f, :f, true, :pq, :h) RETURNING id_publicacion"
             ),
-            {"c": autor, "t": titulo, "co": contenido, "cal": calificacion, "d": destino, "f": fecha},
+            {
+                "c": autor,
+                "t": titulo,
+                "co": contenido,
+                "cal": calificacion,
+                "d": destino,
+                "f": fecha,
+                "pq": _viaje(destino)[0],
+                "h": _viaje(destino)[1],
+            },  # fmt: skip
         ).scalar_one()
         for orden, foto in enumerate(fotos):
             conn.execute(
