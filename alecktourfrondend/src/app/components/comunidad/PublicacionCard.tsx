@@ -1,4 +1,4 @@
-import { MapPin, MessageCircle, Trash2 } from "lucide-react";
+import { ChevronDown, MapPin, MessageCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -38,9 +38,9 @@ function Avatar({ nombre, foto }: { nombre: string; foto: string | null }) {
 
 export default function PublicacionCard({ publicacion, puedeComentar, onPedirLogin, onBorrada }: Props) {
   const [comentarios, setComentarios] = useState<ComentarioComunidad[]>(publicacion.comentarios);
-  // Abierto de entrada si ya hay conversación: antes había que descubrir
-  // el enlace "N comentarios" para verla.
-  const [abierto, setAbierto] = useState(publicacion.comentarios.length > 0);
+  // Cerrado de entrada: con las conversaciones abiertas el muro se volvía
+  // muy largo. El botón muestra cuántos comentarios hay.
+  const [abierto, setAbierto] = useState(false);
   const p = publicacion;
 
   const borrarPublicacion = async () => {
@@ -54,77 +54,100 @@ export default function PublicacionCard({ publicacion, puedeComentar, onPedirLog
     }
   };
 
+  const fotos = p.imagenes.map((url) => resolveMediaComunidad(url));
+  const n = comentarios.length;
+
   return (
-    <article className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-      <header className="flex items-start gap-3 p-4 sm:p-5">
+    <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm shadow-black/[0.03]">
+      <header className="flex items-start gap-3 px-5 pt-5">
         <Avatar nombre={p.autor.nombre} foto={p.autor.foto} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
             {p.autor.nombre}
             {p.es_ejemplo && <EtiquetaEjemplo />}
           </p>
-          <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2">
-            {fecha(p.fecha_creacion)}
-            {p.destino && (
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> {p.destino}
-              </span>
-            )}
+          <p className="text-xs text-muted-foreground">
+            <time dateTime={p.fecha_creacion ?? undefined}>{fecha(p.fecha_creacion)}</time>
           </p>
         </div>
-        {p.calificacion ? <Estrellas valor={p.calificacion} size={14} /> : null}
+        {p.destino && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/[0.07] px-2.5 py-1 text-xs font-medium text-primary">
+            <MapPin className="h-3 w-3" /> {p.destino}
+          </span>
+        )}
         {p.es_mia && onBorrada && (
           <button
             onClick={borrarPublicacion}
-            className="p-1.5 text-muted-foreground hover:text-destructive rounded-lg"
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive"
             aria-label="Borrar mi publicación"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="h-4 w-4" />
           </button>
         )}
       </header>
 
+      <div className="px-5 pb-4 pt-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h3 className="break-words text-lg font-semibold leading-snug text-foreground">{p.titulo}</h3>
+          {p.calificacion ? <Estrellas valor={p.calificacion} size={14} /> : null}
+        </div>
+        <p className="mt-1.5 whitespace-pre-line break-words text-[15px] leading-relaxed text-foreground/75">
+          {p.contenido}
+        </p>
+      </div>
+
       {p.video_url && (
-        <video
-          src={resolveMediaComunidad(p.video_url)}
-          controls
-          playsInline
-          preload="metadata"
-          className="w-full max-h-[70vh] bg-black"
-        />
+        <div className="px-5 pb-4">
+          <video
+            src={resolveMediaComunidad(p.video_url)}
+            controls
+            playsInline
+            preload="metadata"
+            className="max-h-[70vh] w-full rounded-2xl bg-black"
+          />
+        </div>
       )}
-      {p.imagenes.length > 0 && (
-        <div className={`grid gap-0.5 ${p.imagenes.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
-          {p.imagenes.map((url, i) => (
-            <img
-              key={url}
-              src={resolveMediaComunidad(url)}
-              alt={`Foto ${i + 1} de ${p.titulo}`}
-              loading="lazy"
-              className={`w-full object-cover ${p.imagenes.length === 1 ? "max-h-[70vh]" : "aspect-square"}`}
-            />
-          ))}
+      {fotos.length > 0 && (
+        <div className="px-5 pb-4">
+          <div
+            className={`grid gap-1.5 overflow-hidden rounded-2xl ${
+              fotos.length === 1 ? "grid-cols-1" : fotos.length === 2 ? "h-64 grid-cols-2 sm:h-80" : "h-72 grid-cols-3 grid-rows-2 sm:h-96"
+            }`}
+          >
+            {fotos.slice(0, 3).map((src, i) => (
+              <img
+                key={src}
+                src={src}
+                alt={`Foto ${i + 1} de ${p.titulo}`}
+                loading="lazy"
+                className={`h-full w-full bg-muted object-cover ${
+                  fotos.length === 1
+                    ? "aspect-[16/10]"
+                    : fotos.length === 2
+                      ? ""
+                      : i === 0
+                        ? "col-span-2 row-span-2"
+                        : ""
+                }`}
+              />
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="p-4 sm:p-5 space-y-2">
-        <h3 className="font-semibold text-foreground break-words">{p.titulo}</h3>
-        <p className="text-sm text-muted-foreground whitespace-pre-line break-words">{p.contenido}</p>
-
+      <footer className="border-t border-border px-5 py-2.5">
         <button
           onClick={() => setAbierto((v) => !v)}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline pt-1"
+          aria-expanded={abierto}
+          className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
         >
-          <MessageCircle className="w-3.5 h-3.5" />
-          {comentarios.length === 0
-            ? "Comentar"
-            : abierto
-              ? "Ocultar comentarios"
-              : `${comentarios.length} comentario${comentarios.length > 1 ? "s" : ""}`}
+          <MessageCircle className="h-4 w-4" />
+          {n === 0 ? "Comentar" : `${n} ${n === 1 ? "comentario" : "comentarios"}`}
+          {n > 0 && <ChevronDown className={`h-4 w-4 transition-transform ${abierto ? "rotate-180" : ""}`} />}
         </button>
 
         {abierto && (
-          <div className="pt-3 border-t border-border">
+          <div className="pb-2 pt-3">
             <ComentariosHilo
               comentarios={comentarios}
               onChange={setComentarios}
@@ -135,7 +158,7 @@ export default function PublicacionCard({ publicacion, puedeComentar, onPedirLog
             />
           </div>
         )}
-      </div>
+      </footer>
     </article>
   );
 }

@@ -20,6 +20,7 @@ from datetime import UTC, datetime
 import cloudinary
 import cloudinary.utils
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
+from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
 # FastAPI entrega los archivos como starlette.datastructures.UploadFile;
@@ -368,17 +369,20 @@ def firma_subida(
 def listar_publicaciones(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=50),
+    destino: str | None = Query(None, max_length=120, description="Solo las de este destino"),
     db: Session = Depends(get_db),
     usuario: Usuario | None = Depends(get_usuario_opcional),
 ):
     """Publicaciones aprobadas, la más reciente primero. Con sesión marca
     lo propio (es_mia / es_mio) para que se pueda borrar."""
     viewer = _usuario(usuario)
-    base = db.query(PublicacionComunidad).filter(PublicacionComunidad.estado == "aprobada")
-    total = base.count()
+    filtros = [PublicacionComunidad.estado == "aprobada"]
+    if isinstance(destino, str) and destino.strip():
+        filtros.append(func.lower(PublicacionComunidad.destino) == destino.strip().lower())
+    total = db.query(PublicacionComunidad).filter(*filtros).count()
     items = (
         _query_publicaciones(db)
-        .filter(PublicacionComunidad.estado == "aprobada")
+        .filter(*filtros)
         .order_by(PublicacionComunidad.fecha_creacion.desc(), PublicacionComunidad.id_publicacion.desc())
         .offset(skip)
         .limit(limit)
@@ -387,6 +391,24 @@ def listar_publicaciones(
     return PublicacionesPaginadas(
         items=[_publicacion(db, p, viewer) for p in items], total=total, skip=skip, limit=limit
     )
+
+
+@router.get("/destinos")
+def destinos_publicaciones(db: Session = Depends(get_db)):
+    """Destinos con experiencias publicadas y cuántas tiene cada uno, para
+    filtrar la comunidad. Los más comentados primero."""
+    filas = (
+        db.query(PublicacionComunidad.destino, func.count(PublicacionComunidad.id_publicacion))
+        .filter(
+            PublicacionComunidad.estado == "aprobada",
+            PublicacionComunidad.destino.isnot(None),
+            PublicacionComunidad.destino != "",
+        )
+        .group_by(PublicacionComunidad.destino)
+        .order_by(func.count(PublicacionComunidad.id_publicacion).desc(), PublicacionComunidad.destino)
+        .all()
+    )
+    return [{"destino": d, "total": n} for d, n in filas]
 
 
 @router.get("/videos", response_model=list[VideoAgenciaResponse])

@@ -117,8 +117,7 @@ function ProximoViaje({
         <div className="p-5 sm:p-6 md:col-span-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Tu próximo viaje</p>
-              <h3 className="mt-1 text-xl font-bold leading-tight text-foreground sm:text-2xl" style={{ fontFamily: "'Fraunces', serif" }}>
+              <h3 className="text-xl font-bold leading-tight text-foreground sm:text-2xl" style={{ fontFamily: "'Fraunces', serif" }}>
                 {nombreReserva(reserva)}
               </h3>
             </div>
@@ -293,23 +292,25 @@ export default function TabInicio({
             onIr={onIr}
           />
         ) : (
-          <div className="relative overflow-hidden rounded-3xl border border-dashed border-primary/30 bg-gradient-to-br from-primary/5 via-card to-[var(--gold)]/10 p-6 sm:p-8">
-            <Plane className="absolute -right-4 -top-4 h-32 w-32 rotate-12 text-primary/10" aria-hidden="true" />
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Tu próxima aventura</p>
-            <h3 className="mt-1 text-2xl font-bold text-foreground" style={{ fontFamily: "'Fraunces', serif" }}>
+          <div className="relative overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground sm:p-8">
+            <Plane className="absolute -bottom-6 -right-4 h-40 w-40 -rotate-12 text-white/10" aria-hidden="true" />
+            <h3 className="text-2xl font-bold sm:text-3xl" style={{ fontFamily: "'Fraunces', serif" }}>
               ¿A dónde te gustaría ir?
             </h3>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            <p className="relative mt-2 max-w-md text-sm text-primary-foreground/80">
               Todavía no tienes viajes programados. Mira los paquetes con vuelo y hotel incluidos o pídele ideas a un asesor.
             </p>
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="relative mt-5 flex flex-wrap gap-2">
               <Link
                 to="/packages"
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-primary transition-transform hover:-translate-y-0.5"
               >
                 Ver paquetes <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <Link to="/como-reservar" className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted">
+              <Link
+                to="/como-reservar"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/35 px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-white/10"
+              >
                 <BookOpen className="h-4 w-4" aria-hidden="true" /> Cómo reservar
               </Link>
             </div>

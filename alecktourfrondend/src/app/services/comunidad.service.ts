@@ -148,8 +148,12 @@ export function resolveMediaComunidad(url: string | null | undefined): string | 
 
 export const comunidadService = {
   // Público
-  getPublicaciones: (skip = 0, limit = 10) =>
-    apiFetch<PublicacionesPaginadas>(`/comunidad/publicaciones?skip=${skip}&limit=${limit}`),
+  getPublicaciones: (skip = 0, limit = 10, destino?: string | null) =>
+    apiFetch<PublicacionesPaginadas>(
+      `/comunidad/publicaciones?skip=${skip}&limit=${limit}${destino ? `&destino=${encodeURIComponent(destino)}` : ""}`
+    ),
+  /** Destinos con experiencias publicadas y cuántas tiene cada uno. */
+  getDestinos: () => apiFetch<{ destino: string; total: number }[]>("/comunidad/destinos"),
   getVideos: (filtro: { idPaquete?: number; inicio?: boolean } = {}) => {
     const params = new URLSearchParams();
     if (filtro.idPaquete != null) params.set("id_paquete", String(filtro.idPaquete));

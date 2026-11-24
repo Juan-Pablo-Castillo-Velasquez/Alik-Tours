@@ -82,9 +82,8 @@ export default function ProfileHero({ usuario, clienteData, reservas, bloqueado 
             )}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">{saludo()}</p>
             <h1 className="truncate text-2xl font-bold sm:text-3xl" style={{ fontFamily: "'Fraunces', serif" }}>
-              ¡Hola, {nombre}!
+              {saludo()}, {nombre}
             </h1>
             <p className="mt-0.5 text-sm text-white/80">
               {desde ? `Viajas con Alik Tours desde ${desde}` : `@${usuario?.username ?? "viajero"}`}

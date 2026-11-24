@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Compass, Loader2, Plane, Search } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Compass, CreditCard, Loader2, Plane, Search } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
@@ -6,8 +6,6 @@ import { ClienteResponse } from "../../../services/cliente.service";
 import { tituloReserva } from "../../../utils/reservaPresentacion";
 import SearchInput from "../../shared/SearchInput";
 import CalendarioViaje from "./CalendarioViaje";
-import { FiltroEstado } from "./constants";
-import MetricasResumen from "./MetricasResumen";
 import ModalCancelacion from "./ModalCancelacion";
 import ModalResena from "./ModalResena";
 import ModalReservaDetalle from "./ModalReservaDetalle";
@@ -85,17 +83,6 @@ export default function TabReservas({ reservas, loading, clienteData, reservaIdI
     : null;
   const estadoViajeProxima = proxima ? getEstadoViaje(proxima.fecha_inicio, proxima.fecha_fin, hoy) : null;
 
-  const counts: Record<FiltroEstado, number> = useMemo(
-    () => ({
-      todas: reservas.length,
-      confirmada: reservas.filter((r) => r.estado === "confirmada").length,
-      pendiente: reservas.filter((r) => r.estado === "pendiente").length,
-      finalizada: reservas.filter((r) => r.estado === "finalizada").length,
-      cancelada: reservas.filter((r) => r.estado === "cancelada").length,
-    }),
-    [reservas],
-  );
-
   const porPestana = useMemo(() => {
     const mapa: Record<PestanaReservas, any[]> = { proximas: [], por_pagar: [], pasadas: [], canceladas: [], todas: [] };
     for (const r of reservas) for (const p of pestanasDe(r, hoy)) mapa[p].push(r);
@@ -106,6 +93,9 @@ export default function TabReservas({ reservas, loading, clienteData, reservaIdI
     for (const k of ["pasadas", "canceladas", "todas"] as const) mapa[k].sort((a, b) => -asc(a, b));
     return mapa;
   }, [reservas, hoy]);
+
+  // Lo que falta por pagar, sumado: es lo primero que alguien busca aquí.
+  const saldoTotal = porPestana.por_pagar.reduce((acc, r) => acc + Number(r.saldo_pendiente ?? 0), 0);
 
   // Pestaña inicial: lo que viene, si hay; si no, todo.
   const pestanaActiva: PestanaReservas = pestana ?? (porPestana.proximas.length ? "proximas" : "todas");
@@ -192,7 +182,25 @@ export default function TabReservas({ reservas, loading, clienteData, reservaIdI
         </div>
       ) : (
         <div className="space-y-6">
-          <MetricasResumen counts={counts} />
+          {saldoTotal > 0 && pestanaActiva !== "por_pagar" && (
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/25 bg-primary/[0.04] px-4 py-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <CreditCard className="h-5 w-5" />
+              </span>
+              <p className="min-w-0 flex-1 text-sm text-foreground">
+                Tienes <b>${Math.round(saldoTotal).toLocaleString("es-CO")}</b> por pagar en{" "}
+                {porPestana.por_pagar.length === 1 ? "1 reserva" : `${porPestana.por_pagar.length} reservas`}.
+                <span className="block text-xs text-muted-foreground">Págalo antes del viaje para tenerlo todo listo.</span>
+              </p>
+              <button
+                type="button"
+                onClick={() => setPestana("por_pagar")}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              >
+                Ver qué falta
+              </button>
+            </div>
+          )}
 
           {proxima && diasRestantes !== null && estadoViajeProxima && (
             <section aria-labelledby="titulo-proximo-viaje" className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -254,7 +262,11 @@ export default function TabReservas({ reservas, loading, clienteData, reservaIdI
 
           <section aria-label="Lista de reservas">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div role="tablist" aria-label="Filtrar reservas" className="flex flex-wrap gap-1 rounded-xl bg-muted p-1">
+              <div
+                role="tablist"
+                aria-label="Filtrar reservas"
+                className="-mx-1 flex max-w-full gap-1 overflow-x-auto rounded-xl bg-muted p-1 [scrollbar-width:none]"
+              >
                 {PESTANAS.map(({ valor, etiqueta }) => {
                   const activa = valor === pestanaActiva;
                   const n = porPestana[valor].length;
@@ -265,13 +277,13 @@ export default function TabReservas({ reservas, loading, clienteData, reservaIdI
                       role="tab"
                       aria-selected={activa}
                       onClick={() => setPestana(valor)}
-                      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${
                         activa ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {etiqueta}
                       <span
-                        className={`rounded-full px-1.5 text-[10px] ${
+                        className={`rounded-full px-1.5 text-[11px] tabular-nums ${
                           activa ? (valor === "por_pagar" && n > 0 ? "bg-primary text-primary-foreground" : "bg-muted") : "bg-background/60"
                         }`}
                       >

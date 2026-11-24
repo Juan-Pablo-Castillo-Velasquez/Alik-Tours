@@ -174,7 +174,7 @@ export default function ComentariosHilo({ comentarios, onChange, puedeComentar, 
           {!esRespuesta && (
             <button
               onClick={() => (puedeComentar ? setRespondiendoA(c.id_comentario) : onPedirLogin())}
-              className="font-semibold hover:text-primary"
+              className="text-[11px] font-semibold hover:text-primary"
             >
               Responder
             </button>
@@ -182,7 +182,7 @@ export default function ComentariosHilo({ comentarios, onChange, puedeComentar, 
           {c.es_mio && (
             <button
               onClick={() => quitar(c)}
-              className="inline-flex items-center gap-1 hover:text-destructive"
+              className="inline-flex items-center gap-1 text-[11px] hover:text-destructive"
               aria-label="Borrar mi comentario"
             >
               <Trash2 className="w-3 h-3" /> Borrar
