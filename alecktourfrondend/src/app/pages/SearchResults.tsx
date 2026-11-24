@@ -208,22 +208,24 @@ export default function SearchResults() {
        */
       const matchesCal =
         calificacionFilter === "all" ||
-        h.calificacion ===
-        parseInt(calificacionFilter);
+        Math.round(h.calificacion ?? 0) === parseInt(calificacionFilter);
 
       /*
        * FILTRO PAÍS
        */
+      // País y ciudad se comparan sin tildes ni mayúsculas: "Bogota" y
+      // "Bogotá" son la misma ciudad (antes salían como dos opciones y al
+      // elegir una se perdían los hoteles escritos de la otra forma).
       const matchesPais =
         paisFilter === "all" ||
-        h.pais === paisFilter;
+        normalizarTexto(h.pais ?? "") === normalizarTexto(paisFilter);
 
       /*
        * FILTRO CIUDAD
        */
       const matchesCiudad =
         ciudadFilter === "all" ||
-        h.ciudad === ciudadFilter;
+        normalizarTexto(h.ciudad ?? "") === normalizarTexto(ciudadFilter);
 
       /*
        * FILTRO PRECIO POR NOCHE
@@ -386,26 +388,51 @@ export default function SearchResults() {
   /*
    * DATOS PARA FILTROS
    */
-  const paises = [
-    ...new Set(
-      hoteles
-        .map((h) => h.pais)
-        .filter(Boolean)
-    ),
-  ].sort();
+  // Opciones únicas sin importar tildes ni mayúsculas, con cuántos hoteles
+  // tiene cada una. Se muestra la forma escrita con tilde si existe.
+  const opcionesUnicas = (valores: (string | null | undefined)[]) => {
+    const grupos = new Map<string, { etiqueta: string; total: number }>();
+    for (const v of valores) {
+      const limpio = (v ?? "").trim();
+      if (!limpio) continue;
+      const clave = normalizarTexto(limpio);
+      const actual = grupos.get(clave);
+      if (!actual) grupos.set(clave, { etiqueta: limpio, total: 1 });
+      else {
+        actual.total += 1;
+        // Prefiere la forma con tilde ("Bogotá" sobre "Bogota").
+        const tieneTilde = (t: string) => /[áéíóúñü]/i.test(t);
+        if (tieneTilde(limpio) && !tieneTilde(actual.etiqueta)) actual.etiqueta = limpio;
+      }
+    }
+    return [...grupos.values()].sort((a, b) => a.etiqueta.localeCompare(b.etiqueta, "es"));
+  };
 
-  const ciudades = [
-    ...new Set(
-      hoteles
-        .map((h) => h.ciudad)
-        .filter(Boolean)
-    ),
-  ].sort();
+  const paisesConTotal = opcionesUnicas(hoteles.map((h) => h.pais));
+  const paises = paisesConTotal.map((p) => p.etiqueta);
+
+  // Las ciudades dependen del país elegido: antes, con "México" elegido,
+  // seguían saliendo las ciudades de Colombia y todas daban cero resultados.
+  const ciudadesConTotal = opcionesUnicas(
+    hoteles
+      .filter((h) => paisFilter === "all" || normalizarTexto(h.pais ?? "") === normalizarTexto(paisFilter))
+      .map((h) => h.ciudad)
+  );
+  const ciudades = ciudadesConTotal.map((c) => c.etiqueta);
+  const totalPorCiudad = new Map(ciudadesConTotal.map((c) => [c.etiqueta, c.total]));
+  const totalPorPais = new Map(paisesConTotal.map((p) => [p.etiqueta, p.total]));
+
+  // Si al cambiar de país la ciudad elegida ya no aplica, se suelta.
+  const claveCiudades = ciudades.map(normalizarTexto).join("|");
+  useEffect(() => {
+    if (hoteles.length === 0 || ciudadFilter === "all") return;
+    if (!claveCiudades.split("|").includes(normalizarTexto(ciudadFilter))) setCiudadFilter("all");
+  }, [claveCiudades, ciudadFilter, hoteles.length]);
 
   const ciudadesFiltradas =
     ciudades.filter((c) =>
-      c.toLowerCase().includes(
-        ciudadSearch.toLowerCase()
+      normalizarTexto(c).includes(
+        normalizarTexto(ciudadSearch)
       )
     );
 
@@ -467,7 +494,7 @@ export default function SearchResults() {
       {/* CALIFICACIÓN */}
       <div className="mb-6 border-t border-border/60 pt-5">
         <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground/80">
-          Calificación
+          Estrellas del hotel
         </h3>
 
         <div className="space-y-2.5">
@@ -492,15 +519,18 @@ export default function SearchResults() {
             </span>
           </motion.label>
 
-          {[5, 4, 3, 2, 1].map((n) => (
+          {[5, 4, 3, 2, 1].map((n) => {
+            const totalEstrellas = hoteles.filter((h) => Math.round(h.calificacion ?? 0) === n).length;
+            return (
             <motion.label
               key={n}
-              whileHover={{ x: 3 }}
-              className="flex items-center gap-3 cursor-pointer group"
+              whileHover={totalEstrellas ? { x: 3 } : undefined}
+              className={`flex items-center gap-3 group ${totalEstrellas ? "cursor-pointer" : "cursor-not-allowed opacity-45"}`}
             >
               <input
                 type="radio"
                 name="cal"
+                disabled={totalEstrellas === 0 && calificacionFilter !== String(n)}
                 checked={
                   calificacionFilter ===
                   String(n)
@@ -534,8 +564,11 @@ export default function SearchResults() {
                   )
                 )}
               </span>
+              <span className="sr-only">{n} {n === 1 ? "estrella" : "estrellas"}</span>
+              <span className="ml-auto text-xs tabular-nums text-muted-foreground">{totalEstrellas}</span>
             </motion.label>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -585,9 +618,10 @@ export default function SearchResults() {
                 className="w-4 h-4 text-primary"
               />
 
-              <span className="text-sm text-foreground/90">
+              <span className="flex-1 text-sm text-foreground/90">
                 {pais}
               </span>
+              <span className="text-xs tabular-nums text-muted-foreground">{totalPorPais.get(pais)}</span>
             </motion.label>
           ))}
         </div>
@@ -682,9 +716,10 @@ export default function SearchResults() {
                     className="w-4 h-4 text-primary"
                   />
 
-                  <span className="text-sm">
+                  <span className="flex-1 text-sm">
                     {ciudad}
                   </span>
+                  <span className="text-xs tabular-nums text-muted-foreground">{totalPorCiudad.get(ciudad)}</span>
                 </motion.label>
               )
             )}
@@ -886,7 +921,7 @@ export default function SearchResults() {
                   exit={{
                     opacity: 0,
                   }}
-                  className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 lg:hidden"
+                  className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] lg:hidden"
                   onClick={() =>
                     setShowFilters(false)
                   }
@@ -1064,7 +1099,7 @@ export default function SearchResults() {
                     <option value="relevancia">Más relevantes</option>
                     <option value="precio_asc">Precio: menor a mayor</option>
                     <option value="precio_desc">Precio: mayor a menor</option>
-                    <option value="calificacion">Mejor calificados</option>
+                    <option value="calificacion">Más estrellas</option>
                   </select>
                 </div>
               )}
