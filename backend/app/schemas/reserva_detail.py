@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from pydantic import BaseModel, ConfigDict
 
@@ -13,6 +13,17 @@ class ReservaHabitacionDetail(BaseModel):
     precio_acordado: float | None = None
     precio_noche: float
     estado: str
+    # Datos del hotel para el detalle de la reserva del cliente: dónde
+    # queda, a qué hora puede entrar y salir y cómo contactarlo.
+    id_hotel: int | None = None
+    direccion: str | None = None
+    ciudad: str | None = None
+    pais: str | None = None
+    telefono: str | None = None
+    hora_checkin: time | None = None
+    hora_checkout: time | None = None
+    imagen_hotel: str | None = None
+    politica_cancelacion: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

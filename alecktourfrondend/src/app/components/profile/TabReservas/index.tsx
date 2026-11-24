@@ -134,7 +134,21 @@ export default function TabReservas({ reservas, loading, clienteData, reservaIdI
       </AnimatePresence>
       <AnimatePresence>{modalResena && <ModalResena reserva={modalResena} onClose={() => setModalResena(null)} />}</AnimatePresence>
       <AnimatePresence>
-        {detalleReservaId !== null && <ModalReservaDetalle reservaId={detalleReservaId} onClose={() => setDetalleReservaId(null)} />}
+        {detalleReservaId !== null && (() => {
+          const r = reservas.find((x) => x.id_reserva === detalleReservaId);
+          const cerrar = () => setDetalleReservaId(null);
+          return (
+            <ModalReservaDetalle
+              reservaId={detalleReservaId}
+              onClose={cerrar}
+              clienteData={clienteData}
+              cancelacionSolicitada={!!solicitadas[detalleReservaId]}
+              onDejarResena={r ? () => { cerrar(); setModalResena(r); } : undefined}
+              onSolicitarCancelacion={r ? () => { cerrar(); setModalReserva(r); } : undefined}
+              onHablarDeReserva={onHablarDeReserva ? () => { cerrar(); onHablarDeReserva(detalleReservaId); } : undefined}
+            />
+          );
+        })()}
       </AnimatePresence>
 
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
