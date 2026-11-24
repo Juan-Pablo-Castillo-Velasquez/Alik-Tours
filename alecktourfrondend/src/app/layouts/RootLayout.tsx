@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Plane } from "lucide-react";
 import { Toaster } from "../components/ui/sonner";
 import ConfirmacionGlobal from "../components/ui/ConfirmacionGlobal";
+import AvisoLimiteEnvios from "../components/ui/AvisoLimiteEnvios";
 import PanelAccesibilidad from "../components/accesibilidad/PanelAccesibilidad";
 import SaltarContenido from "../components/accesibilidad/SaltarContenido";
 import { AuthModalProvider } from "../context/AuthModalContext";
@@ -30,6 +31,7 @@ export default function RootLayout() {
             <SaltarContenido />
             <Toaster />
             <ConfirmacionGlobal />
+            <AvisoLimiteEnvios />
             {/* La nieve (y demás partículas de temporada) va DETRÁS del
                 contenido: la capa del ambiente tiene z-index -1 (ver
                 temporada.css), así los copos solo se ven en el fondo y pasan

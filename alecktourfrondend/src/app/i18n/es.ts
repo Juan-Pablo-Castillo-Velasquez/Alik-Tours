@@ -234,6 +234,12 @@ const es = {
   "flot.asesor": "Hablar con un asesor",
   "flot.comoFunciona": "¿Cómo funciona?",
   "flot.abrirGuia": "¿Cómo funciona? Abrir la guía para reservar y usar tu perfil",
+
+  // Límite de envíos
+  "limite.titulo": "Hiciste demasiados envíos seguidos",
+  "limite.segundos": "Por seguridad, espera {n} segundos e inténtalo de nuevo.",
+  "limite.minuto": "Por seguridad, espera 1 minuto e inténtalo de nuevo.",
+  "limite.minutos": "Por seguridad, espera {n} minutos e inténtalo de nuevo.",
 } as const;
 
 export default es;

@@ -24,6 +24,7 @@ from fastapi.responses import JSONResponse
 
 from app.core import cache
 from app.core.cache import redis_client
+from app.core.security import decode_token
 
 # (ruta exacta o prefijo) -> (máximo de solicitudes, ventana en segundos)
 RATE_LIMITED_PATHS = {
@@ -85,19 +86,41 @@ RATE_LIMIT_RULES: list[tuple[str, re.Pattern, str, int, int]] = [
     ("POST", re.compile(r"^/api/comunidad/publicaciones/?$"), "/publicar", 5, 3600),
     ("POST", re.compile(r"^/api/comunidad/(publicaciones|videos)/\d+/comentarios$"), "/comentar", 20, 600),
     ("POST", re.compile(r"^/api/resenas/?$"), "/resena", 5, 3600),
+    # PQR (Ley 1755): radicar, escribir, desistir y calificar.
+    ("POST", re.compile(r"^/api/pqr/?$"), "/pqr-radicar", 10, 3600),
+    ("POST", re.compile(r"^/api/pqr/\d+/(mensajes|desistir|calificar)$"), "/pqr-escribir", 30, 600),
+    ("POST", re.compile(r"^/api/pqr/gestion/ejemplos$"), "/pqr-ejemplos", 5, 600),
+    # Buscador de clientes del panel (autocompletar mientras se escribe).
+    ("GET", re.compile(r"^/api/clientes/buscar$"), "/buscar-clientes", 120, 60),
+    # Formularios de perfil y cuenta.
+    ("PUT", re.compile(r"^/api/clientes/\d+$"), "/editar-perfil", 20, 600),
+    ("POST", re.compile(r"^/api/metodos-pago-guardados/?$"), "/guardar-metodo-pago", 10, 600),
+    ("POST", re.compile(r"^/api/preferencias"), "/preferencias", 20, 600),
     # Telemetría IoT: un dispositivo manda una lectura cada pocos segundos;
     # más de 2 por segundo desde la misma IP es un error o un abuso.
     ("POST", re.compile(r"^/api/iot/lecturas$"), "/iot-lecturas", 120, 60),
 ]
 
 
+# Red de seguridad para TODOS los demás formularios: cualquier escritura
+# (POST/PUT/PATCH/DELETE) a /api o /auth que no tenga una regla propia
+# arriba. Holgado para el uso normal (incluido el panel), pero corta bucles
+# y bots que envían un formulario cientos de veces.
+ESCRITURA_GENERAL = ("/escritura", 120, 60)
+_METODOS_ESCRITURA = {"POST", "PUT", "PATCH", "DELETE"}
+
+
 def _rate_limit_base_config_for(path: str, method: str = "POST"):
     if path in RATE_LIMITED_PATHS:
+        if method == "GET":
+            return None
         limit, window = RATE_LIMITED_PATHS[path]
         return path, limit, window
     for metodo, patron, bucket, limit, window in RATE_LIMIT_RULES:
         if method == metodo and patron.match(path):
             return bucket, limit, window
+    if method in _METODOS_ESCRITURA and (path.startswith("/api/") or path.startswith("/auth/")):
+        return ESCRITURA_GENERAL
     return None
 
 
@@ -114,6 +137,19 @@ def ip_cliente(request: Request) -> str:
         if partes:
             return partes[-1][:64]
     return request.client.host if request.client else "desconocido"
+
+
+def identidad(request: Request) -> str:
+    """A quién se le cuentan los intentos: al usuario si viene con una sesión
+    válida (así varios asesores detrás de la misma IP de la oficina no se
+    bloquean entre sí, y un usuario no evade el límite cambiando de red) y,
+    si no, a la IP."""
+    auth = request.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        datos = decode_token(auth[7:].strip())
+        if datos and datos.get("sub"):
+            return f"u{datos['sub']}"
+    return f"ip{ip_cliente(request)}"
 
 
 # Respaldo en memoria por si Redis no responde: antes, sin Redis, el límite
@@ -153,12 +189,17 @@ async def seguridad_middleware(request: Request, call_next):
     config = _rate_limit_config_for(request.url.path, request.method)
     if config:
         bucket, limit, window = config
-        key = f"ratelimit:{bucket}:{ip_cliente(request)}"
+        key = f"ratelimit:{bucket}:{identidad(request)}"
         intentos = _incrementar(key, window)
         if intentos > limit:
+            minutos = max(1, round(window / 60))
+            espera = f"{window} segundos" if window < 60 else f"{minutos} minuto{'s' if minutos != 1 else ''}"
             response = JSONResponse(
                 status_code=429,
-                content={"detail": "Demasiadas solicitudes. Intenta de nuevo en un momento."},
+                content={
+                    "detail": f"Hiciste demasiados envíos seguidos. Espera {espera} e inténtalo de nuevo.",
+                    "reintentar_en": window,
+                },
                 headers={"Retry-After": str(window)},
             )
             response.headers["X-Content-Type-Options"] = "nosniff"

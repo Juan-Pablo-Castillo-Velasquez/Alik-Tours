@@ -228,6 +228,12 @@ const en: Partial<Record<keyof typeof es, string>> = {
   "flot.asesor": "Talk to an advisor",
   "flot.comoFunciona": "How does it work?",
   "flot.abrirGuia": "How does it work? Open the guide to booking and your profile",
+
+  // Límite de envíos
+  "limite.titulo": "Too many submissions in a row",
+  "limite.segundos": "For security, wait {n} seconds and try again.",
+  "limite.minuto": "For security, wait 1 minute and try again.",
+  "limite.minutos": "For security, wait {n} minutes and try again.",
 };
 
 export default en;
