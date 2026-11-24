@@ -25,10 +25,16 @@ export default function RootLayout() {
     return (
         <AuthModalProvider>
             <Toaster position="top-right" richColors closeButton />
-            <Suspense fallback={<RouteFallback />}>
-                <Outlet />
-            </Suspense>
+            {/* La nieve (y demás partículas de temporada) va DETRÁS del
+                contenido: la capa del ambiente queda en z-0 y la página en
+                z-[1], así los copos solo se ven en el fondo y pasan por
+                detrás de tarjetas, textos y formularios, sin taparlos. */}
             <AmbienteTemporada />
+            <div className="temporada-contenido relative z-[1]">
+                <Suspense fallback={<RouteFallback />}>
+                    <Outlet />
+                </Suspense>
+            </div>
             <GuiaUso />
             <WhatsAppButton />
             <CookieConsent />

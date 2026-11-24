@@ -4,7 +4,7 @@ import { useTema } from "../../context/TemaContext";
 import { decoracionDeTema, EfectoTemporada, rutaPermiteAmbiente } from "./temporadas";
 import { useAnimacionTemporada } from "./useAnimacionTemporada";
 
-// Capa fija sobre todo el sitio con lo que "cae" en cada temporada: nieve
+// Capa fija DETRÁS del contenido con lo que "cae" en cada temporada: nieve
 // en Navidad, confeti en Fin de año, corazones en Amor y Amistad, etc.
 // Es decoración pura (aria-hidden, sin eventos de puntero) y no se monta
 // en el panel admin ni en los pasos de pago.
@@ -103,7 +103,8 @@ export default function AmbienteTemporada() {
     document.documentElement.setAttribute("data-animacion-temporada", activa ? "on" : "off");
   }, [activa]);
 
-  const cantidad = angosta ? 16 : 38;
+  // Menos partículas y más tenues que antes: es ambiente, no protagonista.
+  const cantidad = angosta ? 12 : 28;
   const particulas = useMemo(() => {
     if (!efecto) return [];
     const r = aleatorio(20261225);
@@ -112,14 +113,14 @@ export default function AmbienteTemporada() {
     const gira = efecto === "nieve" ? 60 : 320;
     return Array.from({ length: cantidad }, (_, i) => {
       const tam = efecto === "nieve" ? 5 + r() * 11 : 9 + r() * 10;
-      const dur = 9 + r() * 12;
+      const dur = 12 + r() * 14;
       return {
         id: i,
         color: colores[i % colores.length],
         estilo: {
           "--x": `${(r() * 100).toFixed(2)}%`,
           "--tam": `${tam.toFixed(1)}px`,
-          "--op": (0.55 + r() * 0.4).toFixed(2),
+          "--op": (0.4 + r() * 0.35).toFixed(2),
           "--dur": `${dur.toFixed(1)}s`,
           // Retraso negativo: la pantalla arranca ya "nevada", no vacía.
           "--retraso": `${(-r() * dur).toFixed(1)}s`,
