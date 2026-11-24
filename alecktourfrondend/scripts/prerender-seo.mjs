@@ -70,6 +70,11 @@ const ROUTES = {
     description:
       "Términos y condiciones de uso de Alik Tours: cuenta, reservas, pagos, cancelaciones y responsabilidad.",
   },
+  "/pqr": {
+    title: "Peticiones, quejas y reclamos (PQR)",
+    description:
+      "Radica una petición, queja, reclamo, sugerencia o felicitación a Alik Tours y recibe respuesta por escrito dentro del plazo legal en días hábiles.",
+  },
   "/privacy": {
     title: "Política de Privacidad",
     description:

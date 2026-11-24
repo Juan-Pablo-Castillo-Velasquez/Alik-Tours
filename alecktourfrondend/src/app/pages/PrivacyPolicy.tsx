@@ -49,6 +49,7 @@ export default function PrivacyPolicy() {
             </div>
             <div className="space-y-2.5 pl-12 text-sm text-muted-foreground leading-relaxed">
               <p>Usamos tu información para crear y gestionar tu cuenta, procesar tus reservas y pagos, contactarte sobre el estado de una reserva o una solicitud de cancelación, y para que un asesor pueda atenderte si escribes por el formulario de contacto o WhatsApp.</p>
+              <p>Si radicas una petición, queja, reclamo, sugerencia o felicitación (PQR), usamos lo que nos cuentas solo para tramitarla y responderla, y conservamos su historial como soporte de la atención (ver la <Link to="/pqr" className="text-primary hover:underline">política de atención de PQR</Link>).</p>
               <p>No vendemos tus datos personales a terceros.</p>
             </div>
           </section>

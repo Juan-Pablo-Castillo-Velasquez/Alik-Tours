@@ -70,7 +70,7 @@ TIPOS: dict[str, dict] = {
         "nombre": "Felicitación",
         "descripcion": "Quieres reconocer una buena experiencia o a alguien del equipo.",
         "dias": 15,
-        "norma": "Ley 1755 de 2015, art. 14",
+        "norma": "Política interna",
     },
 }
 

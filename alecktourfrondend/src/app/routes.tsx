@@ -43,6 +43,7 @@ const Testimonios = lazy(() => import("./pages/Testimonios"));
 const TravelInfo = lazy(() => import("./pages/TravelInfo"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
+const Pqr = lazy(() => import("./pages/Pqr"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 
 export const router = createBrowserRouter([
@@ -76,6 +77,7 @@ export const router = createBrowserRouter([
       { path: "/testimonios", Component: Testimonios },
       { path: "/reset-password", Component: ResetPassword },
       { path: "/terms", Component: TermsAndConditions },
+      { path: "/pqr", Component: Pqr },
       { path: "/privacy", Component: PrivacyPolicy },
       { path: "*", Component: NotFound },
 

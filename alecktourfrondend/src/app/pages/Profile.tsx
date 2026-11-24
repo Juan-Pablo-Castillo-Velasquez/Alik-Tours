@@ -12,6 +12,7 @@ import TabFacturas from "../components/profile/TabFacturas";
 import TabFavoritos from "../components/profile/TabFavoritos";
 import TabMensajes from "../components/profile/TabMensajes";
 import TabMetodosPago from "../components/profile/TabMetodosPago";
+import TabPqr from "../components/profile/TabPqr";
 import TabPreferencias from "../components/profile/TabPreferencias";
 import TabReservas from "../components/profile/TabReservas";
 import { useAuth } from "../context/AuthContext";
@@ -44,7 +45,10 @@ export default function Profile() {
   // terminar) vuelvan directo a una pestaña específica en vez de caer
   // siempre en "reservas" — ver PreferencesForm.tsx handleFinish.
   const [activeTab, setActiveTab] = useState(
-    () => (location.state as { tab?: string } | null)?.tab ?? "inicio",
+    () =>
+      (location.state as { tab?: string } | null)?.tab ??
+      new URLSearchParams(location.search).get("tab") ??
+      "inicio",
   );
   // Deep-link desde la campana de notificaciones (NotificacionesBell) a una
   // reserva puntual — se resincroniza en el efecto de abajo porque, si ya
@@ -58,6 +62,10 @@ export default function Profile() {
   // el composer. Separado de `reservaIdInicial` (que abre el detalle EN
   // TabReservas) para que no se pisen si el cliente vuelve a esa pestaña.
   const [reservaIdParaMensaje, setReservaIdParaMensaje] = useState<number | null>(null);
+  // Deep-link a una PQR puntual (campana de notificaciones o correo).
+  const [pqrIdInicial, setPqrIdInicial] = useState<number | null>(
+    () => (location.state as { pqrId?: number } | null)?.pqrId ?? null,
+  );
   const hablarDeReserva = (idReserva: number) => {
     setReservaIdParaMensaje(idReserva);
     setActiveTab("mensajes");
@@ -128,8 +136,9 @@ export default function Profile() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    const state = location.state as { tab?: string; reservaId?: number } | null;
+    const state = location.state as { tab?: string; reservaId?: number; pqrId?: number } | null;
     if (state?.tab) setActiveTab(state.tab);
+    if (state?.pqrId != null) setPqrIdInicial(state.pqrId);
     if (state?.reservaId != null) setReservaIdInicial(state.reservaId);
   }, [location.state]);
 
@@ -292,6 +301,17 @@ export default function Profile() {
                   transition={{ duration: 0.2 }}
                 >
                   <TabMensajes reservas={reservas} reservaIdInicial={reservaIdParaMensaje} />
+                </motion.div>
+              )}
+              {tabEfectiva === "pqr" && (
+                <motion.div
+                  key={`pqr-${pqrIdInicial ?? "lista"}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <TabPqr reservas={reservas} pqrIdInicial={pqrIdInicial} />
                 </motion.div>
               )}
               {tabEfectiva === "facturas" && (

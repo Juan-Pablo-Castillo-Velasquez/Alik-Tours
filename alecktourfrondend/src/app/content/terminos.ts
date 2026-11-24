@@ -7,8 +7,8 @@ import { BRAND } from "../config/brand";
 //
 // ESTADO: BORRADOR pendiente de revisión jurídica. Los datos marcados como
 // "[Pendiente: ...]" debe suministrarlos la agencia; no se inventan.
-export const TERMINOS_VERSION = "2026-10-30-borrador";
-export const TERMINOS_FECHA = "30 de octubre de 2026";
+export const TERMINOS_VERSION = "2026-11-24-borrador";
+export const TERMINOS_FECHA = "24 de noviembre de 2026";
 export const TERMINOS_ES_BORRADOR = true;
 
 export interface SeccionTerminos {
@@ -126,19 +126,29 @@ export const TERMINOS_SECCIONES: SeccionTerminos[] = [
     ],
   },
   {
-    titulo: "17. Peticiones, quejas y reclamos",
+    titulo: "17. Peticiones, quejas y reclamos (PQR)",
     parrafos: [
-      "Puedes presentar peticiones, quejas o reclamos por cualquiera de los canales anteriores. Cada solicitud recibe un número de radicado y se responde dentro de los quince (15) días hábiles siguientes. Si no quedas satisfecho, puedes acudir a la Superintendencia de Industria y Comercio.",
+      "Puedes presentar peticiones, quejas, reclamos, sugerencias y felicitaciones desde tu perfil, en la sección «Solicitudes PQR», o por cualquiera de los canales anteriores; en ese caso un asesor la radica por ti y la verás igual en tu perfil. Es gratis y no necesitas abogado.",
+      "Cada solicitud recibe un número de radicado y una fecha límite. Plazos en días hábiles, contados desde el día hábil siguiente a la radicación: 15 para peticiones, quejas, reclamos, sugerencias y felicitaciones; 10 para solicitudes de información o documentos; 30 para consultas (Ley 1755 de 2015). Los reclamos sobre servicios turísticos se responden en máximo 15 días hábiles (Decreto 1074 de 2015).",
+      "Si falta información indispensable, te la pedimos una vez dentro de los 10 días hábiles siguientes; el plazo se pausa y vuelve a empezar cuando respondes. Si no respondes en un mes, la solicitud puede archivarse y podrás radicarla de nuevo. Si necesitamos más tiempo, te avisamos antes del vencimiento con el motivo y la nueva fecha, que no supera el doble del plazo inicial.",
+      "En los reclamos te decimos expresamente si accedemos o no a lo que pides y, si no, por qué. Si no quedas satisfecho, puedes acudir a la Superintendencia de Industria y Comercio. El detalle está en la Política de atención de PQR, publicada en /pqr.",
     ],
   },
   {
-    titulo: "18. Cambios a estos términos",
+    titulo: "18. Uso de la plataforma, los mensajes y el canal de PQR",
+    parrafos: [
+      "Te comprometes a usar tu cuenta, los mensajes y el canal de PQR de forma respetuosa y veraz: sin contenido ofensivo, amenazas, publicidad ni suplantación de otra persona. Las solicitudes irrespetuosas pueden rechazarse, y si una repite otra ya resuelta sin hechos nuevos podemos remitirte a la respuesta anterior (Ley 1755 de 2015, art. 19).",
+      "Nunca te pediremos por estos canales el número completo de una tarjeta, tus claves ni códigos de verificación; no los compartas. Lo que escribas en una solicitud lo ven solo tú y el personal autorizado de la agencia, y se conserva como soporte de la atención.",
+    ],
+  },
+  {
+    titulo: "19. Cambios a estos términos",
     parrafos: [
       "Podemos actualizar estos términos. La nueva versión se publica en esta página con su fecha y solo se aplica a las reservas hechas después de su publicación; las reservas existentes conservan la versión que aceptaste.",
     ],
   },
   {
-    titulo: "19. Ley aplicable",
+    titulo: "20. Ley aplicable",
     parrafos: [
       "Estos términos se rigen por las leyes de la República de Colombia. Nada de lo aquí previsto limita los derechos que la ley reconoce al consumidor.",
     ],

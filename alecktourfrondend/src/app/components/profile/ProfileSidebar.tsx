@@ -1,4 +1,5 @@
 import {
+  FileQuestion,
   Calendar,
   ChevronRight,
   Heart,
@@ -22,6 +23,7 @@ export const PERFIL_TABS = [
   { id: "inicio", label: "Inicio", icon: Home },
   { id: "reservas", label: "Mis reservas", icon: Calendar },
   { id: "mensajes", label: "Mensajes", icon: MessageCircle },
+  { id: "pqr", label: "Solicitudes PQR", icon: FileQuestion },
   { id: "favoritos", label: "Favoritos", icon: Heart },
   { id: "facturas", label: "Comprobantes", icon: Receipt },
   { id: "metodos-pago", label: "Métodos de pago", icon: Wallet },

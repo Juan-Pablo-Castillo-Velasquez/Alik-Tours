@@ -26,6 +26,7 @@ export type Module =
   | "vuelos"
   | "clientes"
   | "cancelaciones"
+  | "pqr"
   | "empresas"
   | "pagos"
   | "usuarios"

@@ -62,7 +62,7 @@ test('una reserva nueva aparece en Mis reservas con su código y botón de pago'
       ninos: 0,
       infantes: 0,
       viajeros: [{ tipo: 'adulto', nombres: 'Viajera', apellidos: 'Prueba', tipo_documento: 'CC', numero_documento: '10203040', fecha_nacimiento: '1995-04-10' }],
-      terminos_version: '2026-10-30-borrador',
+      terminos_version: '2026-11-24-borrador',
     },
   });
   expect(r.ok(), `crear reserva: ${r.status()} ${await r.text()}`).toBeTruthy();

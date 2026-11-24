@@ -1,4 +1,4 @@
-import { Bell, Calendar, CircleCheck, Loader2, Users, XCircle } from "lucide-react";
+import { Bell, Calendar, CircleCheck, FileQuestion, Loader2, Users, XCircle } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
@@ -16,6 +16,7 @@ const TIPO_ICON: Record<string, typeof Calendar> = {
   cancelacion: XCircle,
   pago: CircleCheck,
   comunidad: Users,
+  pqr: FileQuestion,
 };
 
 // Mismo cálculo de tiempo relativo que ya usa ModuleNotificaciones.tsx del
@@ -101,6 +102,10 @@ export default function NotificacionesBell({ idCliente }: Props) {
     setOpen(false);
     if (tipo === "comunidad") {
       navigate("/comunidad");
+      return;
+    }
+    if (tipo === "pqr") {
+      navigate("/profile", { state: { tab: "pqr", pqrId: idReferencia } });
       return;
     }
     // En los avisos de reseña la referencia es la reseña, no una reserva.

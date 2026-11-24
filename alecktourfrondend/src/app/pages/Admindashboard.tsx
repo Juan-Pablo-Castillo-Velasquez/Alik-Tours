@@ -13,6 +13,7 @@ import { Reserva, HotelData, Paquete, Cliente, Empleado, Pago, Usuario, Rol, Mod
 import ModuleDashboard from "../components/admin/ModuleDashboard";
 import ModuleReservas from "../components/admin/ModuleReservas";
 import ModuleCancelaciones from "../components/admin/ModuleCancelaciones";
+import ModulePqr from "../components/admin/ModulePqr";
 import ModuleCrearReserva from "../components/admin/ModuleCrearReserva";
 import { getLocalCache, setLocalCache } from "../utils/localCache";
 import ModuleHoteles from "../components/admin/ModuleHoteles";
@@ -877,6 +878,7 @@ export default function AdminDashboard() {
         soloEmpleado={soloEmpleado}
       />
     ),
+    pqr: <ModulePqr clientes={clientes} usuarioId={usuario?.user_id} />,
     empresas: (
       <ModuleEmpresas
         solicitudes={solicitudesCorporativas}
