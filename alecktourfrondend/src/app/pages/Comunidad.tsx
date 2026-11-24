@@ -103,6 +103,7 @@ export default function Comunidad() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
 
       <header className="mx-auto flex max-w-6xl flex-col gap-5 px-4 pb-8 pt-10 md:flex-row md:items-end md:justify-between">
         <div className="max-w-2xl">
@@ -303,6 +304,7 @@ export default function Comunidad() {
         onPublicada={(p) => setMias((prev) => [p, ...prev])}
       />
 
+      </main>
       <Footer />
     </div>
   );

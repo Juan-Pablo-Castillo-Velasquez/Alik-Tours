@@ -105,6 +105,7 @@ export default function Packages() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
       <BannersPromocionales />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -327,6 +328,7 @@ export default function Packages() {
         )}
       </div>
 
+      </main>
       <Footer />
     </div>
   );

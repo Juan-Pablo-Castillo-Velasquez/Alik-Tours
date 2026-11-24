@@ -22,6 +22,7 @@ export default function Pqr() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
       <Navbar />
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
 
       <section className="border-b border-border bg-card">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:py-16 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-center">
@@ -182,6 +183,7 @@ export default function Pqr() {
         </p>
       </section>
 
+      </main>
       <Footer />
     </div>
   );

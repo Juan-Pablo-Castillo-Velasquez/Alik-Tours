@@ -27,6 +27,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-clip">
       <Navbar />
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
       <Hero />
       <BannersPromocionales />
       <PromocionAccordeon />
@@ -49,6 +50,7 @@ export default function Home() {
         <Newsletter />
       </div>
 
+      </main>
       <Footer />
       <ScrollToTopButton />
     </div>

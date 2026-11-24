@@ -31,8 +31,11 @@ import { resolveFotoUrl } from "./admin/types";
 import NotificacionesBell from "./NotificacionesBell";
 import { LoginModalDiferido, RegisterModalDiferido } from "./ModalesAuthDiferidos";
 import { ThemeToggle } from "./ThemeToggle";
+import SelectorIdioma from "./SelectorIdioma";
+import BotonAccesibilidad from "./accesibilidad/BotonAccesibilidad";
 
 export default function Navbar() {
+  const t = useT();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showOffersMenu, setShowOffersMenu] = useState(false);
   const [showBenefitsMenu, setShowBenefitsMenu] = useState(false);
@@ -164,7 +167,7 @@ export default function Navbar() {
                     text-muted-foreground/70
                   "
                   >
-                    Agencia de viajes
+                    {t("nav.agencia")}
                   </div>
                 </div>
               </Link>
@@ -225,7 +228,7 @@ export default function Navbar() {
                 >
                   <Plane className="w-3.5 h-3.5 text-primary transition-transform group-hover:-translate-y-0.5" />
 
-                  <span>Ofertas</span>
+                  <span>{t("nav.ofertas")}</span>
 
                   <ChevronDown className="w-3 h-3 text-muted-foreground" />
 
@@ -274,7 +277,7 @@ export default function Navbar() {
                     >
                       <div className="px-3 py-2">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-primary">
-                          Descubre tu próximo viaje
+                          {t("nav.descubre")}
                         </p>
                       </div>
 
@@ -295,10 +298,10 @@ export default function Navbar() {
 
                         <div>
                           <span className="block text-sm font-bold">
-                            Todos los destinos
+                            {t("nav.todosDestinos")}
                           </span>
                           <span className="block text-[10px] text-muted-foreground mt-0.5">
-                            Explora todas nuestras opciones
+                            {t("nav.exploraOpciones")}
                           </span>
                         </div>
                       </Link>
@@ -322,7 +325,7 @@ export default function Navbar() {
                 `}
               >
                 <Building2 className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform shrink-0" />
-                Hoteles
+                {t("nav.hoteles")}
                 <span
                   className={`absolute bottom-1 left-3 right-3 h-[2px] bg-primary rounded-full transition-transform origin-left ${isActivePath("/search") ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}
                 />
@@ -346,7 +349,7 @@ export default function Navbar() {
                 `}
               >
                 <Compass className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform shrink-0" />
-                Info de viaje
+                {t("nav.infoViaje")}
                 <span
                   className={`absolute bottom-1 left-3 right-3 h-[2px] bg-primary rounded-full transition-transform origin-left ${isActivePath("/travel-info") ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}
                 />
@@ -367,7 +370,7 @@ export default function Navbar() {
                 `}
               >
                 <Plane className="w-3.5 h-3.5 text-primary group-hover:-translate-y-0.5 transition-transform shrink-0" />
-                Vuelos
+                {t("nav.vuelos")}
                 <span
                   className={`absolute bottom-1 left-3 right-3 h-[2px] bg-primary rounded-full transition-transform origin-left ${isActivePath("/vuelos") ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}
                 />
@@ -388,7 +391,7 @@ export default function Navbar() {
                 `}
               >
                 <Users className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform shrink-0" />
-                Comunidad
+                {t("nav.comunidad")}
                 <span
                   className={`absolute bottom-1 left-3 right-3 h-[2px] bg-primary rounded-full transition-transform origin-left ${isActivePath("/comunidad") ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}
                 />
@@ -412,7 +415,7 @@ export default function Navbar() {
                 "
               >
                 <Package className="w-3.5 h-3.5 group-hover:scale-110 transition-transform shrink-0" />
-                <span>Paquetes</span>
+                <span>{t("nav.paquetes")}</span>
               </Link>
 
               {/* BENEFICIOS */}
@@ -432,7 +435,7 @@ export default function Navbar() {
                   "
                 >
                   <Gift className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform shrink-0" />
-                  Beneficios
+                  {t("nav.beneficios")}
                   <ChevronDown className="w-3 h-3 text-muted-foreground" />
                 </button>
 
@@ -473,7 +476,7 @@ export default function Navbar() {
                     >
                       <div className="px-3 py-2">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-primary">
-                          Viajar tiene sus ventajas
+                          {t("nav.viajarVentajas")}
                         </p>
                       </div>
 
@@ -493,10 +496,10 @@ export default function Navbar() {
 
                         <div>
                           <span className="block text-sm font-bold">
-                            Programa de puntos
+                            {t("nav.puntos")}
                           </span>
                           <span className="block text-[10px] text-muted-foreground mt-0.5">
-                            Obtén beneficios en tus viajes
+                            {t("nav.puntosDesc")}
                           </span>
                         </div>
                       </Link>
@@ -517,10 +520,10 @@ export default function Navbar() {
 
                         <div>
                           <span className="block text-sm font-bold">
-                            Convenios empresariales
+                            {t("nav.convenios")}
                           </span>
                           <span className="block text-[10px] text-muted-foreground mt-0.5">
-                            Soluciones para empresas
+                            {t("nav.conveniosDesc")}
                           </span>
                         </div>
                       </Link>
@@ -545,7 +548,7 @@ export default function Navbar() {
                     transition-all
                   "
                 >
-                  Más
+                  {t("nav.mas")}
                   <ChevronDown className="w-3 h-3 text-muted-foreground" />
                 </button>
 
@@ -589,7 +592,7 @@ export default function Navbar() {
                         className="block px-4 py-3 rounded-xl hover:bg-accent transition-all"
                       >
                         <span className="block text-sm font-bold">
-                          Cómo reservar
+                          {t("nav.comoReservar")}
                         </span>
                       </Link>
 
@@ -598,7 +601,7 @@ export default function Navbar() {
                         className="block px-4 py-3 rounded-xl hover:bg-accent transition-all"
                       >
                         <span className="block text-sm font-bold">
-                          Preguntas frecuentes
+                          {t("nav.faq")}
                         </span>
                       </Link>
 
@@ -607,7 +610,7 @@ export default function Navbar() {
                         className="block px-4 py-3 rounded-xl hover:bg-accent transition-all"
                       >
                         <span className="block text-sm font-bold">
-                          Contáctanos
+                          {t("nav.contacto")}
                         </span>
                       </Link>
                     </motion.div>
@@ -639,6 +642,8 @@ export default function Navbar() {
                 <NotificacionesBell idCliente={cliente.id_cliente} />
               )}
 
+              <SelectorIdioma />
+              <BotonAccesibilidad />
               <ThemeToggle />
 
               {/* AUTH */}
@@ -718,7 +723,7 @@ export default function Navbar() {
                       hover:bg-destructive/10
                       transition-all
                     "
-                    title="Cerrar sesión"
+                    title={t("nav.cerrarSesion")}
                   >
                     <LogOut className="w-4 h-4" />
                   </motion.button>
@@ -748,7 +753,7 @@ export default function Navbar() {
                   "
                 >
                   <LogIn className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  Iniciar sesión
+                  {t("nav.iniciarSesion")}
                 </motion.button>
               )}
             </div>
@@ -761,6 +766,8 @@ export default function Navbar() {
                 <NotificacionesBell idCliente={cliente.id_cliente} />
               )}
 
+              <SelectorIdioma className="px-2" />
+              <BotonAccesibilidad />
               <ThemeToggle />
 
               <motion.button
@@ -843,7 +850,7 @@ export default function Navbar() {
                   >
                     <span className="flex items-center gap-3">
                       <Package className="w-4 h-4" />
-                      Explorar paquetes
+                      {t("nav.explorarPaquetes")}
                     </span>
 
                     <ChevronDown className="w-4 h-4 -rotate-90" />
@@ -863,7 +870,7 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Building2 className="w-4 h-4 text-primary" />
-                    Hoteles
+                    {t("nav.hoteles")}
                   </Link>
 
                   <Link
@@ -880,7 +887,7 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Plane className="w-4 h-4 text-primary" />
-                    Vuelos
+                    {t("nav.vuelos")}
                   </Link>
 
                   <Link
@@ -897,7 +904,7 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Gift className="w-4 h-4 text-primary" />
-                    Beneficios
+                    {t("nav.beneficios")}
                   </Link>
 
                   <Link
@@ -914,7 +921,7 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Compass className="w-4 h-4 text-primary" />
-                    Info de viaje
+                    {t("nav.infoViaje")}
                   </Link>
 
                   <Link
@@ -931,7 +938,7 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <ListChecks className="w-4 h-4 text-primary" />
-                    Cómo reservar
+                    {t("nav.comoReservar")}
                   </Link>
 
                   <Link
@@ -948,7 +955,7 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Users className="w-4 h-4 text-primary" />
-                    Comunidad
+                    {t("nav.comunidad")}
                   </Link>
 
                   <Link
@@ -965,7 +972,7 @@ export default function Navbar() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Phone className="w-4 h-4 text-primary" />
-                    Contáctanos
+                    {t("nav.contacto")}
                   </Link>
 
                   {/* CONTACT CARD */}
@@ -981,10 +988,10 @@ export default function Navbar() {
                   >
                     {/* Antes: "¿Necesitas ayuda? +57 322 812 7104 · Asesoría
                         24/7" como texto que no se podía tocar. */}
-                    <p className="text-xs font-bold mb-2.5">¿Necesitas ayuda?</p>
+                    <p className="text-xs font-bold mb-2.5">{t("nav.ayuda")}</p>
                     <BotonWhatsApp
                       variante="bloque"
-                      texto="Escríbenos por WhatsApp"
+                      texto={t("nav.whatsapp")}
                       detalle={BRAND.whatsapp}
                       onClick={() => setIsMenuOpen(false)}
                     />
@@ -1052,7 +1059,7 @@ export default function Navbar() {
                           transition-all
                         "
                       >
-                        Cerrar sesión
+                        {t("nav.cerrarSesion")}
                       </button>
                     </div>
                   ) : (
@@ -1082,7 +1089,7 @@ export default function Navbar() {
                         "
                       >
                         <LogIn className="w-4 h-4" />
-                        Iniciar sesión
+                        {t("nav.iniciarSesion")}
                       </button>
 
                       <button
@@ -1102,7 +1109,7 @@ export default function Navbar() {
                           transition-all
                         "
                       >
-                        Crear cuenta
+                        {t("nav.crearCuenta")}
                       </button>
                     </div>
                   )}

@@ -5,3 +5,4 @@
 /* aquí solo quedan las variables y @layer base */
 @import './temporada.css';
 @import './avisos.css';
+@import './accesibilidad.css';

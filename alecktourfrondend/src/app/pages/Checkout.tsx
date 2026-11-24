@@ -712,6 +712,7 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
       <Navbar />
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
       <ReservationLoader
         step={loaderStep}
         isVisible={(isProcessing && paymentStatus === 'idle') || !!loaderError}
@@ -1531,6 +1532,7 @@ export default function Checkout() {
           </div>
         </form>
       </div>
+      </main>
       <Footer />
     </div>
   );

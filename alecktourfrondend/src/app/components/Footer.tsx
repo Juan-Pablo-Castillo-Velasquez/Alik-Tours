@@ -8,28 +8,29 @@ import { BotonAnimacionTemporada, NieveFooter } from "./temporada/NieveFooter";
 import { useTema } from "../context/TemaContext";
 
 export default function Footer() {
+  const t = useT();
   const { temaActivo } = useTema();
   const esHalloween = temaActivo?.clave === "halloween";
 
   const footerLinks = {
     empresa: [
-      { name: "Inicio", href: "/" },
-      { name: "Vuelos", href: "/vuelos" },
-      { name: "Viajes Corporativos", href: "/corporate" },
-      { name: "Alik Tours Rewards", href: "/benefits" },
-      { name: "Comunidad y videos", href: "/comunidad" },
-      { name: "Contacto", href: "/contact" },
+      { name: t("footer.inicio"), href: "/" },
+      { name: t("footer.vuelos"), href: "/vuelos" },
+      { name: t("footer.corporativos"), href: "/corporate" },
+      { name: t("footer.rewards"), href: "/benefits" },
+      { name: t("footer.comunidad"), href: "/comunidad" },
+      { name: t("footer.contacto"), href: "/contact" },
     ],
     soporte: [
-      { name: "Cómo reservar", href: "/como-reservar" },
-      { name: "Preguntas Frecuentes", href: "/faq" },
-      { name: "Peticiones, quejas y reclamos", href: "/pqr" },
-      { name: "Información de Viaje", href: "/travel-info" },
-      { name: "Buscar Destinos", href: "/search" },
+      { name: t("footer.comoReservar"), href: "/como-reservar" },
+      { name: t("footer.faq"), href: "/faq" },
+      { name: t("footer.pqrLargo"), href: "/pqr" },
+      { name: t("footer.infoViaje"), href: "/travel-info" },
+      { name: t("footer.buscar"), href: "/search" },
     ],
     cuenta: [
-      { name: "Mi Perfil", href: "/profile" },
-      { name: "Preferencias de Viaje", href: "/preferences" },
+      { name: t("footer.perfil"), href: "/profile" },
+      { name: t("footer.preferencias"), href: "/preferences" },
     ],
   };
 
@@ -86,7 +87,7 @@ export default function Footer() {
 
           {/* Links Columns */}
           <div>
-            <h3 className="footer-heading mb-6">Empresa</h3>
+            <h3 className="footer-heading mb-6">{t("footer.empresa")}</h3>
             <ul className="space-y-4">
               {footerLinks.empresa.map((link) => (
                 <li key={link.name}>
@@ -99,7 +100,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="footer-heading mb-6">Ayuda e Información</h3>
+            <h3 className="footer-heading mb-6">{t("footer.ayuda")}</h3>
             <ul className="space-y-4">
               {footerLinks.soporte.map((link) => (
                 <li key={link.name}>
@@ -112,7 +113,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="footer-heading mb-6">Mi Cuenta</h3>
+            <h3 className="footer-heading mb-6">{t("footer.cuenta")}</h3>
             <ul className="space-y-4">
               {footerLinks.cuenta.map((link) => (
                 <li key={link.name}>
@@ -134,18 +135,21 @@ export default function Footer() {
             style={{ color: "rgba(243,228,232,0.55)" }}
           >
             © {currentYear} {BRAND.name}. Todos los derechos reservados. · RNT {BRAND.rnt}
-            <span className="block mt-1">Agencia fundada por Juan Pablo Castillo Velásquez, Fernando Gutiérrez y Cristian Sinisterra</span>
+            <span className="block mt-1">{t("footer.fundadores")}</span>
           </p>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
             <BotonAnimacionTemporada />
             <Link to="/terms" className="footer-link">
-              Términos y Condiciones
+              {t("footer.terminos")}
             </Link>
             <Link to="/privacy" className="footer-link">
-              Política de Privacidad
+              {t("footer.privacidad")}
             </Link>
             <Link to="/pqr" className="footer-link">
-              PQR
+              {t("footer.pqr")}
+            </Link>
+            <Link to="/accesibilidad" className="footer-link">
+              {t("footer.accesibilidad")}
             </Link>
           </div>
         </div>

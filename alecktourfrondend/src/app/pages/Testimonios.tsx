@@ -201,6 +201,7 @@ export default function Testimonios() {
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
       <Navbar />
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
 
       {/* HERO */}
       <div className="relative overflow-hidden border-b border-border">
@@ -603,6 +604,7 @@ export default function Testimonios() {
         </div>
       </div>
 
+      </main>
       <Footer />
     </div>
   );

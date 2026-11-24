@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { Plane } from "lucide-react";
 import { Toaster } from "../components/ui/sonner";
 import ConfirmacionGlobal from "../components/ui/ConfirmacionGlobal";
+import PanelAccesibilidad from "../components/accesibilidad/PanelAccesibilidad";
+import SaltarContenido from "../components/accesibilidad/SaltarContenido";
 import { AuthModalProvider } from "../context/AuthModalContext";
 import WhatsAppButton from "../components/WhatsAppButton";
 import CookieConsent from "../components/CookieConsent";
@@ -25,6 +27,7 @@ function RouteFallback() {
 export default function RootLayout() {
     return (
         <AuthModalProvider>
+            <SaltarContenido />
             <Toaster />
             <ConfirmacionGlobal />
             {/* La nieve (y demás partículas de temporada) va DETRÁS del
@@ -43,6 +46,7 @@ export default function RootLayout() {
             <GuiaUso />
             <WhatsAppButton />
             <CookieConsent />
+            <PanelAccesibilidad />
         </AuthModalProvider>
     );
 }
