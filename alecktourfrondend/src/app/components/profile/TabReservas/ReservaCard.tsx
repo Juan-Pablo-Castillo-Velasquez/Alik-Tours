@@ -146,8 +146,51 @@ const ReservaCard = forwardRef<HTMLDivElement, Props>(function ReservaCard(
             </div>
           </dl>
 
-          {/* Pago: barra de avance y botón si queda saldo */}
-          {reserva.estado !== "cancelada" && total > 0 && (
+          {/* Recorrido de la reserva: dónde está y qué sigue */}
+          {reserva.estado !== "cancelada" && reserva.estado !== "cancelacion_solicitada" && (
+            <ol className="flex items-center gap-1.5 text-[11px] font-medium" aria-label="Estado del viaje">
+              {[
+                { texto: "Reservada", hecho: true },
+                {
+                  texto: saldo <= 0 ? "Pagada" : debe ? "Pago pendiente" : "Pago parcial",
+                  hecho: saldo <= 0,
+                },
+                {
+                  texto: estadoViaje === "en_curso" ? "En viaje" : estadoViaje === "finalizado" ? "Viajada" : "Viaje",
+                  hecho: estadoViaje === "finalizado",
+                  actual: estadoViaje === "en_curso" || estadoViaje === "hoy",
+                },
+              ].map((paso, i) => (
+                <li key={paso.texto} className="flex items-center gap-1.5">
+                  {i > 0 && <span className={`h-px w-5 ${paso.hecho ? "bg-primary/50" : "bg-border"}`} aria-hidden="true" />}
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
+                      paso.hecho
+                        ? "bg-primary/10 text-primary"
+                        : paso.actual
+                          ? "bg-[var(--gold)]/15 text-foreground"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${paso.hecho ? "bg-primary" : paso.actual ? "bg-[var(--gold)]" : "bg-muted-foreground/40"}`}
+                      aria-hidden="true"
+                    />
+                    {paso.texto}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {/* Pago: barra de avance y botón si queda saldo. En una reserva ya
+              cerrada solo se informa lo pagado (la barra a medias confundía). */}
+          {reserva.estado !== "cancelada" && total > 0 && !activa && (
+            <p className="text-xs text-muted-foreground">
+              Total pagado <b className="text-foreground">{pesos(pagado)}</b>
+            </p>
+          )}
+          {activa && total > 0 && (
             <div className={`rounded-xl px-3 py-2.5 ${debe ? "bg-primary/5" : "bg-muted/40"}`}>
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="text-muted-foreground">

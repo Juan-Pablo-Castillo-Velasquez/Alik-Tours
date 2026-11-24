@@ -1,4 +1,4 @@
-import { Clapperboard, Loader2, PenSquare, Users } from "lucide-react";
+import { Camera, Clapperboard, Loader2, MapPin, PenSquare, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
@@ -43,13 +43,16 @@ export default function Comunidad() {
   const [error, setError] = useState<string | null>(null);
   const [mias, setMias] = useState<PublicacionComunidad[]>([]);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [destinos, setDestinos] = useState<{ destino: string; total: number }[]>([]);
+  const [destino, setDestino] = useState<string | null>(null);
+  const totalGeneral = destinos.reduce((acc, d) => acc + d.total, 0);
 
   // Se recarga al iniciar/cerrar sesión: el servidor marca qué es "mío"
   // (para poder borrarlo) solo si la petición lleva la sesión.
   useEffect(() => {
     let vigente = true;
     setCargando(true);
-    Promise.all([comunidadService.getVideos(), comunidadService.getPublicaciones(0, POR_PAGINA)])
+    Promise.all([comunidadService.getVideos(), comunidadService.getPublicaciones(0, POR_PAGINA, destino)])
       .then(([v, p]) => {
         if (!vigente) return;
         setVideos(v);
@@ -61,7 +64,11 @@ export default function Comunidad() {
     return () => {
       vigente = false;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, destino]);
+
+  useEffect(() => {
+    comunidadService.getDestinos().then(setDestinos).catch(() => {});
+  }, []);
 
   const cargarMias = useCallback(() => {
     if (!esCliente) return;
@@ -75,7 +82,7 @@ export default function Comunidad() {
   const cargarMas = async () => {
     setCargandoMas(true);
     try {
-      const p = await comunidadService.getPublicaciones(publicaciones.length, POR_PAGINA);
+      const p = await comunidadService.getPublicaciones(publicaciones.length, POR_PAGINA, destino);
       setPublicaciones((prev) => [...prev, ...p.items.filter((n) => !prev.some((x) => x.id_publicacion === n.id_publicacion))]);
       setTotal(p.total);
     } finally {
@@ -86,28 +93,45 @@ export default function Comunidad() {
   const abrirPublicar = () => (esCliente ? setModalAbierto(true) : openLogin());
   const pendientes = mias.filter((m) => m.estado !== "aprobada");
 
+  const chip = (activo: boolean) =>
+    `inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+      activo
+        ? "border-primary bg-primary text-primary-foreground"
+        : "border-border bg-card text-foreground/75 hover:border-primary/40 hover:text-foreground"
+    }`;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
-      <header className="max-w-5xl mx-auto px-4 pt-10 pb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-2">{BRAND.slogan}</p>
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight" style={{ fontFamily: "'Fraunces', serif" }}>
-          Comunidad {BRAND.name}
-        </h1>
-        <p className="text-muted-foreground mt-2 max-w-2xl">
-          Mira lo que hacemos en cada viaje y lo que cuentan nuestros viajeros. Si ya viajaste con nosotros, comparte tu
-          experiencia con un video o fotos.
-        </p>
+      <header className="mx-auto flex max-w-6xl flex-col gap-5 px-4 pb-8 pt-10 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-2xl">
+          <h1
+            className="text-4xl leading-[1.05] tracking-tight md:text-5xl"
+            style={{ fontFamily: "'Fraunces', serif", fontWeight: 600 }}
+          >
+            Historias de viaje
+          </h1>
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+            Fotos, consejos y conversaciones de quienes ya viajaron con {BRAND.name}. Mira cómo se vive cada destino antes
+            de reservar.
+          </p>
+        </div>
+        <button
+          onClick={abrirPublicar}
+          className="inline-flex shrink-0 lg:hidden items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition hover:opacity-95"
+        >
+          <PenSquare className="h-4 w-4" /> Contar mi viaje
+        </button>
       </header>
 
       {/* Videos de la agencia */}
       {videos.length > 0 && (
-        <section className="max-w-5xl mx-auto px-4 pb-10" aria-labelledby="videos-agencia">
-          <h2 id="videos-agencia" className="text-xl font-semibold flex items-center gap-2 mb-4">
-            <Clapperboard className="w-5 h-5 text-primary" /> Videos de {BRAND.name}
+        <section className="mx-auto max-w-6xl px-4 pb-12" aria-labelledby="videos-agencia">
+          <h2 id="videos-agencia" className="mb-4 flex items-center gap-2 text-xl font-semibold">
+            <Clapperboard className="h-5 w-5 text-primary" /> Videos de {BRAND.name}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((v) => (
               <VideoAgenciaCard
                 key={`${v.id_video}-${isAuthenticated}`}
@@ -121,74 +145,156 @@ export default function Comunidad() {
       )}
 
       {/* Comunidad de viajeros */}
-      <section className="max-w-2xl mx-auto px-4 pb-16" aria-labelledby="experiencias">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <h2 id="experiencias" className="text-xl font-semibold flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" /> Experiencias de viajeros
+      <section
+        className="mx-auto grid max-w-6xl gap-8 px-4 pb-20 lg:grid-cols-[minmax(0,1fr)_320px]"
+        aria-labelledby="experiencias"
+      >
+        <div className="min-w-0">
+          <h2 id="experiencias" className="sr-only">
+            Experiencias de viajeros
           </h2>
-          <button
-            onClick={abrirPublicar}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-95"
-          >
-            <PenSquare className="w-4 h-4" /> Compartir mi experiencia
-          </button>
+
+          {destinos.length > 1 && (
+            <nav
+              aria-label="Filtrar por destino"
+              className="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]"
+            >
+              <button onClick={() => setDestino(null)} className={chip(destino === null)} aria-pressed={destino === null}>
+                Todos <span className="text-xs opacity-70">{totalGeneral}</span>
+              </button>
+              {destinos.map((d) => (
+                <button
+                  key={d.destino}
+                  onClick={() => setDestino(d.destino)}
+                  className={chip(destino === d.destino)}
+                  aria-pressed={destino === d.destino}
+                >
+                  {d.destino} <span className="text-xs opacity-70">{d.total}</span>
+                </button>
+              ))}
+            </nav>
+          )}
+
+          {cargando ? (
+            <div className="flex justify-center py-16 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : error ? (
+            <p className="py-10 text-center text-sm text-destructive">{error}</p>
+          ) : publicaciones.length === 0 ? (
+            <div className="rounded-3xl border border-border bg-card px-6 py-14 text-center">
+              <Camera className="mx-auto h-8 w-8 text-primary" />
+              <p className="mt-3 font-semibold">
+                {destino ? `Aún no hay historias de ${destino}` : "Todavía no hay historias publicadas"}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">¿Viajaste con nosotros? Sé el primero en contarlo.</p>
+              <button
+                onClick={abrirPublicar}
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+              >
+                <PenSquare className="h-4 w-4" /> Contar mi viaje
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {publicaciones.some((p) => p.es_ejemplo) && <AvisoContenidoEjemplo />}
+              {publicaciones.map((p) => (
+                <PublicacionCard
+                  key={`${p.id_publicacion}-${isAuthenticated}`}
+                  publicacion={p}
+                  puedeComentar={puedeComentar}
+                  onPedirLogin={openLogin}
+                  onBorrada={(id) => {
+                    setPublicaciones((prev) => prev.filter((x) => x.id_publicacion !== id));
+                    setTotal((t) => Math.max(t - 1, 0));
+                    cargarMias();
+                  }}
+                />
+              ))}
+              {publicaciones.length < total && (
+                <button
+                  onClick={cargarMas}
+                  disabled={cargandoMas}
+                  className="w-full rounded-2xl border border-border bg-card py-3 text-sm font-semibold hover:bg-muted disabled:opacity-60"
+                >
+                  {cargandoMas ? "Cargando..." : `Ver más historias (${total - publicaciones.length})`}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {pendientes.length > 0 && (
-          <div className="mb-6 rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
-            <p className="text-sm font-semibold">Tus publicaciones en revisión o no aprobadas</p>
-            {pendientes.map((m) => (
-              <div key={m.id_publicacion} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="truncate max-w-[70%]">{m.titulo}</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ESTADO_LABEL[m.estado]?.cls ?? ""}`}>
-                  {ESTADO_LABEL[m.estado]?.texto ?? m.estado}
-                </span>
-                {m.estado === "rechazada" && m.motivo_moderacion && (
-                  <p className="w-full text-xs text-muted-foreground">Motivo: {m.motivo_moderacion}</p>
-                )}
-              </div>
-            ))}
+        <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-3xl bg-primary p-6 text-primary-foreground">
+            <h3 className="text-xl leading-tight" style={{ fontFamily: "'Fraunces', serif", fontWeight: 600 }}>
+              ¿Ya volviste de tu viaje?
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-primary-foreground/80">
+              Comparte tus fotos o un video y cuéntale a otros viajeros qué te gustó y qué recomiendas.
+            </p>
+            <button
+              onClick={abrirPublicar}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-white/90"
+            >
+              <PenSquare className="h-4 w-4" /> {esCliente ? "Contar mi viaje" : "Inicia sesión para publicar"}
+            </button>
           </div>
-        )}
 
-        {cargando ? (
-          <div className="flex justify-center py-16 text-muted-foreground">
-            <Loader2 className="w-6 h-6 animate-spin" />
+          {pendientes.length > 0 && (
+            <div className="rounded-3xl border border-border bg-card p-5">
+              <p className="text-sm font-semibold">Tus publicaciones</p>
+              <ul className="mt-3 space-y-3">
+                {pendientes.map((m) => (
+                  <li key={m.id_publicacion} className="text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate">{m.titulo}</span>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${ESTADO_LABEL[m.estado]?.cls ?? ""}`}
+                      >
+                        {ESTADO_LABEL[m.estado]?.texto ?? m.estado}
+                      </span>
+                    </div>
+                    {m.estado === "rechazada" && m.motivo_moderacion && (
+                      <p className="mt-1 text-xs text-muted-foreground">Motivo: {m.motivo_moderacion}</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {destinos.length > 0 && (
+            <div className="hidden rounded-3xl border border-border bg-card p-5 lg:block">
+              <p className="text-sm font-semibold">Destinos con más historias</p>
+              <ul className="mt-3 space-y-1">
+                {destinos.slice(0, 6).map((d) => (
+                  <li key={d.destino}>
+                    <button
+                      onClick={() => {
+                        setDestino(d.destino);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-sm text-foreground/80 hover:bg-muted hover:text-foreground"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <MapPin className="h-3.5 w-3.5 text-primary" /> {d.destino}
+                      </span>
+                      <span className="text-xs tabular-nums text-muted-foreground">{d.total}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex gap-3 rounded-3xl border border-border bg-card p-5 text-sm">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+            <p className="leading-relaxed text-muted-foreground">
+              <span className="font-semibold text-foreground">Revisamos cada historia</span> antes de publicarla para que
+              la comunidad sea un lugar útil y respetuoso.
+            </p>
           </div>
-        ) : error ? (
-          <p className="text-center text-sm text-destructive py-10">{error}</p>
-        ) : publicaciones.length === 0 ? (
-          <div className="text-center py-14 border border-dashed border-border rounded-2xl">
-            <p className="font-medium">Todavía no hay experiencias publicadas</p>
-            <p className="text-sm text-muted-foreground mt-1">¿Viajaste con nosotros? Sé el primero en contarlo.</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {publicaciones.some((p) => p.es_ejemplo) && <AvisoContenidoEjemplo />}
-            {publicaciones.map((p) => (
-              <PublicacionCard
-                key={`${p.id_publicacion}-${isAuthenticated}`}
-                publicacion={p}
-                puedeComentar={puedeComentar}
-                onPedirLogin={openLogin}
-                onBorrada={(id) => {
-                  setPublicaciones((prev) => prev.filter((x) => x.id_publicacion !== id));
-                  setTotal((t) => Math.max(t - 1, 0));
-                  cargarMias();
-                }}
-              />
-            ))}
-            {publicaciones.length < total && (
-              <button
-                onClick={cargarMas}
-                disabled={cargandoMas}
-                className="w-full py-3 rounded-xl border border-border text-sm font-medium hover:bg-muted disabled:opacity-60"
-              >
-                {cargandoMas ? "Cargando..." : "Ver más experiencias"}
-              </button>
-            )}
-          </div>
-        )}
+        </aside>
       </section>
 
       <PublicarModal

@@ -98,3 +98,16 @@ def test_quitarlo_deja_solo_lo_real(client, crear_usuario, hotel, resena_real, d
 
     assert client.get(URL, headers=admin).json() == {"publicaciones": 0, "resenas": 0}
     assert db.query(Resena).count() == 1
+
+
+def test_filtrar_comunidad_por_destino(client, crear_usuario, hotel):
+    _, admin = crear_usuario(roles=("admin",), con_cliente=False)
+    client.post(URL, headers=admin)
+
+    destinos = client.get("/api/comunidad/destinos").json()
+    assert sum(d["total"] for d in destinos) == 50
+    cartagena = next(d for d in destinos if d["destino"] == "Cartagena")
+
+    resp = client.get("/api/comunidad/publicaciones?destino=cartagena&limit=50").json()
+    assert resp["total"] == cartagena["total"]
+    assert all(p["destino"] == "Cartagena" for p in resp["items"])
