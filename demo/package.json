@@ -1,0 +1,14 @@
+{
+  "name": "aliktours-demo",
+  "private": true,
+  "type": "module",
+  "description": "Video de demostración de AlikTours grabado con Playwright (ver README.md)",
+  "scripts": {
+    "sembrar": "node sembrar.mjs",
+    "probar": "RITMO=0.5 node guion.mjs",
+    "grabar": "node guion.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.63.0"
+  }
+}

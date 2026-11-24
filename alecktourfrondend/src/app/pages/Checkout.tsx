@@ -1,4 +1,5 @@
 import { TERMINOS_VERSION } from "../content/terminos";
+import { rutaLoginConVuelta } from "../utils/volverTrasLogin";
 import { esCelularValido } from "../utils/validaciones";
 import { enlaceWhatsAppAgencia } from "../utils/whatsapp";
 import { BRAND } from "../config/brand";
@@ -246,7 +247,7 @@ export default function Checkout() {
   };
 
   useEffect(() => {
-    if (!isAuthenticated) { navigate('/login'); return; }
+    if (!isAuthenticated) { navigate(rutaLoginConVuelta(window.location.pathname + window.location.search), { replace: true }); return; }
     if (!id) return;
 
     Promise.all([
