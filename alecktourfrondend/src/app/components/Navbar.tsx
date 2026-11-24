@@ -1,3 +1,4 @@
+import { useT } from "../i18n";
 import BotonWhatsApp from "./BotonWhatsApp";
 import GuirnaldaLuces from "./temporada/GuirnaldaLuces";
 import BrandLogo from "./BrandLogo";

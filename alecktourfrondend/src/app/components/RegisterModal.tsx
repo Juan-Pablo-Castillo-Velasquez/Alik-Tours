@@ -15,6 +15,8 @@ import { authService } from "../services/auth.service";
 import PrivacidadModal from "./PrivacidadModal";
 import TerminosModal from "./TerminosModal";
 import OtpCodeInput from "./ui/OtpCodeInput";
+import { useT } from "../i18n";
+import PanelMarcaAuth from "./auth/PanelMarcaAuth";
 import ModalBackdrop from "./ui/ModalBackdrop";
 import { DURACION, EASE_SUAVE } from "../utils/motion";
 
@@ -36,13 +38,13 @@ const CODE_LENGTH = 6;
 // una pantalla de "revisa tu correo" sin más -- ahora se te pide el código
 // de 6 dígitos ahí mismo, sin salir del modal.
 type Step = 1 | 2 | 3 | 4;
-const STEP_LABELS = ["Acceso", "Perfil", "Listo", "Código"];
+const STEP_LABELS = ["registro.pasoAcceso", "registro.pasoPerfil", "registro.pasoListo", "registro.pasoCodigo"] as const;
 
 const STEP_COPY: Record<Step, { title: string; subtitle: string }> = {
-    1: { title: "Crea tu cuenta", subtitle: "Empecemos por tu correo y una contraseña segura." },
-    2: { title: "Cuéntanos de ti", subtitle: "Así preparamos tus reservas y facturas a tu nombre." },
-    3: { title: "Ya casi está", subtitle: "Revisa que todo esté bien antes de confirmar." },
-    4: { title: "Confirma tu correo", subtitle: "Te enviamos un código de 6 dígitos." },
+    1: { title: "registro.paso1.titulo", subtitle: "registro.paso1.sub" },
+    2: { title: "registro.paso2.titulo", subtitle: "registro.paso2.sub" },
+    3: { title: "registro.paso3.titulo", subtitle: "registro.paso3.sub" },
+    4: { title: "registro.paso4.titulo", subtitle: "registro.paso4.sub" },
 };
 
 const initialFormData = {
@@ -103,12 +105,19 @@ function Field({ label, icon, error, suffix, optional, children }: FieldProps) {
     // a él.
     const idGenerado = useId();
     const id = (isValidElement(children) && children.props.id) || idGenerado;
-    const campo = isValidElement(children) ? cloneElement(children, { id }) : children;
+    const t = useT();
+    const campo = isValidElement(children)
+        ? cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+              id,
+              "aria-invalid": error ? true : undefined,
+              "aria-describedby": error ? `${id}-error` : undefined,
+          })
+        : children;
     return (
         <div className="space-y-1.5 w-full">
-            <label htmlFor={id} className="flex items-center gap-1 text-xs font-semibold text-foreground/80 pl-0.5">
+            <label htmlFor={id} className="flex items-center gap-1 pl-0.5 text-sm font-medium text-foreground">
                 {label}
-                {optional && <span className="text-muted-foreground font-normal">(opcional)</span>}
+                {optional && <span className="font-normal text-muted-foreground">({t("registro.opcional").toLowerCase()})</span>}
             </label>
             <div className="relative group">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors duration-200">
@@ -122,10 +131,12 @@ function Field({ label, icon, error, suffix, optional, children }: FieldProps) {
             <AnimatePresence>
                 {error && (
                     <motion.p
+                        id={`${id}-error`}
+                        role="alert"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="text-[11px] text-destructive font-medium flex items-center gap-1 pl-1"
+                        className="flex items-center gap-1 pl-1 text-xs font-medium text-destructive"
                     >
                         <AlertCircle className="w-3 h-3 flex-shrink-0" />
                         {error}
@@ -138,6 +149,7 @@ function Field({ label, icon, error, suffix, optional, children }: FieldProps) {
 
 // Indicador visual de fuerza de contraseña
 function PasswordStrength({ password }: { password: string }) {
+    const t = useT();
     if (!password) return null;
     const hasLower = /[a-z]/.test(password);
     const hasUpper = /[A-Z]/.test(password);
@@ -145,10 +157,10 @@ function PasswordStrength({ password }: { password: string }) {
     const hasLength = password.length >= 6;
 
     const checks = [
-        { label: "Minúscula", ok: hasLower },
-        { label: "Mayúscula", ok: hasUpper },
-        { label: "Número", ok: hasNumber },
-        { label: "6+ chars", ok: hasLength },
+        { label: t("registro.minuscula"), ok: hasLower },
+        { label: t("registro.mayuscula"), ok: hasUpper },
+        { label: t("registro.numero"), ok: hasNumber },
+        { label: t("registro.largo"), ok: hasLength },
     ];
 
     const passed = checks.filter(c => c.ok).length;
@@ -167,7 +179,7 @@ function PasswordStrength({ password }: { password: string }) {
             </div>
             <div className="flex gap-2 flex-wrap">
                 {checks.map(({ label, ok }) => (
-                    <span key={label} className={`text-[10px] font-medium flex items-center gap-0.5 transition-colors ${ok ? "text-[#7B1E3A]" : "text-muted-foreground"}`}>
+                    <span key={label} className={`text-[11px] font-medium flex items-center gap-0.5 transition-colors ${ok ? "text-[#7B1E3A]" : "text-muted-foreground"}`}>
                         <span>{ok ? "✓" : "○"}</span> {label}
                     </span>
                 ))}
@@ -181,33 +193,35 @@ function PasswordStrength({ password }: { password: string }) {
 // completados, .step-active al actual") pero que ningún componente
 // llegaba a usar todavía.
 function Stepper({ step }: { step: Step }) {
+    const t = useT();
     return (
-        <div className="flex items-start px-8 pt-5 pb-4 bg-card border-b border-border flex-shrink-0">
+        <ol className="flex items-start px-6 pt-5 pb-4 bg-card border-b border-border flex-shrink-0 sm:px-8" aria-label={`${step} / 4`}>
             {STEP_LABELS.map((label, i) => {
                 const idx = (i + 1) as Step;
                 const isDone = step > idx;
                 const isActive = step === idx;
                 return (
-                    <div key={label} className={`flex items-center ${idx < STEP_LABELS.length ? "flex-1" : ""}`}>
+                    <li key={label} aria-current={isActive ? "step" : undefined} className={`flex items-center ${idx < STEP_LABELS.length ? "flex-1" : ""}`}>
                         <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
                             <div className={`step-dot text-xs ${isActive ? "step-active" : ""} ${isDone ? "step-done" : ""}`}>
                                 {isDone ? <Check className="w-4 h-4" /> : idx}
                             </div>
                             <span className={`text-[10px] font-bold uppercase tracking-wide whitespace-nowrap ${isActive ? "text-primary" : isDone ? "text-[color:var(--gold)]" : "text-muted-foreground"}`}>
-                                {label}
+                                {t(label)}
                             </span>
                         </div>
                         {idx < STEP_LABELS.length && (
-                            <div className={`step-line flex-1 mx-2 mb-4 ${isDone ? "step-line-done" : ""}`} />
+                            <div className={`step-line flex-1 mx-2 mb-4 ${isDone ? "step-line-done" : ""}`} aria-hidden />
                         )}
-                    </div>
+                    </li>
                 );
             })}
-        </div>
+        </ol>
     );
 }
 
 export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModalProps) {
+    const t = useT();
     const navigate = useNavigate();
     const { login } = useAuth();
 
@@ -523,29 +537,32 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                             role="dialog"
                             aria-modal="true"
                             aria-labelledby="registro-titulo"
-                            className="relative w-full max-w-lg my-8 rounded-xl shadow-2xl border border-border overflow-hidden bg-card text-card-foreground max-h-[90vh] flex flex-col"
+                            className="relative my-8 grid w-full max-w-lg overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-2xl md:max-w-5xl md:grid-cols-[0.85fr_1.15fr]"
                         >
+                            <PanelMarcaAuth variante="registro" />
+                            <div className="flex max-h-[90vh] min-w-0 flex-col">
                             {/* ── Header ── */}
-                            <div className="relative px-8 py-6 flex-shrink-0 overflow-hidden bg-primary text-primary-foreground">
-                                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5 blur-xl" />
-                                <div className="absolute top-4 -right-4 w-20 h-20 rounded-full bg-white/5 blur-lg" />
+                            <div className="relative px-8 py-6 flex-shrink-0 overflow-hidden bg-primary text-primary-foreground md:border-b md:border-border md:bg-card md:text-foreground">
+                                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5 blur-xl md:hidden" />
+                                <div className="absolute top-4 -right-4 w-20 h-20 rounded-full bg-white/5 blur-lg md:hidden" />
 
                                 <button
+                                    type="button"
                                     onClick={handleClose}
-                                    aria-label="Cerrar"
-                                    className="absolute top-5 right-5 p-2 rounded-lg text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10 transition-all duration-200"
+                                    aria-label={t("comun.cerrar")}
+                                    className="absolute top-5 right-5 p-2 rounded-lg text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10 transition-all duration-200 md:text-muted-foreground md:hover:bg-muted md:hover:text-foreground"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
 
                                 <div className="flex items-center gap-4 relative">
-                                    <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center shadow-inner border border-white/10">
+                                    <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center shadow-inner border border-white/10 md:border-0 md:bg-primary/10 md:shadow-none" aria-hidden>
                                         {step === 4
-                                            ? <ShieldCheck className="w-6 h-6 text-primary-foreground" />
-                                            : <Plane className="w-6 h-6 text-primary-foreground transform -rotate-12" />}
+                                            ? <ShieldCheck className="w-6 h-6 text-primary-foreground md:text-primary" />
+                                            : <Plane className="w-6 h-6 text-primary-foreground transform -rotate-12 md:text-primary" />}
                                     </div>
                                     <div>
-                                        <p className="text-primary-foreground/70 text-[11px] font-bold tracking-widest uppercase">Alik Tours</p>
+                                        <p className="text-primary-foreground/70 text-[11px] font-bold tracking-widest uppercase md:text-primary">Alik Tours</p>
                                         <AnimatePresence mode="wait">
                                             <motion.h1
                                                 id="registro-titulo"
@@ -554,9 +571,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: 6 }}
                                                 transition={{ duration: DURACION.rapida, ease: EASE_SUAVE }}
-                                                className="text-primary-foreground font-medium text-2xl tracking-tight leading-none mt-0.5"
+                                                className="text-primary-foreground font-bold text-2xl tracking-tight leading-none mt-0.5 md:text-foreground"
                                             >
-                                                {STEP_COPY[step].title}
+                                                {t(STEP_COPY[step].title)}
                                             </motion.h1>
                                         </AnimatePresence>
                                     </div>
@@ -569,9 +586,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
                                         transition={{ duration: DURACION.rapida, ease: EASE_SUAVE }}
-                                        className="text-primary-foreground/80 text-xs font-normal mt-3 relative max-w-[85%]"
+                                        className="text-primary-foreground/80 text-sm font-normal mt-3 relative max-w-[85%] md:text-muted-foreground"
                                     >
-                                        {STEP_COPY[step].subtitle}
+                                        {t(STEP_COPY[step].subtitle)}
                                     </motion.p>
                                 </AnimatePresence>
                             </div>
@@ -606,14 +623,14 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 transition={{ duration: DURACION.rapida, ease: EASE_SUAVE }}
                                                 className="space-y-4"
                                             >
-                                                <Field label="Correo electrónico" icon={<Mail className="w-4 h-4" />} error={fieldError("correo_electronico")}>
+                                                <Field label={t("registro.correo")} icon={<Mail className="w-4 h-4" />} error={fieldError("correo_electronico")}>
                                                     <input maxLength={120}
                                                         type="email"
                                                         name="correo_electronico"
                                                         value={formData.correo_electronico}
                                                         onChange={handleChange}
                                                         onBlur={handleBlur}
-                                                        placeholder="tu@correo.com (será tu usuario)"
+                                                        placeholder={t("registro.correoPh")}
                                                         autoComplete="email"
                                                         inputMode="email"
                                                         required
@@ -623,7 +640,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
 
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <Field
-                                                        label="Contraseña"
+                                                        label={t("registro.password")}
                                                         icon={<Lock className="w-4 h-4" />}
                                                         error={fieldError("password")}
                                                         suffix={
@@ -650,7 +667,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                         />
                                                     </Field>
                                                     <Field
-                                                        label="Confirmar contraseña"
+                                                        label={t("registro.confirmar")}
                                                         icon={<Lock className="w-4 h-4" />}
                                                         error={fieldError("confirmPassword")}
                                                         suffix={
@@ -691,11 +708,11 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 </div>
 
                                                 <p className="text-center text-xs font-medium text-muted-foreground">
-                                                    ¿Ya tienes cuenta?{" "}
+                                                    {t("registro.yaTienes")}{" "}
                                                     <button type="button"
                                                         onClick={() => { handleClose(); onSwitchToLogin?.(); }}
                                                         className="text-primary font-bold hover:underline transition-colors">
-                                                        Inicia sesión
+                                                        {t("registro.iniciaSesion")}
                                                     </button>
                                                 </p>
                                             </motion.div>
@@ -711,12 +728,12 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 className="space-y-3"
                                             >
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <Field label="Nombre" icon={<User className="w-4 h-4" />}>
+                                                    <Field label={t("registro.nombre")} icon={<User className="w-4 h-4" />}>
                                                         <input maxLength={80} type="text" name="nombre" value={formData.nombre}
                                                             onChange={handleChange} onBlur={handleBlur}
                                                             placeholder="Ej. Juan Pablo" autoComplete="given-name" required className={inputBase("nombre")} />
                                                     </Field>
-                                                    <Field label="Apellido" icon={<User className="w-4 h-4" />}>
+                                                    <Field label={t("registro.apellido")} icon={<User className="w-4 h-4" />}>
                                                         <input maxLength={80} type="text" name="apellido" value={formData.apellido}
                                                             onChange={handleChange} onBlur={handleBlur}
                                                             placeholder="Ej. Castillo" autoComplete="family-name" required className={inputBase("apellido")} />
@@ -724,13 +741,13 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 </div>
 
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <Field label="Cédula" icon={<CreditCard className="w-4 h-4" />} error={fieldError("cedula")}>
+                                                    <Field label={t("registro.cedula")} icon={<CreditCard className="w-4 h-4" />} error={fieldError("cedula")}>
                                                         <input maxLength={20} type="text" name="cedula" value={formData.cedula}
                                                             onChange={handleChange} onBlur={handleBlur}
                                                             placeholder="1020304050" required inputMode="numeric"
                                                             className={inputBase("cedula")} />
                                                     </Field>
-                                                    <Field label="Celular" icon={<Phone className="w-4 h-4" />} error={fieldError("celular")}>
+                                                    <Field label={t("registro.celular")} icon={<Phone className="w-4 h-4" />} error={fieldError("celular")}>
                                                         <input maxLength={20} type="tel" name="celular" value={formData.celular}
                                                             onChange={handleChange} onBlur={handleBlur}
                                                             placeholder="3001234567" inputMode="tel" autoComplete="tel" required
@@ -739,7 +756,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 </div>
 
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <Field label="Ciudad" icon={<MapPin className="w-4 h-4" />} error={fieldError("ciudad")}>
+                                                    <Field label={t("registro.ciudad")} icon={<MapPin className="w-4 h-4" />} error={fieldError("ciudad")}>
                                                         <select
                                                             name="ciudad"
                                                             value={formData.ciudad}
@@ -747,7 +764,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                             onBlur={handleBlur}
                                                             className={inputBase("ciudad")}
                                                         >
-                                                            <option value="" disabled>Selecciona tu ciudad</option>
+                                                            <option value="" disabled>{t("registro.seleccionaCiudad")}</option>
                                                             <option value="Bogotá">Bogotá</option>
                                                             <option value="Medellín">Medellín</option>
                                                             <option value="Cali">Cali</option>
@@ -760,7 +777,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                             <option value="Cúcuta">Cúcuta</option>
                                                         </select>
                                                     </Field>
-                                                    <Field label="Fecha de nacimiento" icon={<Calendar className="w-4 h-4" />} error={fieldError("fecha_nacimiento")}>
+                                                    <Field label={t("registro.nacimiento")} icon={<Calendar className="w-4 h-4" />} error={fieldError("fecha_nacimiento")}>
                                                         <input type="date"
                 max="2100-12-31" name="fecha_nacimiento" value={formData.fecha_nacimiento}
                                                             onChange={handleChange} onBlur={handleBlur}
@@ -768,7 +785,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                     </Field>
                                                 </div>
 
-                                                <Field label="Dirección" icon={<MapPin className="w-4 h-4" />} error={fieldError("direccion")} optional>
+                                                <Field label={t("registro.direccion")} icon={<MapPin className="w-4 h-4" />} error={fieldError("direccion")} optional>
                                                     <input maxLength={150} type="text" name="direccion" value={formData.direccion}
                                                         onChange={handleChange} onBlur={handleBlur}
                                                         placeholder="Ej. Calle 45 #12-34"
@@ -777,20 +794,20 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 </Field>
 
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    <Field label="Barrio / Localidad" icon={<Building2 className="w-4 h-4" />} optional>
+                                                    <Field label={t("registro.barrio")} icon={<Building2 className="w-4 h-4" />} optional>
                                                         <input maxLength={80} type="text" name="barrio" value={formData.barrio}
                                                             onChange={handleChange}
                                                             placeholder="Ej. Chapinero"
                                                             className={inputBase("barrio")} />
                                                     </Field>
-                                                    <Field label="Departamento" icon={<MapPin className="w-4 h-4" />} optional>
+                                                    <Field label={t("registro.departamento")} icon={<MapPin className="w-4 h-4" />} optional>
                                                         <select
                                                             name="departamento"
                                                             value={formData.departamento}
                                                             onChange={handleChange}
                                                             className={inputBase("departamento")}
                                                         >
-                                                            <option value="">Selecciona</option>
+                                                            <option value="">{t("registro.selecciona")}</option>
                                                             {DEPARTAMENTOS_COLOMBIA.map((d) => (
                                                                 <option key={d} value={d}>{d}</option>
                                                             ))}
@@ -798,7 +815,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                     </Field>
                                                 </div>
 
-                                                <Field label="Código postal" icon={<MapPin className="w-4 h-4" />} optional>
+                                                <Field label={t("registro.postal")} icon={<MapPin className="w-4 h-4" />} optional>
                                                     <input type="text" name="codigo_postal" value={formData.codigo_postal}
                                                         onChange={handleChange} placeholder="Ej. 110221"
                                                         inputMode="numeric" autoComplete="postal-code"
@@ -834,15 +851,15 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 className="space-y-5"
                                             >
                                                 <div className="bg-muted/40 border border-border p-5 rounded-lg space-y-3 shadow-sm">
-                                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Revisa tus datos</p>
+                                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t("registro.revisa")}</p>
                                                     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-                                                        <dt className="text-muted-foreground">Nombre</dt>
+                                                        <dt className="text-muted-foreground">{t("registro.nombre")}</dt>
                                                         <dd className="font-medium text-foreground text-right">{formData.nombre} {formData.apellido}</dd>
-                                                        <dt className="text-muted-foreground">Correo</dt>
+                                                        <dt className="text-muted-foreground">{t("registro.correoCorto")}</dt>
                                                         <dd className="font-medium text-foreground text-right truncate">{formData.correo_electronico}</dd>
-                                                        <dt className="text-muted-foreground">Cédula</dt>
+                                                        <dt className="text-muted-foreground">{t("registro.cedula")}</dt>
                                                         <dd className="font-medium text-foreground text-right">{formData.cedula}</dd>
-                                                        <dt className="text-muted-foreground">Ciudad</dt>
+                                                        <dt className="text-muted-foreground">{t("registro.ciudad")}</dt>
                                                         <dd className="font-medium text-foreground text-right">{formData.ciudad}</dd>
                                                     </dl>
                                                     <div className="flex items-center gap-3 pt-1 border-t border-border">
@@ -875,13 +892,13 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                         <button type="button"
                                                             onClick={(e) => { e.preventDefault(); setShowTerminos(true); }}
                                                             className="text-primary hover:underline font-bold transition-colors">
-                                                            Términos y Condiciones
+                                                            {t("registro.terminos")}
                                                         </button>{" "}
                                                         y la{" "}
                                                         <button type="button"
                                                             onClick={(e) => { e.preventDefault(); setShowPrivacidad(true); }}
                                                             className="text-primary hover:underline font-bold transition-colors">
-                                                            Política de Privacidad
+                                                            {t("registro.privacidad")}
                                                         </button>{" "}
                                                         de Alik Tours
                                                     </span>
@@ -904,9 +921,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                                                                 </svg>
-                                                                Creando cuenta...
+                                                                {t("registro.creando")}
                                                             </span>
-                                                        ) : "Crear cuenta →"}
+                                                        ) : t("registro.crear")}
                                                     </button>
                                                 </div>
                                             </motion.div>
@@ -963,9 +980,9 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                                                             </svg>
-                                                            Verificando...
+                                                            {t("login.verificando")}
                                                         </>
-                                                    ) : "Verificar cuenta"}
+                                                    ) : t("login.verificar")}
                                                 </button>
 
                                                 <button
@@ -975,19 +992,20 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                 >
                                                     <RefreshCw className={`w-3.5 h-3.5 ${resending ? "animate-spin" : ""}`} />
                                                     {resending
-                                                        ? "Reenviando..."
+                                                        ? t("login.reenviando")
                                                         : resendCooldown > 0
-                                                            ? `Reenviar código (${resendCooldown}s)`
-                                                            : "Reenviar código"}
+                                                            ? t("login.reenviarEn", { n: resendCooldown })
+                                                            : t("login.reenviar")}
                                                 </button>
 
                                                 <p className="text-[11px] font-medium text-muted-foreground mt-4 bg-muted py-1.5 px-3 rounded-lg border border-border inline-block">
-                                                    ¿No te llegó? Revisa spam/promociones -- también puedes abrir el enlace del mismo correo.
+                                                    {t("registro.spam")}
                                                 </p>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
                                 </form>
+                            </div>
                             </div>
                         </motion.div>
                     </ModalBackdrop>

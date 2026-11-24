@@ -36,7 +36,7 @@ export default function PanelMarcaAuth({ variante }: { variante: "login" | "regi
       </svg>
 
       <div className="relative flex items-center gap-3">
-        <img src="/logo.png" alt="" className="h-10 w-10 rounded-xl bg-white/95 object-contain p-1" onError={(e) => (e.currentTarget.style.display = "none")} />
+        <img src="/logo-alik-tours-160.png" alt="" className="h-10 w-10 rounded-xl bg-white/95 object-contain p-1" onError={(e) => (e.currentTarget.style.display = "none")} />
         <div>
           <p className="font-serif text-xl font-bold leading-none">Alik Tours</p>
           <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/70">

@@ -1,3 +1,4 @@
+import { useT } from "../i18n";
 import BrandLogo from "./BrandLogo";
 import { BRAND } from "../config/brand";
 import { Link } from "react-router";
