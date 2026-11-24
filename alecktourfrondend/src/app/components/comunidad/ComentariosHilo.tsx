@@ -2,6 +2,7 @@ import { BadgeCheck, CornerDownRight, Send, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ComentarioComunidad, LIMITES_COMUNIDAD, resolveMediaComunidad } from "../../services/comunidad.service";
+import { confirmar } from "../../utils/confirmar";
 
 interface Props {
   comentarios: ComentarioComunidad[];
@@ -75,7 +76,7 @@ function Caja({
   return (
     <div className="flex items-end gap-2">
       <div className="flex-1 min-w-0">
-        <textarea
+        <textarea maxLength={2000}
           value={texto}
           autoFocus={autoFocus}
           onChange={(e) => setTexto(e.target.value.slice(0, LIMITES_COMUNIDAD.comentarioMax))}
@@ -144,7 +145,7 @@ export default function ComentariosHilo({ comentarios, onChange, puedeComentar, 
   };
 
   const quitar = async (c: ComentarioComunidad) => {
-    if (!window.confirm("¿Borrar tu comentario?")) return;
+    if (!(await confirmar({ titulo: "¿Borrar tu comentario?", confirmar: "Borrar", peligro: true }))) return;
     try {
       await borrar(c.id_comentario);
       // Con el comentario se van sus respuestas (igual que en el servidor).

@@ -46,7 +46,7 @@ export default function CardPayment({
         </div>
         <div>
           <label htmlFor="tarjeta-titular" className="block text-xs font-medium text-muted-foreground mb-1.5">Nombre del titular</label>
-          <input
+          <input maxLength={80}
             id="tarjeta-titular"
             type="text"
             placeholder="Como aparece en la tarjeta"

@@ -81,7 +81,7 @@ export default function ConfirmDialog({
         {requireReason && (
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-muted-foreground">{reasonLabel}</label>
-            <textarea
+            <textarea maxLength={5000}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={reasonPlaceholder}

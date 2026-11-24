@@ -1,4 +1,4 @@
-import { AlertCircle, Eye, EyeOff, Lock, Mail, Plane, RefreshCw, Shield, User, X } from "lucide-react";
+import { Lock, Mail, Plane, RefreshCw, Shield, User, X } from "lucide-react";
 import { tomarVuelta } from "../utils/volverTrasLogin";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
@@ -9,6 +9,9 @@ import ModalBackdrop from "./ui/ModalBackdrop";
 import OtpCodeInput from "./ui/OtpCodeInput";
 import { useAuth } from "../context/AuthContext";
 import { authService } from "../services/auth.service";
+import { useT } from "../i18n";
+import PanelMarcaAuth from "./auth/PanelMarcaAuth";
+import { BotonPrincipal, CampoTexto, ErrorFormulario } from "./forms/Campos";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -29,10 +32,10 @@ const CODE_LENGTH = 6;
 const MENSAJE_NO_VERIFICADO = "Por favor verifica tu email antes de continuar";
 
 export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: LoginModalProps) {
+    const t = useT();
     const navigate = useNavigate();
     const { login } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
     // Lo escrito sobrevive a cerrar el modal (ver utils/borradorAuth.ts).
     const [formData, setFormData] = useState(() => borradorLogin.leer({ username: "", password: "" }));
     const [formError, setFormError] = useState("");
@@ -85,7 +88,6 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
     // Cerrar SIN borrar lo escrito (clic afuera, la X, pasar a registro).
     const cerrarConservando = () => {
         setFormError("");
-        setShowPassword(false);
         setShowForgot(false);
         setForgotMsg("");
         setWelcomeInfo(null);
@@ -98,7 +100,6 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         borradorLogin.borrar();
         setFormData({ username: "", password: "" });
         setFormError("");
-        setShowPassword(false);
         setShowForgot(false);
         setForgotMsg("");
         setForgotEmail("");
@@ -134,7 +135,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         const displayName = res.username ?? formData.username;
 
         setWelcomeInfo({ username: displayName, isAdmin });
-        toast.success(`¡Bienvenido, ${displayName}!`);
+        toast.success(t("login.hola", { nombre: displayName }));
 
         setTimeout(() => {
             resetAndClose();
@@ -225,333 +226,240 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
         setForgotEmail("");
     }
 
-    const inputBase =
-        "w-full pl-12 pr-4 py-3 bg-input-background border border-border rounded-lg text-sm outline-none transition-all duration-200 text-foreground placeholder:text-muted-foreground focus:bg-card focus:border-primary focus:ring-4 focus:ring-primary/10";
+    const verificandoTitulo = needsVerification ? t("login.tituloVerificar") : t("login.titulo");
+    const verificandoSub = needsVerification ? t("login.subtituloVerificar") : t("login.subtitulo");
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <ModalBackdrop zIndex={100} onClick={cerrarConservando}>
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.94, y: 24 }}
+                        initial={{ opacity: 0, scale: 0.96, y: 16 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.94, y: 24 }}
-                        transition={{ type: "spring", damping: 24, stiffness: 320 }}
+                        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+                        transition={{ type: "spring", damping: 26, stiffness: 320 }}
                         onClick={(e) => e.stopPropagation()}
-                        // Accesibilidad (bootcamp, semana 1): sin role="dialog" ni nombre,
-                        // un lector de pantalla (y Playwright con getByRole) no sabía que
-                        // esto era una ventana modal ni cómo se llamaba.
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="login-titulo"
-                        className="relative w-full max-w-md bg-card text-card-foreground rounded-xl shadow-2xl overflow-hidden border border-border my-auto"
+                        aria-describedby="login-sub"
+                        className="relative my-auto grid w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-2xl md:max-w-4xl md:grid-cols-[0.95fr_1.05fr]"
                     >
-                        {/* Header */}
-                        <div className="relative bg-primary text-primary-foreground px-8 pt-8 pb-12 overflow-hidden">
-                            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5 blur-xl" />
+                        <PanelMarcaAuth variante="login" />
+
+                        <div className="relative flex flex-col px-6 pb-7 pt-6 sm:px-10 sm:pb-10 sm:pt-9">
                             <button
+                                type="button"
                                 onClick={cerrarConservando}
-                                aria-label="Cerrar"
-                                className="absolute top-5 right-5 p-2 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10 rounded-lg transition-colors"
+                                aria-label={t("comun.cerrar")}
+                                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="h-5 w-5" aria-hidden />
                             </button>
-                            <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center shadow-inner border border-white/10 mb-4">
-                                <Plane className="w-6 h-6 text-primary-foreground transform -rotate-12" />
-                            </div>
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={needsVerification ? "verify" : "login"}
-                                    initial={{ opacity: 0, y: -6 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 6 }}
-                                    transition={{ duration: 0.18 }}
-                                >
-                                    <h1 id="login-titulo" className="text-2xl font-bold mb-1 text-primary-foreground">
-                                        {needsVerification ? "Confirma tu correo" : "Bienvenido de nuevo"}
-                                    </h1>
-                                    <p className="text-primary-foreground/80 text-sm">
-                                        {needsVerification
-                                            ? "Te enviamos un código de 6 dígitos para activar tu cuenta."
-                                            : "Inicia sesión para continuar tu viaje"}
-                                    </p>
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
 
-                        <div className="px-8 pb-8 -mt-6">
-                            <div className="bg-card rounded-xl shadow-lg border border-border p-6">
-
+                            <div className="mb-7 pr-8">
+                                <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary md:hidden" aria-hidden>
+                                    <Plane className="h-5 w-5 -rotate-12" />
+                                </span>
                                 <AnimatePresence mode="wait">
-                                    {welcomeInfo ? (
-                                        <motion.div
-                                            key="welcome"
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            className="flex flex-col items-center py-4 text-center gap-3"
-                                        >
-                                            <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-md ${welcomeInfo.isAdmin ? "bg-gold/15 text-gold" : "bg-primary/10 text-primary"}`}>
-                                                {welcomeInfo.isAdmin
-                                                    ? <Shield className="w-8 h-8" />
-                                                    : <User className="w-8 h-8" />
-                                                }
-                                            </div>
-                                            <div>
-                                                <p className="text-lg font-bold text-foreground">
-                                                    ¡Hola, {welcomeInfo.username}!
-                                                </p>
-                                                <span className={`inline-flex items-center gap-1.5 mt-1 px-3 py-1 rounded-full text-xs font-semibold ${welcomeInfo.isAdmin ? "bg-gold/15 text-gold" : "bg-primary/10 text-primary"}`}>
-                                                    {welcomeInfo.isAdmin
-                                                        ? <><Shield className="w-3 h-3" /> Administrador</>
-                                                        : <><User className="w-3 h-3" /> Cliente</>
-                                                    }
-                                                </span>
-                                            </div>
-                                            <p className="text-sm text-muted-foreground">Redirigiendo...</p>
-                                        </motion.div>
-                                    ) : needsVerification ? (
-                                        <motion.div key="verify-panel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-2">
-                                            <p className="text-sm text-muted-foreground mb-5">
-                                                Código enviado a <span className="font-bold text-foreground">{formData.username}</span>
-                                            </p>
-
-                                            <OtpCodeInput
-                                                value={codeDigits}
-                                                onChange={setCodeDigits}
-                                                disabled={verifying}
-                                                autoFocus
-                                                error={!!verifyError}
-                                            />
-
-                                            <AnimatePresence>
-                                                {verifyError && (
-                                                    <motion.p
-                                                        initial={{ opacity: 0, height: 0 }}
-                                                        animate={{ opacity: 1, height: "auto" }}
-                                                        exit={{ opacity: 0, height: 0 }}
-                                                        className="text-[12px] text-destructive font-medium flex items-center justify-center gap-1 mt-3"
-                                                    >
-                                                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                                                        {verifyError}
-                                                    </motion.p>
-                                                )}
-                                            </AnimatePresence>
-
-                                            <button
-                                                type="button"
-                                                onClick={handleVerifyCode}
-                                                disabled={verifying || codigoCompleto.length !== CODE_LENGTH}
-                                                className="w-full mt-6 py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:shadow-xl hover:brightness-110 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
-                                            >
-                                                {verifying ? "Verificando..." : "Verificar cuenta"}
-                                            </button>
-
-                                            <button
-                                                onClick={handleResendCode}
-                                                disabled={resending || resendCooldown > 0}
-                                                className="w-full py-2.5 mt-2 rounded-lg text-primary font-medium text-xs transition-all hover:bg-muted disabled:opacity-50 flex items-center justify-center gap-2"
-                                            >
-                                                <RefreshCw className={`w-3.5 h-3.5 ${resending ? "animate-spin" : ""}`} />
-                                                {resending ? "Reenviando..." : resendCooldown > 0 ? `Reenviar código (${resendCooldown}s)` : "Reenviar código"}
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => { setNeedsVerification(false); setFormError(""); }}
-                                                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mt-3"
-                                            >
-                                                ← Volver
-                                            </button>
-                                        </motion.div>
-                                    ) : (
-                                        <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                            <AnimatePresence>
-                                                {formError && (
-                                                    <motion.div
-                                                        role="alert"
-                                                        initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                                                        animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
-                                                        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                                                        className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg p-3 text-sm overflow-hidden"
-                                                    >
-                                                        <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                                        <span>{formError}</span>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-
-                                            <form onSubmit={handleSubmit} className="space-y-4">
-                                                <div>
-                                                    <label htmlFor="login-correo" className="block text-sm font-medium text-foreground mb-1.5">Correo electrónico</label>
-                                                    <div className="relative group">
-                                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                                        <input
-                                                            id="login-correo"
-                                                            type="email"
-                                                            name="username"
-                                                            value={formData.username}
-                                                            onChange={handleChange}
-                                                            onBlur={() => setEmailTouched(true)}
-                                                            placeholder="alek@example.com"
-                                                            autoComplete="email"
-                                                            inputMode="email"
-                                                            required
-                                                            className={`${inputBase} ${emailTouched && formData.username && !emailValid
-                                                                ? "!border-destructive focus:!ring-destructive/10"
-                                                                : ""
-                                                                }`}
-                                                        />
-                                                    </div>
-                                                    {emailTouched && formData.username && !emailValid && (
-                                                        <p className="text-[11px] text-destructive font-medium flex items-center gap-1 mt-1.5">
-                                                            <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                                                            Ingresa un correo electrónico válido (con @)
-                                                        </p>
-                                                    )}
-                                                    <p className="text-[11px] text-muted-foreground mt-1.5">
-                                                        Inicia sesión con el correo de tu cuenta, no con tu nombre de usuario.
-                                                    </p>
-                                                </div>
-
-                                                <div>
-                                                    <div className="flex items-center justify-between mb-1.5">
-                                                        <label htmlFor="login-password" className="text-sm font-medium text-foreground">Contraseña</label>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowForgot(true)}
-                                                            className="text-xs text-primary hover:underline font-medium"
-                                                        >
-                                                            ¿Olvidaste tu contraseña?
-                                                        </button>
-                                                    </div>
-                                                    <div className="relative group">
-                                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                                        <input
-                                                            id="login-password"
-                                                            type={showPassword ? "text" : "password"}
-                                                            name="password"
-                                                            value={formData.password}
-                                                            onChange={handleChange}
-                                                            placeholder="••••••••"
-                                                            autoComplete="current-password"
-                                                            required
-                                                            className={`${inputBase} pr-12`}
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowPassword((s) => !s)}
-                                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
-                                                            tabIndex={-1}
-                                                            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                                        >
-                                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <button
-                                                    type="submit"
-                                                    disabled={!isFormValid || loading}
-                                                    className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-lg hover:shadow-xl hover:brightness-110 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:brightness-100"
-                                                >
-                                                    {loading ? "Iniciando sesión..." : "Iniciar sesión"}
-                                                </button>
-                                            </form>
-                                        </motion.div>
-                                    )}
+                                    <motion.div
+                                        key={needsVerification ? "verify" : "login"}
+                                        initial={{ opacity: 0, y: -6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 6 }}
+                                        transition={{ duration: 0.18 }}
+                                    >
+                                        <h1 id="login-titulo" className="text-2xl font-bold tracking-tight text-foreground sm:text-[1.7rem]">
+                                            {verificandoTitulo}
+                                        </h1>
+                                        <p id="login-sub" className="mt-1.5 text-sm text-muted-foreground">
+                                            {verificandoSub}
+                                        </p>
+                                    </motion.div>
                                 </AnimatePresence>
                             </div>
 
-                            {!welcomeInfo && !needsVerification && (
-                                <p className="text-center text-muted-foreground text-sm mt-5">
-                                    ¿No tienes cuenta?{" "}
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            cerrarConservando();
-                                            onSwitchToRegister?.();
-                                        }}
-                                        className="text-primary hover:underline font-semibold"
+                            <AnimatePresence mode="wait">
+                                {welcomeInfo ? (
+                                    <motion.div
+                                        key="welcome"
+                                        initial={{ opacity: 0, scale: 0.94 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="flex flex-col items-center gap-3 py-6 text-center"
+                                        role="status"
                                     >
-                                        Regístrate gratis
-                                    </button>
-                                </p>
+                                        <div className={`flex h-16 w-16 items-center justify-center rounded-full shadow-md ${welcomeInfo.isAdmin ? "bg-gold/15 text-gold" : "bg-primary/10 text-primary"}`}>
+                                            {welcomeInfo.isAdmin ? <Shield className="h-8 w-8" aria-hidden /> : <User className="h-8 w-8" aria-hidden />}
+                                        </div>
+                                        <p className="text-lg font-bold text-foreground">{t("login.hola", { nombre: welcomeInfo.username })}</p>
+                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${welcomeInfo.isAdmin ? "bg-gold/15 text-gold" : "bg-primary/10 text-primary"}`}>
+                                            {welcomeInfo.isAdmin ? t("login.admin") : t("login.cliente")}
+                                        </span>
+                                        <p className="text-sm text-muted-foreground">{t("login.redirigiendo")}</p>
+                                    </motion.div>
+                                ) : needsVerification ? (
+                                    <motion.div key="verify-panel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center">
+                                        <p className="mb-5 text-sm text-muted-foreground">
+                                            {t("login.codigoEnviado")} <span className="font-bold text-foreground">{formData.username}</span>
+                                        </p>
+                                        <OtpCodeInput value={codeDigits} onChange={setCodeDigits} disabled={verifying} autoFocus error={!!verifyError} />
+                                        {verifyError && <div className="mt-4"><ErrorFormulario>{verifyError}</ErrorFormulario></div>}
+                                        <BotonPrincipal
+                                            type="button"
+                                            onClick={handleVerifyCode}
+                                            disabled={verifying || codigoCompleto.length !== CODE_LENGTH}
+                                            cargando={verifying}
+                                            textoCargando={t("login.verificando")}
+                                            className="mt-6"
+                                        >
+                                            {t("login.verificar")}
+                                        </BotonPrincipal>
+                                        <button
+                                            type="button"
+                                            onClick={handleResendCode}
+                                            disabled={resending || resendCooldown > 0}
+                                            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-medium text-primary transition-colors hover:bg-muted disabled:opacity-50"
+                                        >
+                                            <RefreshCw className={`h-3.5 w-3.5 ${resending ? "animate-spin" : ""}`} aria-hidden />
+                                            {resending ? t("login.reenviando") : resendCooldown > 0 ? t("login.reenviarEn", { n: resendCooldown }) : t("login.reenviar")}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setNeedsVerification(false); setFormError(""); }}
+                                            className="mt-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                                        >
+                                            {t("comun.volver")}
+                                        </button>
+                                    </motion.div>
+                                ) : (
+                                    <motion.form key="form" onSubmit={handleSubmit} initial={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-5" noValidate>
+                                        <ErrorFormulario>{formError}</ErrorFormulario>
+                                        <CampoTexto
+                                            id="login-correo"
+                                            label={t("login.correo")}
+                                            icono={Mail}
+                                            type="email"
+                                            name="username"
+                                            maxLength={120}
+                                            value={formData.username}
+                                            onChange={handleChange}
+                                            onBlur={() => setEmailTouched(true)}
+                                            placeholder="tu@correo.com"
+                                            autoComplete="email"
+                                            inputMode="email"
+                                            required
+                                            error={emailTouched && formData.username && !emailValid ? t("login.correoInvalido") : null}
+                                            ayuda={t("login.correoAyuda")}
+                                        />
+                                        <CampoTexto
+                                            id="login-password"
+                                            label={t("login.password")}
+                                            icono={Lock}
+                                            type="password"
+                                            name="password"
+                                            maxLength={72}
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            placeholder="••••••••"
+                                            autoComplete="current-password"
+                                            required
+                                            extraEtiqueta={
+                                                <button type="button" onClick={() => setShowForgot(true)} className="text-xs font-semibold text-primary hover:underline">
+                                                    {t("login.olvido")}
+                                                </button>
+                                            }
+                                        />
+                                        <BotonPrincipal type="submit" disabled={!isFormValid || loading} cargando={loading} textoCargando={t("login.entrando")}>
+                                            {t("login.entrar")}
+                                        </BotonPrincipal>
+                                    </motion.form>
+                                )}
+                            </AnimatePresence>
+
+                            {!welcomeInfo && !needsVerification && (
+                                <>
+                                    <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground" aria-hidden>
+                                        <span className="h-px flex-1 bg-border" />
+                                        {t("login.o")}
+                                        <span className="h-px flex-1 bg-border" />
+                                    </div>
+                                    <p className="text-center text-sm text-muted-foreground">
+                                        {t("login.sinCuenta")}{" "}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                cerrarConservando();
+                                                onSwitchToRegister?.();
+                                            }}
+                                            className="font-semibold text-primary hover:underline"
+                                        >
+                                            {t("login.registrate")}
+                                        </button>
+                                    </p>
+                                </>
                             )}
                         </div>
 
-                        {/* Sub-modal: olvidé contraseña */}
+                        {/* Recuperar contraseña: tarjeta centrada sobre el modal. */}
                         <AnimatePresence>
                             {showForgot && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl p-4"
+                                    className="absolute inset-0 z-10 flex items-center justify-center bg-background/85 p-4 backdrop-blur-sm"
                                     onClick={closeForgotSub}
                                 >
                                     <motion.div
-                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        initial={{ opacity: 0, scale: 0.94, y: 12 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        exit={{ opacity: 0, scale: 0.94, y: 12 }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="bg-card text-card-foreground border border-border rounded-xl p-8 w-full max-w-sm shadow-2xl"
+                                        role="dialog"
+                                        aria-modal="true"
+                                        aria-labelledby="olvido-titulo"
+                                        className="w-full max-w-sm rounded-2xl border border-border bg-card p-7 text-card-foreground shadow-2xl"
                                     >
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className="w-10 h-10 bg-accent text-accent-foreground rounded-lg flex items-center justify-center">
-                                                <Mail className="w-5 h-5" />
-                                            </div>
-                                            <h2 className="text-xl font-bold text-foreground">Recuperar contraseña</h2>
-                                        </div>
-                                        <p className="text-muted-foreground text-sm mb-6">
-                                            Te enviaremos un enlace a tu correo para restablecer tu contraseña.
-                                        </p>
-
+                                        <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary" aria-hidden>
+                                            <Mail className="h-5 w-5" />
+                                        </span>
+                                        <h2 id="olvido-titulo" className="text-xl font-bold text-foreground">{t("login.recuperar")}</h2>
+                                        <p className="mb-5 mt-1 text-sm text-muted-foreground">{t("login.recuperarTexto")}</p>
                                         {forgotMsg ? (
-                                            <div className="text-center py-2">
-                                                <div className="w-16 h-16 bg-accent text-accent-foreground rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <span className="text-3xl">✅</span>
-                                                </div>
-                                                <p className="text-foreground font-medium mb-1">¡Correo enviado!</p>
-                                                <p className="text-muted-foreground text-sm">{forgotMsg}</p>
-                                                <button
-                                                    onClick={closeForgotSub}
-                                                    className="mt-6 w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:brightness-110 transition-all"
-                                                >
-                                                    Entendido
-                                                </button>
+                                            <div className="text-center" role="status">
+                                                <p className="font-semibold text-foreground">{t("login.enviado")}</p>
+                                                <p className="mt-1 text-sm text-muted-foreground">{forgotMsg}</p>
+                                                <BotonPrincipal type="button" onClick={closeForgotSub} className="mt-6">
+                                                    {t("comun.entendido")}
+                                                </BotonPrincipal>
                                             </div>
                                         ) : (
-                                            <>
-                                                <div className="relative mb-4 group">
-                                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                                    <input
-                                                        type="email"
-                                                        placeholder="tu@correo.com"
-                                                        value={forgotEmail}
-                                                        onChange={(e) => setForgotEmail(e.target.value)}
-                                                        onKeyDown={(e) => e.key === "Enter" && handleForgot()}
-                                                        className={inputBase}
-                                                    />
-                                                </div>
-
-                                                <motion.button
-                                                    whileHover={{ scale: 1.02 }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    onClick={handleForgot}
-                                                    disabled={forgotLoading || !forgotEmail}
-                                                    className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:shadow-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:hover:brightness-100"
-                                                >
-                                                    {forgotLoading ? "Enviando..." : "Enviar enlace"}
-                                                </motion.button>
-
-                                                <button
-                                                    onClick={closeForgotSub}
-                                                    className="w-full mt-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                                                >
-                                                    Cancelar
+                                            <form
+                                                onSubmit={(e) => {
+                                                    e.preventDefault();
+                                                    handleForgot();
+                                                }}
+                                                className="space-y-4"
+                                            >
+                                                <CampoTexto
+                                                    label={t("login.correo")}
+                                                    icono={Mail}
+                                                    type="email"
+                                                    maxLength={120}
+                                                    placeholder="tu@correo.com"
+                                                    value={forgotEmail}
+                                                    onChange={(e) => setForgotEmail(e.target.value)}
+                                                    autoComplete="email"
+                                                    autoFocus
+                                                />
+                                                <BotonPrincipal type="submit" disabled={forgotLoading || !forgotEmail} cargando={forgotLoading} textoCargando={t("comun.enviando")}>
+                                                    {t("login.enviarEnlace")}
+                                                </BotonPrincipal>
+                                                <button type="button" onClick={closeForgotSub} className="w-full py-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
+                                                    {t("comun.cancelar")}
                                                 </button>
-                                            </>
+                                            </form>
                                         )}
                                     </motion.div>
                                 </motion.div>

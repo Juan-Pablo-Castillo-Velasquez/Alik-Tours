@@ -404,7 +404,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Contraseña actual</label>
               <div className="relative">
-                <input
+                <input maxLength={72}
                   type={showPassword ? "text" : "password"}
                   value={contrasenaActual}
                   onChange={(e) => setContrasenaActual(e.target.value)}
@@ -425,7 +425,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Nueva contraseña</label>
               <div className="relative">
-                <input
+                <input maxLength={72}
                   type={showPassword ? "text" : "password"}
                   value={nuevaContrasena}
                   onChange={(e) => setNuevaContrasena(e.target.value)}
@@ -446,7 +446,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Confirmar nueva contraseña</label>
               <div className="relative">
-                <input
+                <input maxLength={72}
                   type={showPassword ? "text" : "password"}
                   value={confirmarContrasena}
                   onChange={(e) => setConfirmarContrasena(e.target.value)}

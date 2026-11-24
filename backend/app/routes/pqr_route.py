@@ -614,7 +614,11 @@ def actualizar_gestion(
         if not data.categoria or not data.motivo or not svc.tipificacion_valida(data.categoria, data.motivo):
             raise HTTPException(status_code=422, detail="Elige una categoría y un motivo válidos")
         if (pqr.categoria, pqr.motivo) != (data.categoria, data.motivo):
-            antes = f"{pqr.categoria}/{pqr.motivo}" if pqr.categoria else None
+            antes = (
+                f"{svc.TIPIFICACION.get(pqr.categoria, {'nombre': pqr.categoria})['nombre']} → {pqr.motivo}"
+                if pqr.categoria
+                else None
+            )
             pqr.categoria = data.categoria
             pqr.motivo = data.motivo
             pqr.id_usuario_tipifica = id_usuario

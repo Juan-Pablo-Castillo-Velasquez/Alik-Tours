@@ -58,8 +58,8 @@ export default function VuelosInicio() {
         </div>
 
         <form onSubmit={buscar} className="grid gap-2 rounded-2xl border border-border bg-card p-3 shadow-sm sm:grid-cols-2 lg:grid-cols-[1fr_1fr_180px_auto]">
-          <input value={origen} onChange={(e) => setOrigen(e.target.value)} placeholder="¿Desde dónde? (ej. Bogotá)" aria-label="Origen del vuelo" className={campo} />
-          <input value={destino} onChange={(e) => setDestino(e.target.value)} placeholder="¿A dónde? (ej. Cartagena)" aria-label="Destino del vuelo" className={campo} />
+          <input maxLength={80} value={origen} onChange={(e) => setOrigen(e.target.value)} placeholder="¿Desde dónde? (ej. Bogotá)" aria-label="Origen del vuelo" className={campo} />
+          <input maxLength={80} value={destino} onChange={(e) => setDestino(e.target.value)} placeholder="¿A dónde? (ej. Cartagena)" aria-label="Destino del vuelo" className={campo} />
           <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} aria-label="Fecha de salida desde" className={campo} />
           <button type="submit" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90">
             <Search className="h-4 w-4" /> Buscar vuelos

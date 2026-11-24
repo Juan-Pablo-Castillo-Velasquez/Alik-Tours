@@ -1,7 +1,7 @@
 import { CheckCircle2, Loader2, Plane } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import PagoDeReserva from "../components/payment/PagoDeReserva";
@@ -17,6 +17,7 @@ import { nuevoClientMsgId } from "../services/mensajeChat.service";
 import { reservaService } from "../services/reserva.service";
 import { hora, OfertaVuelo, rutaOferta, vueloService } from "../services/vuelo.service";
 import { fechaVuelo } from "./Vuelos";
+import ContadorCaracteres from "../components/ui/ContadorCaracteres";
 
 type Pasajero = ViajeroInput & { clave: string };
 const HOY = new Date().toISOString().slice(0, 10);
@@ -123,7 +124,6 @@ export default function ReservarVuelo() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <Toaster position="top-center" richColors />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <CabeceraReserva
           volverA={`/vuelos/${o.id_oferta}`}
@@ -190,6 +190,7 @@ export default function ReservarVuelo() {
                   <label className="block text-sm">
                     <span className="mb-1 block font-medium">Solicitudes especiales (opcional)</span>
                     <textarea value={solicitudes} onChange={(e) => setSolicitudes(e.target.value)} maxLength={2000} rows={2} placeholder="Ej: asistencia en aeropuerto, comida especial..." className={campo} />
+                    <ContadorCaracteres valor={solicitudes} max={2000} />
                     <span className="text-[11px] text-muted-foreground">Las gestiona la agencia con la aerolínea; no se garantizan hasta que te las confirmen.</span>
                   </label>
                 </section>

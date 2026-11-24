@@ -2,6 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.cache import delete_pattern, get_cached, set_cached
@@ -50,6 +51,57 @@ def get_clientes(
     data = [ClienteResponse.model_validate(c).model_dump(mode="json") for c in clientes]
     set_cached(cache_key, data, ttl_seconds=120)
     return data
+
+
+class ClienteBusqueda(BaseModel):
+    id_cliente: int
+    nombre: str
+    apellido: str
+    cedula: str
+    correo: str | None
+    celular: str | None
+    tiene_cuenta: bool
+
+
+@router.get("/clientes/buscar", response_model=list[ClienteBusqueda])
+def buscar_clientes(
+    q: str = Query(..., min_length=2, max_length=80, description="Nombre, apellido, cédula o correo"),
+    limit: int = Query(8, ge=1, le=20),
+    db: Session = Depends(get_db),
+    _id: int = Depends(require_empleado),
+):
+    """Autocompletar de clientes para los formularios del panel: se escribe
+    el nombre (o la cédula, o el correo) y llegan las coincidencias, sin
+    tener que cargar el listado completo en el navegador."""
+    terminos = [t for t in q.strip().split() if t][:4]
+    consulta = db.query(Cliente)
+    for t in terminos:
+        patron = f"%{t}%"
+        consulta = consulta.filter(
+            or_(
+                Cliente.nombre.ilike(patron),
+                Cliente.apellido.ilike(patron),
+                Cliente.cedula.ilike(patron),
+                Cliente.correo.ilike(patron),
+            )
+        )
+    filas = consulta.order_by(Cliente.nombre.asc(), Cliente.apellido.asc()).limit(limit).all()
+    con_cuenta = {
+        u.id_cliente
+        for u in db.query(Usuario.id_cliente).filter(Usuario.id_cliente.in_([c.id_cliente for c in filas])).all()
+    }
+    return [
+        {
+            "id_cliente": c.id_cliente,
+            "nombre": c.nombre,
+            "apellido": c.apellido,
+            "cedula": c.cedula,
+            "correo": c.correo,
+            "celular": c.celular,
+            "tiene_cuenta": c.id_cliente in con_cuenta,
+        }
+        for c in filas
+    ]
 
 
 @router.get("/clientes/{cliente_id}", response_model=ClienteResponse)

@@ -229,7 +229,7 @@ export default function ModuleClientes({
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
+          <input maxLength={120}
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre, cédula o correo..."
@@ -371,41 +371,41 @@ export default function ModuleClientes({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Nombre</label>
-              <input value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })}
+              <input maxLength={80} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })}
                 className={inputCls} required placeholder="Juan" />
             </div>
             <div>
               <label className={labelCls}>Apellido</label>
-              <input value={form.apellido} onChange={e => setForm({ ...form, apellido: e.target.value })}
+              <input maxLength={80} value={form.apellido} onChange={e => setForm({ ...form, apellido: e.target.value })}
                 className={inputCls} required placeholder="Pérez" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Cédula</label>
-              <input value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })}
+              <input maxLength={20} value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })}
                 className={inputCls} required placeholder="1000111222" />
             </div>
             <div>
               <label className={labelCls}>Celular</label>
-              <input value={form.celular} onChange={e => setForm({ ...form, celular: e.target.value })}
+              <input maxLength={20} value={form.celular} onChange={e => setForm({ ...form, celular: e.target.value })}
                 className={inputCls} placeholder="3001234567" inputMode="tel" required={editingId == null} />
             </div>
           </div>
           <div>
             <label className={labelCls}>Correo</label>
-            <input type="email" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })}
+            <input maxLength={120} type="email" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })}
               className={inputCls} placeholder="juan@email.com" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Ciudad</label>
-              <input value={form.ciudad} onChange={e => setForm({ ...form, ciudad: e.target.value })}
+              <input maxLength={80} value={form.ciudad} onChange={e => setForm({ ...form, ciudad: e.target.value })}
                 className={inputCls} placeholder="Bogotá" />
             </div>
             <div>
               <label className={labelCls}>País</label>
-              <input value={form.pais} onChange={e => setForm({ ...form, pais: e.target.value })}
+              <input maxLength={80} value={form.pais} onChange={e => setForm({ ...form, pais: e.target.value })}
                 className={inputCls} placeholder="Colombia" />
             </div>
           </div>

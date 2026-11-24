@@ -642,7 +642,7 @@ export default function SearchResults() {
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
 
-          <input
+          <input maxLength={100}
             type="text"
             value={ciudadSearch}
             onChange={(e) =>

@@ -1,0 +1,83 @@
+/* Avisos (sonner) con la identidad de Alik Tours. Ver components/ui/sonner.tsx. */
+.alik-avisos [data-sonner-toast].alik-aviso {
+  --franja: var(--primary);
+  width: min(440px, calc(100vw - 24px));
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px 14px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--popover) 96%, transparent);
+  color: var(--popover-foreground);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    0 1px 2px rgba(36, 26, 31, 0.06),
+    0 12px 32px -8px rgba(110, 24, 50, 0.22);
+  overflow: hidden;
+  font-family: inherit;
+}
+.alik-avisos [data-sonner-toast].alik-aviso::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--franja);
+}
+.alik-avisos [data-sonner-toast][data-type="success"] { --franja: var(--success); }
+.alik-avisos [data-sonner-toast][data-type="error"] { --franja: var(--destructive); }
+.alik-avisos [data-sonner-toast][data-type="warning"] { --franja: var(--warning); }
+.alik-avisos [data-sonner-toast][data-type="info"] { --franja: var(--info); }
+
+.alik-avisos .alik-aviso-icono {
+  width: auto;
+  height: auto;
+  margin: 0;
+  flex-shrink: 0;
+}
+.alik-avisos .alik-aviso-titulo {
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--foreground);
+}
+.alik-avisos .alik-aviso-descripcion {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+.alik-avisos .alik-aviso-accion {
+  border-radius: 10px !important;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  font-weight: 600 !important;
+  padding: 0 12px !important;
+  height: 30px !important;
+}
+.alik-avisos .alik-aviso-cerrar {
+  left: auto !important;
+  right: 6px !important;
+  top: 6px !important;
+  transform: none !important;
+  width: 26px !important;
+  height: 26px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--muted-foreground) !important;
+  border-radius: 8px !important;
+}
+.alik-avisos .alik-aviso-cerrar:hover {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
+}
+.alik-avisos [data-sonner-toast].alik-aviso [data-content] {
+  padding-right: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alik-avisos [data-sonner-toast] {
+    transition: opacity 0.15s ease !important;
+  }
+}

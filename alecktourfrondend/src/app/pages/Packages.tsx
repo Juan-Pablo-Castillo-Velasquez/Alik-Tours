@@ -105,6 +105,7 @@ export default function Packages() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
       <BannersPromocionales />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -145,7 +146,7 @@ export default function Packages() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div className="relative w-full sm:max-w-xs">
               <MapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
+              <input maxLength={100}
                 type="text"
                 value={filtroDestino}
                 onChange={(e) => {
@@ -327,6 +328,7 @@ export default function Packages() {
         )}
       </div>
 
+      </main>
       <Footer />
     </div>
   );

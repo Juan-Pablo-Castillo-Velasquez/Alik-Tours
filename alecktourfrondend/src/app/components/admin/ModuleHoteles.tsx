@@ -342,7 +342,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
+          <input maxLength={100}
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre, ciudad o país..."
@@ -516,7 +516,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
           )}
           <div>
             <label className={labelCls}>Nombre</label>
-            <input value={form.nombre_hotel} onChange={e => setForm({ ...form, nombre_hotel: e.target.value })}
+            <input maxLength={80} value={form.nombre_hotel} onChange={e => setForm({ ...form, nombre_hotel: e.target.value })}
               className={inputCls} required placeholder="Hotel Paraíso" />
           </div>
 
@@ -540,12 +540,12 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Ciudad</label>
-              <input value={form.ciudad} onChange={e => setForm({ ...form, ciudad: e.target.value })}
+              <input maxLength={80} value={form.ciudad} onChange={e => setForm({ ...form, ciudad: e.target.value })}
                 className={inputCls} required placeholder="Bogotá" />
             </div>
             <div>
               <label className={labelCls}>País</label>
-              <input value={form.pais} onChange={e => setForm({ ...form, pais: e.target.value })}
+              <input maxLength={80} value={form.pais} onChange={e => setForm({ ...form, pais: e.target.value })}
                 className={inputCls} required placeholder="Colombia" />
             </div>
           </div>
@@ -558,13 +558,13 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
             </div>
             <div>
               <label className={labelCls}>Teléfono</label>
-              <input value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })}
+              <input maxLength={20} value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })}
                 className={inputCls} placeholder="+57..." />
             </div>
           </div>
           <div>
             <label className={labelCls}>Correo</label>
-            <input type="email" value={form.correo_electronico}
+            <input maxLength={120} type="email" value={form.correo_electronico}
               onChange={e => setForm({ ...form, correo_electronico: e.target.value })}
               className={inputCls} placeholder="info@hotel.com" />
           </div>

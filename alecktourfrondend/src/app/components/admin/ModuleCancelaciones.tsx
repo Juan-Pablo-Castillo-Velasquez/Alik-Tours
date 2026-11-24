@@ -227,7 +227,7 @@ export default function ModuleCancelaciones({
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
+          <input maxLength={100}
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por cliente, reserva o motivo..."
@@ -532,7 +532,7 @@ export default function ModuleCancelaciones({
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
               Detalle {crearMotivo === "Otro motivo" ? "(obligatorio)" : "(opcional)"}
             </label>
-            <textarea
+            <textarea maxLength={5000}
               value={crearDetalle}
               onChange={e => setCrearDetalle(e.target.value)}
               rows={3}

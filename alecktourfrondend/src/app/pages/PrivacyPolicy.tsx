@@ -14,6 +14,7 @@ export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
       <Navbar />
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
 
       <div className="max-w-3xl mx-auto px-4 py-12">
         <div className="mb-10">
@@ -123,6 +124,7 @@ export default function PrivacyPolicy() {
         </p>
       </div>
 
+      </main>
       <Footer />
     </div>
   );

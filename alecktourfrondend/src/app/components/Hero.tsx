@@ -1,3 +1,4 @@
+import { useT } from "../i18n";
 import { Compass, ShieldCheck } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -17,6 +18,7 @@ import SearchBar from "./SearchBar";
 const HERO_VIDEO_URL = "https://assets.mixkit.co/videos/5371/5371-360.mp4";
 
 export default function Hero() {
+  const t = useT();
   const [videoFailed, setVideoFailed] = useState(false);
   // El video arranca en opacidad 0 hasta que el navegador ya decodificó un
   // primer frame real (onLoadedData) -- antes se animaba a opacidad 1 apenas
@@ -103,18 +105,18 @@ export default function Hero() {
   const hayResenasReales = resenasTotal != null && resenasTotal > 0;
 
   const stats = [
-    { value: totalHotelesLabel, label: "hoteles" },
-    { value: String(totalDestinos), label: "destinos" },
+    { value: totalHotelesLabel, label: t("hero.statHoteles") },
+    { value: String(totalDestinos), label: t("hero.statDestinos") },
     {
       value:
         hayResenasReales && resenasPromedio != null
           ? `${resenasPromedio.toFixed(1)}★`
           : "—",
       label: hayResenasReales
-        ? `${resenasTotal} reseña${resenasTotal !== 1 ? "s" : ""}`
-        : "reseñas",
+        ? t(resenasTotal === 1 ? "hero.statResena1" : "hero.statResenaN", { n: resenasTotal })
+        : t("hero.statResenas"),
     },
-    { value: String(totalHabitacionesDisponibles), label: "hab. libres" },
+    { value: String(totalHabitacionesDisponibles), label: t("hero.statHab") },
   ];
 
   return (
@@ -220,7 +222,7 @@ export default function Hero() {
                                 uppercase
                             "
             >
-              Tarifas exclusivas para Colombia
+              {t("hero.tarifas")}
             </span>
           </div>
 
@@ -241,9 +243,9 @@ export default function Hero() {
               fontFamily: "'Fraunces', serif",
             }}
           >
-            Tu próximo viaje
+            {t("hero.titulo1")}
             <br />
-            empieza <span className="text-[var(--gold)]">aquí.</span>
+            {t("hero.titulo2")} <span className="text-[var(--gold)]">{t("hero.titulo3")}</span>
           </h1>
 
           {/* Descripción */}
@@ -258,8 +260,7 @@ export default function Hero() {
                             mb-7
                         "
           >
-            Compara vuelos, hoteles y experiencias en un solo lugar. Encuentra
-            destinos increíbles con precios transparentes y acompañamiento real.
+            {t("hero.sub")}
           </p>
 
           {/* Botones */}
@@ -284,7 +285,7 @@ export default function Hero() {
                             "
             >
               <Compass className="w-4 h-4" />
-              Explorar destinos
+              {t("hero.explorar")}
             </a>
           </div>
 
@@ -325,10 +326,10 @@ export default function Hero() {
 
                   <p className="text-[11px] text-white/70 leading-tight">
                     <b className="text-white">
-                      +{totalHotelesLabel} hoteles verificados
+                      {t("hero.verificados", { n: totalHotelesLabel })}
                     </b>
                     <br />
-                    listos para reservar hoy
+                    {t("hero.listos")}
                   </p>
                 </motion.div>
               )

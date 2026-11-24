@@ -2,6 +2,7 @@ import { FlaskConical, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { comunidadService } from "../../services/comunidad.service";
+import { confirmar } from "../../utils/confirmar";
 
 /** Carga o quita el contenido de ejemplo (50 publicaciones y 18 reseñas) para
  * una demostración. Solo lo ve un admin: para los demás el estado responde 403
@@ -25,7 +26,7 @@ export default function ContenidoEjemplo() {
   const cargado = estado.publicaciones + estado.resenas > 0;
 
   const ejecutar = async (accion: "cargar" | "quitar") => {
-    if (accion === "quitar" && !window.confirm("¿Quitar todo el contenido de ejemplo del sitio?")) return;
+    if (accion === "quitar" && !(await confirmar({ titulo: "¿Quitar todo el contenido de ejemplo?", mensaje: "Se borran las reseñas, publicaciones y videos marcados «Ejemplo».", confirmar: "Quitar", peligro: true }))) return;
     setOcupado(true);
     try {
       if (accion === "cargar") {

@@ -33,12 +33,14 @@ import { DECISION_PQR, fechaCorta, TIPOS_PQR } from "../../utils/pqr";
 import { codigoReserva } from "../../utils/reservaPresentacion";
 import { EstadoPqrBadge, EtiquetaEjemplo, HiloPqr, PlazoCorto, PlazoDetalle } from "../pqr/PqrPiezas";
 import Pagination from "../ui/pagination";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../ui/dialog";
+import ContadorCaracteres from "../ui/ContadorCaracteres";
 import AdminModal from "./ui/AdminModal";
+import ClienteCombobox, { type ClienteBusqueda } from "./ui/ClienteCombobox";
 import EmptyState from "./ui/EmptyState";
 import SectionHeader from "./ui/SectionHeader";
 import StatCard from "./ui/StatCard";
-import { inputCls, labelCls, type Cliente } from "./types";
+import { inputCls, labelCls } from "./types";
 
 const POR_PAGINA = 10;
 const mensajeError = (e: unknown, porDefecto: string) => (e instanceof Error && e.message ? e.message : porDefecto);
@@ -46,11 +48,9 @@ const mensajeError = (e: unknown, porDefecto: string) => (e instanceof Error && 
 type Accion = "mensaje" | "nota" | "informacion" | "prorroga" | "respuesta" | "cierre";
 
 export default function ModulePqr({
-  clientes = [],
   usuarioId,
   esAdmin = false,
 }: {
-  clientes?: Cliente[];
   usuarioId?: number;
   esAdmin?: boolean;
 }) {
@@ -238,6 +238,7 @@ export default function ModulePqr({
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
+              maxLength={100}
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Radicado, asunto, cliente o cédula"
@@ -410,8 +411,8 @@ export default function ModulePqr({
         )}
       </div>
 
-      <Sheet open={abierta != null} onOpenChange={(o) => !o && setAbierta(null)}>
-        <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-2xl">
+      <Dialog open={abierta != null} onOpenChange={(o) => !o && setAbierta(null)}>
+        <DialogContent className="flex max-h-[92vh] w-full max-w-[calc(100%-1.5rem)] flex-col gap-0 overflow-hidden rounded-2xl border-border bg-background p-0 shadow-2xl sm:max-w-5xl">
           {abierta != null && (
             <DetalleGestion
               id={abierta}
@@ -421,13 +422,12 @@ export default function ModulePqr({
               onCambio={cargar}
             />
           )}
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       <CargarEjemplos
         open={ejemplos}
         onOpenChange={setEjemplos}
-        clientes={clientes}
         onListo={(n) => {
           setEjemplos(false);
           toast.success(`Se crearon ${n} PQR de ejemplo`);
@@ -438,7 +438,6 @@ export default function ModulePqr({
       <RadicarPorCliente
         open={radicar}
         onOpenChange={setRadicar}
-        clientes={clientes}
         onRadicada={(p) => {
           setRadicar(false);
           toast.success(`Radicada ${p.radicado}`);
@@ -504,8 +503,10 @@ function DetalleGestion({
 
   if (!pqr) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="flex h-72 items-center justify-center" role="status">
+        <DialogTitle className="sr-only">Cargando PQR</DialogTitle>
+        <DialogDescription className="sr-only">Cargando el detalle de la solicitud</DialogDescription>
+        <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
       </div>
     );
   }
@@ -531,6 +532,15 @@ function DetalleGestion({
     prorroga: 20,
     respuesta: decision === "parcial" || decision === "desfavorable" ? 80 : 30,
     cierre: 10,
+  };
+  // Mismos máximos que el backend (schemas/pqr_schema.py).
+  const maximo: Record<Accion, number> = {
+    mensaje: 3000,
+    nota: 3000,
+    informacion: 2000,
+    prorroga: 2000,
+    respuesta: 8000,
+    cierre: 1000,
   };
   const tipificada = !!pqr.categoria;
   const listo =
@@ -572,8 +582,8 @@ function DetalleGestion({
   };
 
   return (
-    <div className="flex min-h-full flex-col">
-      <SheetHeader className="border-b border-border bg-card p-5 pr-12">
+    <>
+      <header className="border-b border-border bg-card px-6 py-5 pr-14">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span className="font-mono font-semibold text-foreground">{pqr.radicado}</span>
           <span>· {pqr.tipo_nombre}</span>
@@ -581,14 +591,15 @@ function DetalleGestion({
           {pqr.es_ejemplo && <EtiquetaEjemplo />}
           <EstadoPqrBadge estado={pqr.estado} vista="equipo" />
         </div>
-        <SheetTitle className="text-xl font-bold text-foreground">{pqr.asunto}</SheetTitle>
-        <SheetDescription>
+        <DialogTitle className="mt-1.5 text-xl font-bold tracking-tight text-foreground md:text-2xl">{pqr.asunto}</DialogTitle>
+        <DialogDescription className="mt-0.5 text-sm text-muted-foreground">
           {pqr.cliente_nombre ?? `Cliente #${pqr.id_cliente}`} · radicada el {fechaCorta(pqr.fecha_radicacion)}
           {pqr.id_reserva ? ` · ${codigoReserva(pqr.id_reserva)}` : ""}
-        </SheetDescription>
-      </SheetHeader>
+        </DialogDescription>
+      </header>
 
-      <div className="space-y-5 p-5">
+      <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:overflow-hidden">
+      <div className="space-y-5 p-6 lg:overflow-y-auto">
         <PlazoDetalle pqr={pqr} vista="equipo" />
 
         {abierta && (
@@ -805,6 +816,7 @@ function DetalleGestion({
               Texto
             </label>
             <textarea
+              maxLength={maximo[actual]}
               id="pqr-texto"
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
@@ -814,7 +826,9 @@ function DetalleGestion({
             />
             <div className="mt-3 flex items-center justify-between gap-3">
               <span className={`text-xs ${listo ? "text-muted-foreground" : "text-muted-foreground/80"}`}>
-                {texto.trim().length < minimo[actual] ? `Mínimo ${minimo[actual]} caracteres` : `${texto.trim().length} caracteres`}
+                {texto.trim().length < minimo[actual]
+                  ? `Mínimo ${minimo[actual]} caracteres · ${texto.length}/${maximo[actual].toLocaleString("es-CO")}`
+                  : `${texto.length.toLocaleString("es-CO")}/${maximo[actual].toLocaleString("es-CO")}`}
               </span>
               <button
                 type="button"
@@ -829,12 +843,13 @@ function DetalleGestion({
           </section>
         )}
 
-        <section>
-          <h3 className="mb-3 text-sm font-semibold text-foreground">Historial</h3>
-          <HiloPqr actuaciones={pqr.actuaciones} vista="equipo" />
-        </section>
       </div>
-    </div>
+        <aside className="border-t border-border bg-muted/30 p-6 lg:overflow-y-auto lg:border-l lg:border-t-0" aria-label="Historial">
+          <h3 className="mb-4 text-sm font-semibold text-foreground">Historial</h3>
+          <HiloPqr actuaciones={pqr.actuaciones} vista="equipo" />
+        </aside>
+      </div>
+    </>
   );
 }
 
@@ -843,16 +858,13 @@ function DetalleGestion({
 function RadicarPorCliente({
   open,
   onOpenChange,
-  clientes,
   onRadicada,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  clientes: Cliente[];
   onRadicada: (p: PqrDetalle) => void;
 }) {
-  const [idCliente, setIdCliente] = useState("");
-  const [filtroCliente, setFiltroCliente] = useState("");
+  const [cliente, setCliente] = useState<ClienteBusqueda | null>(null);
   const [tipo, setTipo] = useState<TipoPqr>("peticion");
   const [canal, setCanal] = useState<"telefono" | "presencial" | "correo" | "whatsapp">("telefono");
   const [asunto, setAsunto] = useState("");
@@ -861,14 +873,8 @@ function RadicarPorCliente({
   const [autoriza, setAutoriza] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
-  const opciones = clientes
-    .filter((c) => {
-      const q = filtroCliente.trim().toLowerCase();
-      return !q || `${c.nombre} ${c.apellido} ${c.cedula}`.toLowerCase().includes(q);
-    })
-    .slice(0, 50);
   const listo =
-    !!idCliente &&
+    !!cliente &&
     asunto.trim().length >= 5 &&
     descripcion.trim().length >= 20 &&
     (tipo !== "reclamo" || pretension.trim().length >= 10) &&
@@ -880,13 +886,14 @@ function RadicarPorCliente({
       const p = await pqrService.radicar({
         tipo,
         canal,
-        id_cliente: Number(idCliente),
+        id_cliente: cliente!.id_cliente,
         asunto: asunto.trim(),
         descripcion: descripcion.trim(),
         pretension: pretension.trim() || undefined,
         autoriza_datos: autoriza,
       });
       onRadicada(p);
+      setCliente(null);
       setAsunto("");
       setDescripcion("");
       setPretension("");
@@ -918,24 +925,7 @@ function RadicarPorCliente({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label htmlFor="rad-buscar" className={labelCls}>
-            Cliente
-          </label>
-          <input
-            id="rad-buscar"
-            value={filtroCliente}
-            onChange={(e) => setFiltroCliente(e.target.value)}
-            placeholder="Buscar por nombre o cédula"
-            className={`${inputCls} mb-2`}
-          />
-          <select aria-label="Cliente" value={idCliente} onChange={(e) => setIdCliente(e.target.value)} className={inputCls}>
-            <option value="">Elige un cliente</option>
-            {opciones.map((c) => (
-              <option key={c.id_cliente} value={c.id_cliente}>
-                {c.nombre} {c.apellido} · {c.cedula}
-              </option>
-            ))}
-          </select>
+          <ClienteCombobox value={cliente} onChange={setCliente} />
         </div>
         <div>
           <label htmlFor="rad-tipo" className={labelCls}>
@@ -971,24 +961,28 @@ function RadicarPorCliente({
             Lo que cuenta el cliente
           </label>
           <textarea
+            maxLength={4000}
             id="rad-desc"
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             rows={4}
             className={`${inputCls} resize-y`}
           />
+          <ContadorCaracteres valor={descripcion} max={4000} />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="rad-pret" className={labelCls}>
             Lo que pide {tipo === "reclamo" ? "(obligatorio en reclamos)" : "(opcional)"}
           </label>
           <textarea
+            maxLength={2000}
             id="rad-pret"
             value={pretension}
             onChange={(e) => setPretension(e.target.value)}
             rows={2}
             className={`${inputCls} resize-y`}
           />
+          <ContadorCaracteres valor={pretension} max={2000} />
         </div>
         <label className="flex items-start gap-2 text-sm text-foreground sm:col-span-2">
           <input type="checkbox" checked={autoriza} onChange={(e) => setAutoriza(e.target.checked)} className="mt-0.5" />
@@ -1004,23 +998,14 @@ function RadicarPorCliente({
 function CargarEjemplos({
   open,
   onOpenChange,
-  clientes,
   onListo,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  clientes: Cliente[];
   onListo: (n: number) => void;
 }) {
-  const [idCliente, setIdCliente] = useState("");
-  const [filtro, setFiltro] = useState("");
+  const [cliente, setCliente] = useState<ClienteBusqueda | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const opciones = clientes
-    .filter((c) => {
-      const q = filtro.trim().toLowerCase();
-      return !q || `${c.nombre} ${c.apellido} ${c.cedula} ${c.correo ?? ""}`.toLowerCase().includes(q);
-    })
-    .slice(0, 50);
 
   return (
     <AdminModal
@@ -1032,11 +1017,11 @@ function CargarEjemplos({
       footer={
         <button
           type="button"
-          disabled={!idCliente || enviando}
+          disabled={!cliente || enviando}
           onClick={async () => {
             setEnviando(true);
             try {
-              const { creadas } = await pqrService.cargarEjemplos(Number(idCliente));
+              const { creadas } = await pqrService.cargarEjemplos(cliente!.id_cliente);
               onListo(creadas);
             } catch (e) {
               toast.error(mensajeError(e, "No se pudieron crear los ejemplos"));
@@ -1051,24 +1036,13 @@ function CargarEjemplos({
       }
     >
       <div className="space-y-3">
-        <label htmlFor="ej-buscar" className={labelCls}>
-          Cliente que verá los ejemplos en su perfil
-        </label>
-        <input
-          id="ej-buscar"
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value)}
-          placeholder="Buscar por nombre, cédula o correo"
-          className={inputCls}
+        <ClienteCombobox
+          value={cliente}
+          onChange={setCliente}
+          label="Cliente que verá los ejemplos en su perfil"
+          ayuda="Escribe su nombre, cédula o correo y elígelo de la lista."
+          autoFocus
         />
-        <select aria-label="Cliente para los ejemplos" value={idCliente} onChange={(e) => setIdCliente(e.target.value)} className={inputCls}>
-          <option value="">Elige un cliente</option>
-          {opciones.map((c) => (
-            <option key={c.id_cliente} value={c.id_cliente}>
-              {c.nombre} {c.apellido} · {c.cedula}
-            </option>
-          ))}
-        </select>
         <p className="rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground">
           Usa una cuenta de prueba o la tuya: a ese correo llegan 2 respuestas marcadas «[Ejemplo]». Las PQR llevan la
           etiqueta «Ejemplo» en el panel y en el perfil, y las quitas todas con «Quitar ejemplos».

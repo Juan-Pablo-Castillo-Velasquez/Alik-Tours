@@ -1,0 +1,89 @@
+/* Preferencias de accesibilidad (context/AccesibilidadContext.tsx). */
+
+/* Tamaño del texto: todo el sitio usa rem, así que basta con la raíz. */
+html.a11y-texto-1 { font-size: 112.5%; }
+html.a11y-texto-2 { font-size: 125%; }
+
+/* Alto contraste: texto más oscuro, bordes marcados, sin transparencias suaves. */
+html.a11y-contraste {
+  --muted-foreground: #2b2125;
+  --border: #5c4a50;
+  --input: #5c4a50;
+}
+html.a11y-contraste.dark {
+  --muted-foreground: #f2e9ec;
+  --border: #cbb7be;
+  --input: #cbb7be;
+  --background: #000;
+  --card: #0b0b0b;
+  --popover: #0b0b0b;
+}
+html.a11y-contraste body { background: var(--background); }
+html.a11y-contraste :is(input, textarea, select)[class*="border"] { border-width: 2px !important; }
+html.a11y-contraste img { filter: contrast(1.08); }
+html.a11y-contraste .temporada-ambiente,
+html.a11y-contraste [class*="backdrop-blur"] { backdrop-filter: none !important; }
+
+/* Subrayar enlaces */
+html.a11y-enlaces a:not([role="button"]) {
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
+/* Reducir animaciones (además de MotionConfig). */
+html.a11y-movimiento *,
+html.a11y-movimiento *::before,
+html.a11y-movimiento *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+html.a11y-movimiento .temporada-ambiente,
+html.a11y-movimiento [data-ambiente-temporada] { display: none !important; }
+
+/* Fuente fácil de leer: más espacio entre letras, palabras y líneas. */
+html.a11y-lectura body {
+  letter-spacing: 0.03em;
+  word-spacing: 0.12em;
+}
+html.a11y-lectura :is(p, li, label, dd, td) { line-height: 1.8 !important; }
+
+/* Foco muy visible al navegar con teclado. */
+html.a11y-foco :focus-visible {
+  outline: 3px solid var(--gold, #b8912e) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 35%, transparent) !important;
+  border-radius: 6px;
+}
+
+/* Cursor grande */
+html.a11y-cursor,
+html.a11y-cursor * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24'%3E%3Cpath d='M4 2l16 9-7 2-3 7z' fill='%23111' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E") 4 2, auto !important;
+}
+
+/* Foco por defecto (siempre): visible y con el color de marca. */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Enlace "Saltar al contenido": invisible hasta que recibe el foco. */
+.saltar-contenido {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translate(-50%, -160%);
+  z-index: 200;
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  font-size: 0.875rem;
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+.saltar-contenido:focus { transform: translate(-50%, 0); outline: 3px solid var(--gold, #b8912e); }

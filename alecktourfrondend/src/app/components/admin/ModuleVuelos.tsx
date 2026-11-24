@@ -174,7 +174,7 @@ export default function ModuleVuelos() {
       <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
         <div className="relative col-span-2">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
+          <input maxLength={150}
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className={inputCls + " pl-9"}
@@ -188,9 +188,9 @@ export default function ModuleVuelos() {
             <option key={e} value={e}>{ETIQUETA_ESTADO_OFERTA[e]}</option>
           ))}
         </select>
-        <input value={filtros.origen ?? ""} onChange={(e) => setFiltro("origen", e.target.value)} className={inputCls} placeholder="Origen" aria-label="Origen" />
-        <input value={filtros.destino ?? ""} onChange={(e) => setFiltro("destino", e.target.value)} className={inputCls} placeholder="Destino" aria-label="Destino" />
-        <input value={filtros.aerolinea ?? ""} onChange={(e) => setFiltro("aerolinea", e.target.value)} className={inputCls} placeholder="Aerolínea" aria-label="Aerolínea" />
+        <input maxLength={100} value={filtros.origen ?? ""} onChange={(e) => setFiltro("origen", e.target.value)} className={inputCls} placeholder="Origen" aria-label="Origen" />
+        <input maxLength={100} value={filtros.destino ?? ""} onChange={(e) => setFiltro("destino", e.target.value)} className={inputCls} placeholder="Destino" aria-label="Destino" />
+        <input maxLength={100} value={filtros.aerolinea ?? ""} onChange={(e) => setFiltro("aerolinea", e.target.value)} className={inputCls} placeholder="Aerolínea" aria-label="Aerolínea" />
         <label className="col-span-1 text-xs text-muted-foreground">
           Salida desde
           <input type="date" value={filtros.fecha_desde ?? ""} onChange={(e) => setFiltro("fecha_desde", e.target.value)} className={inputCls} />
@@ -528,7 +528,7 @@ function FormOferta({ oferta, onCerrar, onGuardada }: { oferta: OfertaVueloAdmin
               <Campo label="Duración estimada" ayuda="Ej: 1 h 25 min"><input {...txt("duracion_estimada")} maxLength={40} className={inputCls} /></Campo>
               <Campo label="Escalas"><input type="number" min={0} max={10} {...txt("escalas")} className={inputCls} /></Campo>
               <Campo label="Aeropuertos de conexión"><input {...txt("aeropuertos_conexion")} maxLength={255} className={inputCls} placeholder="Ej: MDE" /></Campo>
-              <Campo label="Horarios de conexión" className="sm:col-span-3"><textarea {...txt("horarios_conexion")} rows={2} className={inputCls} /></Campo>
+              <Campo label="Horarios de conexión" className="sm:col-span-3"><textarea maxLength={5000} {...txt("horarios_conexion")} rows={2} className={inputCls} /></Campo>
             </div>
             <p className="text-[11px] text-muted-foreground">Las horas son opcionales: ponlas solo cuando la aerolínea las haya confirmado.</p>
           </div>
@@ -545,7 +545,7 @@ function FormOferta({ oferta, onCerrar, onGuardada }: { oferta: OfertaVueloAdmin
             <div />
             <Campo label="Equipaje de mano" ayuda="Ej: 1 pieza de 10 kg"><input {...txt("equipaje_mano")} maxLength={150} className={inputCls} /></Campo>
             <Campo label="Equipaje de bodega" ayuda="Ej: 1 maleta de 23 kg / No incluido"><input {...txt("equipaje_bodega")} maxLength={150} className={inputCls} /></Campo>
-            <Campo label="Información adicional" className="sm:col-span-2"><textarea {...txt("informacion_adicional")} rows={3} className={inputCls} /></Campo>
+            <Campo label="Información adicional" className="sm:col-span-2"><textarea maxLength={5000} {...txt("informacion_adicional")} rows={3} className={inputCls} /></Campo>
           </div>
         )}
 
@@ -571,10 +571,10 @@ function FormOferta({ oferta, onCerrar, onGuardada }: { oferta: OfertaVueloAdmin
 
         {paso === 5 && (
           <div className="grid gap-3">
-            <Campo label="Condiciones de cambio"><textarea {...txt("condiciones_cambio")} rows={2} className={inputCls} /></Campo>
-            <Campo label="Condiciones de cancelación"><textarea {...txt("condiciones_cancelacion")} rows={2} className={inputCls} /></Campo>
-            <Campo label="Restricciones"><textarea {...txt("restricciones")} rows={2} className={inputCls} /></Campo>
-            <Campo label="Condiciones comerciales"><textarea {...txt("condiciones_comerciales")} rows={2} className={inputCls} /></Campo>
+            <Campo label="Condiciones de cambio"><textarea maxLength={5000} {...txt("condiciones_cambio")} rows={2} className={inputCls} /></Campo>
+            <Campo label="Condiciones de cancelación"><textarea maxLength={5000} {...txt("condiciones_cancelacion")} rows={2} className={inputCls} /></Campo>
+            <Campo label="Restricciones"><textarea maxLength={5000} {...txt("restricciones")} rows={2} className={inputCls} /></Campo>
+            <Campo label="Condiciones comerciales"><textarea maxLength={5000} {...txt("condiciones_comerciales")} rows={2} className={inputCls} /></Campo>
           </div>
         )}
       </AdminModal>

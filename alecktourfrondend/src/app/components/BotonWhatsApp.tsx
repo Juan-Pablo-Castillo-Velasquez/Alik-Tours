@@ -42,15 +42,15 @@ export default function BotonWhatsApp({
       target="_blank"
       rel="noopener noreferrer"
       onClick={onClick}
-      aria-label={`${texto}${detalle ? ` (${detalle})` : ""}: abrir chat de WhatsApp con la agencia`}
       className={`inline-flex items-center gap-2.5 rounded-xl bg-[#25D366] text-white font-semibold shadow-sm transition-colors hover:bg-[#1EBE5A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 ${
         bloque ? "w-full px-4 py-3" : "px-3 py-2 text-xs"
       } ${className}`}
     >
-      <IconoWhatsApp className={bloque ? "w-6 h-6 shrink-0" : "w-4 h-4 shrink-0"} />
+      <IconoWhatsApp className={bloque ? "w-6 h-6 shrink-0" : "w-4 h-4 shrink-0"} aria-hidden />
       <span className="leading-tight text-left">
         <span className={`block ${bloque ? "text-sm" : ""}`}>{texto}</span>
         {detalle && <span className="block text-[11px] font-medium text-white/85">{detalle}</span>}
+        <span className="sr-only"> (abre el chat de WhatsApp de la agencia en una pestaña nueva)</span>
       </span>
     </a>
   );

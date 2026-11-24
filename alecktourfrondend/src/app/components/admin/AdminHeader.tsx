@@ -184,7 +184,7 @@ export default function AdminHeader({
       {/* Buscador global */}
       <div ref={searchRef} className="relative flex-1 max-w-md ml-2 hidden md:block">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
-        <input
+        <input maxLength={100}
           value={query}
           onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }}
           onFocus={() => setSearchOpen(true)}

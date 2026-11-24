@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Cookie } from "lucide-react";
+import { useT } from "../i18n";
 
 const STORAGE_KEY = "cookie_consent_ack";
 
@@ -11,6 +12,7 @@ const STORAGE_KEY = "cookie_consent_ack";
 // informa y deja constancia de que el usuario lo vio, una vez por
 // navegador (localStorage, nunca se vuelve a mostrar tras aceptarlo).
 export default function CookieConsent() {
+  const t = useT();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -41,10 +43,9 @@ export default function CookieConsent() {
           <Cookie className="w-4.5 h-4.5 text-primary" />
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed flex-1">
-          Usamos almacenamiento local esencial para mantener tu sesión iniciada y recordar tus preferencias.
-          No usamos cookies de publicidad de terceros.{" "}
+          {t("cookies.texto")}{" "}
           <Link to="/privacy" className="text-primary font-medium hover:underline">
-            Más información
+            {t("cookies.mas")}
           </Link>
           .
         </p>
@@ -52,7 +53,7 @@ export default function CookieConsent() {
           onClick={aceptar}
           className="w-full sm:w-auto flex-shrink-0 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-95 transition-all"
         >
-          Entendido
+          {t("comun.entendido")}
         </button>
       </div>
     </div>

@@ -1090,7 +1090,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
           <section>
             <h3 className={section}><Send className="w-3.5 h-3.5" /> Nota interna</h3>
             <div className={`${card} space-y-2`}>
-              <textarea
+              <textarea maxLength={5000}
                 value={notaTexto}
                 onChange={(e) => setNotaTexto(e.target.value)}
                 placeholder="Ej: Llamé al cliente, confirmó que llega el día 10..."
@@ -1635,7 +1635,7 @@ export default function ModuleReservas({
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="relative min-w-[220px] flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
+            <input maxLength={120}
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar por código, cliente, documento, correo o destino..."

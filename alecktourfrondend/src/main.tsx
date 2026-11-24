@@ -2,7 +2,9 @@ import { MotionConfig } from "motion/react";
 import { createRoot } from "react-dom/client";
 import App from "./app/App.tsx";
 import WelcomeSplash from "./app/components/WelcomeSplash.tsx";
+import { AccesibilidadProvider } from "./app/context/AccesibilidadContext";
 import { AuthProvider } from "./app/context/AuthContext";
+import { IdiomaProvider } from "./app/i18n";
 import { FavoritosProvider } from "./app/context/FavoritosContext";
 import { TemaProvider } from "./app/context/TemaContext";
 import "./styles/index.css";
@@ -12,6 +14,8 @@ createRoot(document.getElementById("root")!).render(
   // sistema (mareo, migraña, epilepsia), las ~50 animaciones de motion/react
   // del sitio se vuelven instantáneas en vez de deslizarse.
   <MotionConfig reducedMotion="user">
+  <IdiomaProvider>
+  <AccesibilidadProvider>
   <AuthProvider>
     <FavoritosProvider>
       <TemaProvider>
@@ -24,5 +28,7 @@ createRoot(document.getElementById("root")!).render(
       </TemaProvider>
     </FavoritosProvider>
   </AuthProvider>
+  </AccesibilidadProvider>
+  </IdiomaProvider>
   </MotionConfig>
 );

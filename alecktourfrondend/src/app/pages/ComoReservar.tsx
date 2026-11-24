@@ -67,6 +67,7 @@ export default function ComoReservar() {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-clip">
       <Navbar />
+      <main id="contenido-principal" tabIndex={-1} className="outline-none">
 
       {/* Cabecera */}
       <header className="group relative overflow-hidden bg-gradient-to-br from-primary via-primary to-[color-mix(in_oklab,var(--primary)_70%,black)] text-primary-foreground">
@@ -249,6 +250,7 @@ export default function ComoReservar() {
         </p>
       </section>
 
+      </main>
       <Footer />
       <ScrollToTopButton />
     </div>
