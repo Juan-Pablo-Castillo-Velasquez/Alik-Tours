@@ -23,6 +23,7 @@ export default function Footer() {
     soporte: [
       { name: "Cómo reservar", href: "/como-reservar" },
       { name: "Preguntas Frecuentes", href: "/faq" },
+      { name: "Peticiones, quejas y reclamos", href: "/pqr" },
       { name: "Información de Viaje", href: "/travel-info" },
       { name: "Buscar Destinos", href: "/search" },
     ],
@@ -142,6 +143,9 @@ export default function Footer() {
             </Link>
             <Link to="/privacy" className="footer-link">
               Política de Privacidad
+            </Link>
+            <Link to="/pqr" className="footer-link">
+              PQR
             </Link>
           </div>
         </div>

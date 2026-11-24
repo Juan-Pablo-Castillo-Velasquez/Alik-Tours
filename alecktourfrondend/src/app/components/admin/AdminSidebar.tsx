@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  FileQuestion,
   Clapperboard,
   LayoutDashboard, CalendarDays, XCircle, PlusCircle, Users, Hotel,
   Package, Building2, Wallet, Bell, UserPlus, ShieldCheck, Activity,
@@ -47,6 +48,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { id: "reservas", label: "Reservas", icon: CalendarDays, ready: true },
       { id: "crear-reserva", label: "Crear reserva", icon: PlusCircle, ready: true },
       { id: "cancelaciones", label: "Solicitudes de cancelación", icon: XCircle, ready: true },
+      { id: "pqr", label: "PQR", icon: FileQuestion, ready: true },
       { id: "clientes", label: "Clientes", icon: Users, ready: true },
     ],
   },
@@ -110,6 +112,8 @@ export const MODULOS_EMPLEADO: Module[] = [
   // redirige de vuelta al dashboard apenas el empleado intenta crear una.
   "crear-reserva",
   "cancelaciones",
+  // Los asesores atienden las PQR igual que el admin.
+  "pqr",
   "pagos",
   "mensajes",
   // Los asesores también moderan la comunidad; los videos de la agencia

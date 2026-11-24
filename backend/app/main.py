@@ -41,6 +41,7 @@ from app.routes.iot_route import router as iot_router
 from app.routes.mensaje_chat_route import router as mensaje_chat_router
 from app.routes.metodo_pago_guardado_route import router as metodo_pago_guardado_router
 from app.routes.notificacion_route import router as notificacion_router
+from app.routes.pqr_route import router as pqr_router
 from app.routes.preferencias_route import router as preferencias_router
 from app.routes.promociones_route import router as promociones_router
 from app.routes.resena_route import router as resena_route
@@ -204,6 +205,7 @@ app.include_router(tema_router)
 app.include_router(comunidad_router)
 app.include_router(vuelo_router)
 app.include_router(iot_router)
+app.include_router(pqr_router)
 
 # ============================================================================
 # ARCHIVOS ESTATICOS (fotos de perfil, etc.)

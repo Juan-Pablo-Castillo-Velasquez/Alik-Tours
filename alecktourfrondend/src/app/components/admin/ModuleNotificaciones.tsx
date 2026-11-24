@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Bell, Mail, XCircle, Building2, Wallet, Check, Trash2, CheckCheck, Loader2, Search, Send, CalendarCheck, Users, Star,
+  Bell, FileQuestion, Mail, XCircle, Building2, Wallet, Check, Trash2, CheckCheck, Loader2, Search, Send, CalendarCheck, Users, Star,
 } from "lucide-react";
 import type { NotificacionItem } from "../../services/notificacion.service";
 import SectionHeader from "./ui/SectionHeader";
@@ -47,6 +47,7 @@ const TIPO_ICON: Record<string, React.ReactNode> = {
   reserva: <CalendarCheck className="w-4 h-4" />,
   comunidad: <Users className="w-4 h-4" />,
   resena: <Star className="w-4 h-4" />,
+  pqr: <FileQuestion className="w-4 h-4" />,
 };
 
 const TIPO_LABEL: Record<string, string> = {
@@ -57,6 +58,7 @@ const TIPO_LABEL: Record<string, string> = {
   reserva: "Reserva",
   comunidad: "Comunidad",
   resena: "Reseña",
+  pqr: "PQR",
 };
 
 interface Props {

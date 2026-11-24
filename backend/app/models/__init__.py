@@ -19,6 +19,7 @@ from app.models.iot_model import DispositivoIoT, LecturaIoT
 from app.models.mensaje_chat_model import MensajeChat
 from app.models.metodo_pago_guardado_model import MetodoPagoGuardado
 from app.models.notificacion_model import Notificacion
+from app.models.pqr_model import Pqr, PqrActuacion
 from app.models.resena_model import Resena
 from app.models.reserva_model import (
     HistorialReserva,
@@ -102,4 +103,6 @@ __all__ = [
     "SalidaPaquete",
     "ReservaConcepto",
     "ViajeroReserva",
+    "Pqr",
+    "PqrActuacion",
 ]
