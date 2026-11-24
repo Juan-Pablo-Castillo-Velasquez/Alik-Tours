@@ -22,6 +22,18 @@ class ComentarioResponse(BaseModel):
     es_mio: bool = False
 
 
+class ViajeAsociado(BaseModel):
+    """Paquete u hotel del que habla una publicación, para reservarlo."""
+
+    tipo: str  # "paquete" | "hotel"
+    id: int
+    nombre: str
+    destino: str | None = None
+    imagen_url: str | None = None
+    precio_desde: float | None = None
+    unidad_precio: str | None = None  # "por_persona" | "por_paquete" | "por_noche"
+
+
 class PublicacionResponse(BaseModel):
     id_publicacion: int
     titulo: str
@@ -38,6 +50,7 @@ class PublicacionResponse(BaseModel):
     total_comentarios: int = 0
     es_mia: bool = False
     es_ejemplo: bool = False
+    viaje: ViajeAsociado | None = None
 
 
 class PublicacionesPaginadas(BaseModel):

@@ -23,6 +23,17 @@ export interface ComentarioComunidad {
 
 export type EstadoPublicacion = "pendiente" | "aprobada" | "rechazada" | "oculta";
 
+/** Paquete u hotel del que habla una publicación, para reservarlo. */
+export interface ViajeAsociado {
+  tipo: "paquete" | "hotel";
+  id: number;
+  nombre: string;
+  destino: string | null;
+  imagen_url: string | null;
+  precio_desde: number | null;
+  unidad_precio: "por_persona" | "por_paquete" | "por_noche" | null;
+}
+
 export interface PublicacionComunidad {
   id_publicacion: number;
   titulo: string;
@@ -40,6 +51,7 @@ export interface PublicacionComunidad {
   es_mia: boolean;
   /** Contenido de demostración: se muestra con la etiqueta "Ejemplo". */
   es_ejemplo?: boolean;
+  viaje?: ViajeAsociado | null;
 }
 
 export interface PublicacionesPaginadas {
@@ -72,6 +84,8 @@ export interface NuevaPublicacion {
   contenido: string;
   calificacion?: number;
   destino?: string;
+  /** Reserva propia de la que trata la historia (paquete u hotel). */
+  idReserva?: number;
   video?: File;
   imagenes?: File[];
   /** 0-100 mientras se suben los archivos. */
@@ -175,6 +189,7 @@ export const comunidadService = {
     fd.append("contenido", data.contenido);
     if (data.calificacion) fd.append("calificacion", String(data.calificacion));
     if (data.destino) fd.append("destino", data.destino);
+    if (data.idReserva) fd.append("id_reserva", String(data.idReserva));
     if (data.video) {
       const url = await subirArchivoDirecto(data.video, "comunidad-video", data.onProgreso);
       if (url) fd.append("video_url", url);

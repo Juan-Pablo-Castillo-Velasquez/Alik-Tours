@@ -41,8 +41,9 @@ from app.core.file_validation import validar_y_leer_archivo
 from app.core.image_storage import CLOUDINARY_CONFIGURADO, borrar_imagen, guardar_imagen
 from app.core.security import require_admin, require_empleado
 from app.models.comunidad_model import ComentarioComunidad, ImagenPublicacion, PublicacionComunidad, VideoAgencia
+from app.models.hotel_model import Hotel
 from app.models.resena_model import Resena
-from app.models.reserva_model import Paquete
+from app.models.reserva_model import Paquete, Reserva
 from app.models.user_model import Usuario
 from app.schemas.comunidad_schema import (
     AutorComunidad,
@@ -52,6 +53,7 @@ from app.schemas.comunidad_schema import (
     OcultarComentario,
     PublicacionesPaginadas,
     PublicacionResponse,
+    ViajeAsociado,
     VideoAgenciaResponse,
     VideoAgenciaUpdate,
 )
@@ -176,6 +178,7 @@ def _publicacion(
         total_comentarios=len(comentarios),
         es_mia=id_cliente_actual is not None and p.id_cliente == id_cliente_actual,
         es_ejemplo=bool(p.es_ejemplo),
+        viaje=_viaje(p),
     )
 
 
@@ -292,7 +295,39 @@ def _query_publicaciones(db: Session):
         selectinload(PublicacionComunidad.imagenes),
         selectinload(PublicacionComunidad.comentarios).selectinload(ComentarioComunidad.cliente),
         selectinload(PublicacionComunidad.cliente),
+        selectinload(PublicacionComunidad.paquete),
+        selectinload(PublicacionComunidad.hotel).selectinload(Hotel.habitaciones),
     )
+
+
+def _viaje(p: PublicacionComunidad) -> ViajeAsociado | None:
+    """Paquete u hotel de la publicación, solo si sigue a la venta (paquete
+    activo u hotel publicado): no se promociona algo que ya no se puede
+    reservar."""
+    if p.paquete is not None and p.paquete.activo is not False:
+        pq = p.paquete
+        return ViajeAsociado(
+            tipo="paquete",
+            id=pq.id_paquete,
+            nombre=pq.nombre_paquete,
+            destino=pq.ciudad_destino or pq.destino_ciudad or p.destino,
+            imagen_url=pq.imagen_url,
+            precio_desde=float(pq.precio_base) if pq.precio_base is not None else None,
+            unidad_precio=pq.unidad_precio or "por_persona",
+        )
+    if p.hotel is not None and p.hotel.publicado:
+        h = p.hotel
+        precios = [float(x.precio_noche) for x in h.habitaciones if x.precio_noche is not None]
+        return ViajeAsociado(
+            tipo="hotel",
+            id=h.id_hotel,
+            nombre=h.nombre_hotel,
+            destino=h.ciudad,
+            imagen_url=h.imagen_url,
+            precio_desde=min(precios) if precios else None,
+            unidad_precio="por_noche",
+        )
+    return None
 
 
 def _borrar_medios(p: PublicacionComunidad) -> None:
@@ -470,6 +505,7 @@ async def crear_publicacion(
     imagenes: list[UploadFile] | None = File(None),
     video_url: str | None = Form(None, description="URL ya subida a Cloudinary (subida directa)"),
     imagenes_urls: list[str] | None = Form(None, description="URLs ya subidas a Cloudinary (subida directa)"),
+    id_reserva: int | None = Form(None, description="Reserva propia de la que trata la publicación"),
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_usuario_verificado),
 ):
@@ -498,6 +534,17 @@ async def crear_publicacion(
         raise HTTPException(status_code=422, detail="Cuéntanos un poco más: mínimo 10 caracteres")
     if len(imagenes) + len(fotos_directas) > MAX_IMAGENES:
         raise HTTPException(status_code=422, detail=f"Máximo {MAX_IMAGENES} fotos por publicación.")
+
+    # El viaje del que habla: tiene que ser una reserva propia y no cancelada.
+    reserva = None
+    if isinstance(id_reserva, int):
+        reserva = (
+            db.query(Reserva)
+            .filter(Reserva.id_reserva == id_reserva, Reserva.id_cliente == id_cliente, Reserva.estado != "cancelada")
+            .first()
+        )
+        if reserva is None:
+            raise HTTPException(status_code=422, detail="Esa reserva no es tuya o fue cancelada.")
 
     # Validar TODO antes de subir nada.
     video_validado = None
@@ -533,6 +580,14 @@ async def crear_publicacion(
         video_url=video_final,
         estado="pendiente",
     )
+    if reserva is not None:
+        publicacion.id_reserva = reserva.id_reserva
+        publicacion.id_paquete = reserva.id_paquete
+        if reserva.id_paquete is None:
+            hotel = reserva._primer_hotel
+            publicacion.id_hotel = hotel.id_hotel if hotel else None
+        if not publicacion.destino:
+            publicacion.destino = (reserva.destino or "")[:120] or None
     publicacion.imagenes = [ImagenPublicacion(url=u, orden=i) for i, u in enumerate(urls_fotos)]
     db.add(publicacion)
     db.flush()

@@ -1,6 +1,9 @@
 import { mensajeErrorEnvio } from "../../utils/validacionFormulario";
 import { ImagePlus, Loader2, Video, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { reservaService } from "../../services/reserva.service";
+import { tituloReserva } from "../../utils/reservaPresentacion";
 import { toast } from "sonner";
 import { comunidadService, duracionVideo, LIMITES_COMUNIDAD, PublicacionComunidad } from "../../services/comunidad.service";
 import ModalBackdrop from "../ui/ModalBackdrop";
@@ -21,6 +24,30 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
   const [titulo, setTitulo] = useState("");
   const [contenido, setContenido] = useState("");
   const [destino, setDestino] = useState("");
+  const { usuario } = useAuth();
+  // Viajes del cliente (no cancelados) para asociar la historia a lo que
+  // reservó: así otros viajeros pueden reservar ese mismo paquete u hotel.
+  const [viajes, setViajes] = useState<{ id: number; titulo: string; fechaFin: string; destino?: string | null }[]>([]);
+  const [idReserva, setIdReserva] = useState<number | "">("");
+  useEffect(() => {
+    if (!abierto || usuario?.id_cliente == null) return;
+    reservaService
+      .getByCliente(usuario.id_cliente)
+      .then((lista) => {
+        const hoy = new Date().toISOString().slice(0, 10);
+        const utiles = (lista as any[])
+          .filter((r) => r.estado !== "cancelada" && (r.id_paquete != null || (r.reserva_habitaciones?.length ?? 0) > 0 || r.hotel_nombre))
+          .sort((a, b) => String(b.fecha_inicio).localeCompare(String(a.fecha_inicio)))
+          .map((r) => ({ id: r.id_reserva, titulo: tituloReserva(r), fechaFin: String(r.fecha_fin ?? ""), destino: r.destino }));
+        setViajes(utiles);
+        // Propone el viaje más reciente que ya terminó.
+        const ultimo = utiles.find((v) => v.fechaFin && v.fechaFin <= hoy);
+        if (ultimo) {
+          setIdReserva((actual) => (actual === "" ? ultimo.id : actual));
+        }
+      })
+      .catch(() => setViajes([]));
+  }, [abierto, usuario?.id_cliente]);
   const [calificacion, setCalificacion] = useState(0);
   const [video, setVideo] = useState<File | null>(null);
   const [fotos, setFotos] = useState<File[]>([]);
@@ -40,6 +67,7 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
     setTitulo("");
     setContenido("");
     setDestino("");
+    setIdReserva("");
     setCalificacion(0);
     setVideo(null);
     setFotos([]);
@@ -98,6 +126,7 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
         titulo: titulo.trim(),
         contenido: contenido.trim(),
         destino: destino.trim() || undefined,
+        idReserva: idReserva === "" ? undefined : idReserva,
         calificacion: calificacion || undefined,
         video: video ?? undefined,
         imagenes: fotos,
@@ -141,6 +170,30 @@ export default function PublicarModal({ abierto, onCerrar, onPublicada }: Props)
           <input id="pub-titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={150}
             className={inputCls} placeholder="Ej. Una semana increíble en San Andrés" required />
         </div>
+        {viajes.length > 0 && (
+          <div>
+            <label htmlFor="pub-viaje" className="text-xs font-semibold text-muted-foreground">
+              ¿De qué viaje es tu historia?
+            </label>
+            <select
+              id="pub-viaje"
+              value={idReserva}
+              onChange={(e) => setIdReserva(e.target.value ? Number(e.target.value) : "")}
+              className={inputCls}
+            >
+              <option value="">Ninguno en particular</option>
+              {viajes.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.titulo}
+                  {v.destino ? ` · ${v.destino}` : ""}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Aparecerá en tu publicación para que otros viajeros puedan reservar el mismo viaje.
+            </p>
+          </div>
+        )}
         <div>
           <label htmlFor="pub-destino" className="text-xs font-semibold text-muted-foreground">Destino (opcional)</label>
           <input id="pub-destino" value={destino} onChange={(e) => setDestino(e.target.value)} maxLength={120}
