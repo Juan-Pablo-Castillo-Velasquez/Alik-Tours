@@ -310,9 +310,18 @@
   }
 
   h4,
-  label,
-  button {
+  label {
     font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  /* Los botones heredan el tamaño de letra de donde están (como un enlace).
+     Antes tenían un tamaño fijo: dentro de un menú o una fila en text-xs
+     salían más grandes que los enlaces vecinos ("Ofertas", "Beneficios" y
+     "Más" en el menú; "Responder" en los comentarios). */
+  button {
+    font-size: inherit;
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }

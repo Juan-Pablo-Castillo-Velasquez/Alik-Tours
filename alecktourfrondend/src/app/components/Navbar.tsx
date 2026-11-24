@@ -92,12 +92,16 @@ export default function Navbar() {
 
   return (
     <>
+      {/* z-[90]: encima del contenido y de los botones flotantes (z-40/50),
+          pero DEBAJO de modales, paneles laterales y diálogos (z-100+).
+          Antes era z-[9999] y tapaba el título y el botón de cerrar de la
+          guía "¿Cómo funciona?" en el celular: no había cómo salir. */}
       <motion.nav
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: DURACION.lenta, ease: EASE_ENTRADA }}
         className="
-          sticky top-0 z-[9999]
+          sticky top-0 z-[90]
           navbar-surface
           text-foreground
         "
@@ -116,16 +120,20 @@ export default function Navbar() {
                 LOGO
             ========================================================= */}
             <div className="col-start-1 flex items-center gap-3 shrink-0">
-              <Link to="/" className="flex items-center gap-3 group">
+              <Link to="/" className="flex shrink-0 items-center gap-3 group" aria-label={`${BRAND.name}, ir al inicio`}>
+                {/* shrink-0: en pantallas de 1280-1536 px el menú completo
+                    no cabe y el logo era lo que se encogía hasta desaparecer. */}
                 <motion.div
                   whileHover={{ scale: 1.06, rotate: 3 }}
                   whileTap={{ scale: 0.96 }}
-                  className="relative"
+                  className="relative shrink-0"
                 >
                   <BrandLogo size={48} />
                 </motion.div>
 
-                <div className="leading-none">
+                {/* El nombre en texto se oculta solo donde el menú completo
+                    compite por espacio (1280 a 1680 px); el logo sigue visible. */}
+                <div className="leading-none whitespace-nowrap xl:hidden min-[1680px]:block">
                   <div
                     className="
                     text-[22px]
@@ -617,7 +625,15 @@ export default function Navbar() {
             <div className="col-start-3 hidden xl:flex items-center gap-2 2xl:gap-3 pl-4 border-l border-border/60 shrink-0">
               {/* CONTACTO: botón de WhatsApp (antes era un recuadro
                   "Asesoría 24/7" que no hacía nada al tocarlo). */}
-              <BotonWhatsApp className="hidden 2xl:inline-flex shrink-0" />
+              {/* El "hidden" iba en el mismo className que el inline-flex del
+                  botón y perdía: el botón salía siempre y empujaba el logo. */}
+              {/* Con sesión iniciada se omite: la persona ya tiene el chat con
+                  su asesor y el espacio no alcanza para todo en una fila. */}
+              {!isAuthenticated && (
+                <span className="hidden shrink-0 min-[1680px]:inline-flex">
+                  <BotonWhatsApp className="shrink-0" />
+                </span>
+              )}
 
               {isAuthenticated && cliente && (
                 <NotificacionesBell idCliente={cliente.id_cliente} />
@@ -630,10 +646,11 @@ export default function Navbar() {
                 <div className="flex items-center gap-2">
                   <Link
                     to="/profile"
+                    aria-label={`Mi perfil: ${displayName}`}
                     className="
                       group
                       flex items-center gap-3
-                      pl-2 pr-3.5 py-2
+                      pl-2 pr-2 min-[1680px]:pr-3.5 py-2
                       rounded-full
                       border border-border/70
                       bg-card
@@ -672,7 +689,7 @@ export default function Navbar() {
                       )}
                     </div>
 
-                    <div className="leading-tight max-w-[130px]">
+                    <div className="hidden leading-tight max-w-[130px] min-[1680px]:block">
                       <span className="block truncate text-[13px] font-bold text-foreground">
                         {displayName}
                       </span>
