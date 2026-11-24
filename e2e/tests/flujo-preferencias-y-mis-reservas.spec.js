@@ -41,7 +41,7 @@ test('responder el cuestionario de preferencias y verlas en el perfil', async ({
 
   // Vuelve al perfil, pestaña Preferencias, con los textos (no "mid" ni "couple")
   await expect(page).toHaveURL(/\/profile/);
-  await expect(page.getByRole('heading', { name: 'Mis Preferencias' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Preferencias de viaje' })).toBeVisible();
   await expect(page.getByText('Estándar', { exact: true })).toBeVisible();
   await expect(page.getByText('En Pareja', { exact: true })).toBeVisible();
   await expect(page.getByText('mid', { exact: true })).toHaveCount(0);

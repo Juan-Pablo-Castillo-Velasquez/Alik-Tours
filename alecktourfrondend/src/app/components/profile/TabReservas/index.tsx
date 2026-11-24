@@ -1,4 +1,5 @@
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Compass, CreditCard, Loader2, Plane, Search } from "lucide-react";
+import EncabezadoTab from "../EncabezadoTab";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
@@ -151,18 +152,18 @@ export default function TabReservas({ reservas, loading, clienteData, reservaIdI
         })()}
       </AnimatePresence>
 
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Mis reservas</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Tus viajes, lo que falta por pagar y tus comprobantes, en un solo lugar.</p>
-        </div>
-        <Link
-          to="/search"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
-        >
-          <Compass className="h-4 w-4" /> Reservar otro viaje
-        </Link>
-      </div>
+      <EncabezadoTab
+        titulo="Mis reservas"
+        descripcion="Tus viajes, lo que falta por pagar y tus comprobantes, en un solo lugar."
+        accion={
+          <Link
+            to="/search"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
+          >
+            <Compass className="h-4 w-4" /> Reservar otro viaje
+          </Link>
+        }
+      />
 
       {loading ? (
         <div className="space-y-3" aria-busy="true" aria-label="Cargando tus reservas">
