@@ -1,3 +1,4 @@
+import { useT } from "../i18n";
 import {
   Building2,
   Calendar,
@@ -8,7 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, cloneElement, isValidElement, useId } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 import { DestinoReal, hotelService } from "../services/hotel.service";
@@ -22,6 +23,7 @@ interface MenuRect {
 type ModoBusqueda = "hoteles" | "paquetes";
 
 export default function SearchBar() {
+  const t = useT();
   const navigate = useNavigate();
   const destinoWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -159,11 +161,11 @@ export default function SearchBar() {
           className="text-white text-[15px]"
           style={{ fontFamily: "'Fraunces', serif", fontWeight: 600 }}
         >
-          {modo === "hoteles" ? "Encuentra tu próximo hotel" : "Encuentra tu próximo paquete"}
+          {modo === "hoteles" ? t("buscar.tituloHotel") : t("buscar.tituloPaquete")}
         </span>
         <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-300">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Reserva segura
+          {t("buscar.reservaSegura")}
         </span>
       </div>
 
@@ -174,13 +176,13 @@ export default function SearchBar() {
           active={modo === "hoteles"}
           onClick={() => setModo("hoteles")}
           icon={Building2}
-          label="Hoteles"
+          label={t("buscar.hoteles")}
         />
         <ModoTab
           active={modo === "paquetes"}
           onClick={() => setModo("paquetes")}
           icon={Package}
-          label="Paquetes"
+          label={t("buscar.paquetes")}
         />
       </div>
 
@@ -216,7 +218,7 @@ export default function SearchBar() {
       >
         {/* DESTINO — presente en ambos modos */}
         <div ref={destinoWrapperRef} className="relative flex-[1.3] min-w-0">
-          <Segment label="Destino" icon={MapPin}>
+          <Segment label={t("buscar.destino")} icon={MapPin}>
             <input maxLength={80}
               type="text"
               value={destination}
@@ -230,10 +232,10 @@ export default function SearchBar() {
                 setDestination(e.target.value);
                 setShowDestinations(true);
               }}
-              placeholder={modo === "hoteles" ? "¿A qué ciudad viajas?" : "¿A qué destino quieres ir?"}
+              placeholder={modo === "hoteles" ? t("buscar.phHotel") : t("buscar.phPaquete")}
               required
               autoComplete="off"
-              className="w-full bg-transparent text-[13px] font-semibold outline-none truncate placeholder:text-[#b9adb2] placeholder:font-normal"
+              className="w-full bg-transparent text-[13px] font-semibold outline-none truncate placeholder:text-[#8a7880] placeholder:font-normal"
             />
           </Segment>
         </div>
@@ -242,7 +244,7 @@ export default function SearchBar() {
           <>
             {/* ENTRADA */}
             <div className="flex-1 min-w-0">
-              <Segment label="Entrada" icon={Calendar}>
+              <Segment label={t("buscar.entrada")} icon={Calendar}>
                 <input
                   type="date"
                 max="2100-12-31"
@@ -257,7 +259,7 @@ export default function SearchBar() {
 
             {/* SALIDA */}
             <div className="flex-1 min-w-0">
-              <Segment label="Salida" icon={Calendar}>
+              <Segment label={t("buscar.salida")} icon={Calendar}>
                 <input
                   type="date"
                 max="2100-12-31"
@@ -272,7 +274,7 @@ export default function SearchBar() {
 
             {/* HUÉSPEDES */}
             <div className="flex-1 min-w-0">
-              <Segment label="Huéspedes" icon={Users}>
+              <Segment label={t("buscar.huespedes")} icon={Users}>
                 <select
                   value={people}
                   onChange={(e) => setPeople(e.target.value)}
@@ -280,7 +282,7 @@ export default function SearchBar() {
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
                     <option key={num} value={num}>
-                      {num} {num === 1 ? "huésped" : "huéspedes"}
+                      {t(num === 1 ? "buscar.huesped1" : "buscar.huespedN", { n: num })}
                     </option>
                   ))}
                 </select>
@@ -307,14 +309,14 @@ export default function SearchBar() {
           }}
         >
           <Search className="w-4 h-4" />
-          {modo === "hoteles" ? "Buscar hoteles" : "Buscar paquetes"}
+          {modo === "hoteles" ? t("buscar.btnHoteles") : t("buscar.btnPaquetes")}
         </motion.button>
       </form>
 
       <div className="flex items-center justify-center sm:justify-end pt-2 px-1">
         <span className="flex items-center gap-1.5 text-[11px] text-white/80">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Pagos seguros
+          {t("buscar.pagosSeguros")}
         </span>
       </div>
 
@@ -340,7 +342,7 @@ export default function SearchBar() {
               >
                 <div className="px-3 py-2.5 border-b border-border">
                   <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
-                    {destination.trim() ? "Destinos disponibles" : "Destinos populares"}
+                    {destination.trim() ? t("buscar.disponibles") : t("buscar.populares")}
                   </p>
                 </div>
 
@@ -384,18 +386,18 @@ export default function SearchBar() {
                     <MapPin className="w-5 h-5 text-muted-foreground mx-auto mb-2" />
 
                     <p className="text-xs font-semibold text-muted-foreground">
-                      Buscaremos este destino
+                      {t("buscar.buscaremos")}
                     </p>
 
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      Presiona Buscar para consultar los alojamientos.
+                      {t("buscar.presiona")}
                     </p>
                   </div>
                 )}
 
                 <div className="px-3 py-2 border-t border-border bg-muted">
                   <p className="text-[9px] text-muted-foreground">
-                    Escribe una ciudad o país para encontrar hoteles.
+                    {t("buscar.escribe")}
                   </p>
                 </div>
               </motion.div>
@@ -448,14 +450,20 @@ function Segment({
   icon: React.ElementType;
   children: React.ReactNode;
 }) {
+  // La etiqueta se une al control (id/htmlFor) para que los lectores de
+  // pantalla anuncien "Entrada, fecha" y no un campo sin nombre.
+  const id = useId();
+  const control = isValidElement(children)
+    ? cloneElement(children as React.ReactElement<{ id?: string }>, { id })
+    : children;
   return (
     <div className="px-5 py-3 h-full flex flex-col justify-center min-w-0">
-      <label className="flex items-center gap-1 text-[9px] uppercase tracking-wide font-bold text-[#9d8e94] mb-1">
-        <Icon className="w-2.5 h-2.5 text-primary" />
+      <label htmlFor={id} className="flex items-center gap-1 text-[10px] uppercase tracking-wide font-bold text-[#6b5a61] dark:text-[#cbbcc2] mb-1">
+        <Icon className="w-2.5 h-2.5 text-primary" aria-hidden />
         {label}
       </label>
 
-      {children}
+      {control}
     </div>
   );
 }

@@ -10,7 +10,7 @@ export default function SelectorIdioma({ className = "" }: { className?: string 
     <DropdownMenu>
       <DropdownMenuTrigger
         className={`inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold text-foreground transition-colors hover:bg-accent ${className}`}
-        aria-label={`${t("nav.idioma")}: ${actual.nombre}`}
+        aria-label={`${actual.corto} · ${t("nav.idioma")}: ${actual.nombre}`}
       >
         <Globe className="h-4 w-4" aria-hidden />
         {actual.corto}

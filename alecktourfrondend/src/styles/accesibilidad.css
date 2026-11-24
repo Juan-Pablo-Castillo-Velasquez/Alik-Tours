@@ -19,7 +19,7 @@ html.a11y-contraste.dark {
   --popover: #0b0b0b;
 }
 html.a11y-contraste body { background: var(--background); }
-html.a11y-contraste :is(input, textarea, select) { border-width: 2px !important; }
+html.a11y-contraste :is(input, textarea, select)[class*="border"] { border-width: 2px !important; }
 html.a11y-contraste img { filter: contrast(1.08); }
 html.a11y-contraste .temporada-ambiente,
 html.a11y-contraste [class*="backdrop-blur"] { backdrop-filter: none !important; }

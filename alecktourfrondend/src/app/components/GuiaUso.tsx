@@ -1,3 +1,4 @@
+import { useT } from "../i18n";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import {
@@ -21,7 +22,7 @@ import {
   XCircle,
   type LucideIcon,
 } from "lucide-react";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog";
 
 // Guía de uso del sitio: un botón flotante abre un panel lateral con dos
 // recorridos paso a paso -- cómo reservar y cómo usar el perfil de cliente.
@@ -226,6 +227,7 @@ export function RecorridoGuia({ pasos, onIr }: { pasos: PasoGuia[]; onIr?: () =>
 }
 
 export default function GuiaUso() {
+  const t = useT();
   const { pathname } = useLocation();
   const [abierta, setAbierta] = useState(false);
   const [recorrido, setRecorrido] = useState<Recorrido>("reserva");
@@ -268,11 +270,11 @@ export default function GuiaUso() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <Sheet open={abierta} onOpenChange={abrir}>
+    <Dialog open={abierta} onOpenChange={abrir}>
       <button
         type="button"
         onClick={() => abrir(true)}
-        aria-label="Abrir guía: cómo reservar y usar tu perfil"
+        aria-label={t("flot.abrirGuia")}
         className="fixed bottom-[5.5rem] right-5 z-40 flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
       >
         <span className="relative flex">
@@ -281,16 +283,23 @@ export default function GuiaUso() {
             <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-ping rounded-full bg-primary" aria-hidden />
           )}
         </span>
-        <span className="hidden sm:inline">¿Cómo funciona?</span>
+        <span className="hidden sm:inline">{t("flot.comoFunciona")}</span>
       </button>
 
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Guía de Alik Tours</SheetTitle>
-          <SheetDescription>Todo lo que necesitas para reservar tu viaje y sacarle provecho a tu perfil.</SheetDescription>
-        </SheetHeader>
+      <DialogContent className="flex max-h-[90vh] w-full max-w-[calc(100%-1.5rem)] flex-col gap-0 overflow-hidden rounded-2xl border-border bg-card p-0 shadow-2xl sm:max-w-xl">
+        <header className="flex items-start gap-3 border-b border-border px-6 py-5 pr-12">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden>
+            <HelpCircle className="h-5 w-5" />
+          </span>
+          <div>
+            <DialogTitle className="text-lg font-bold tracking-tight text-foreground">Guía de Alik Tours</DialogTitle>
+            <DialogDescription className="mt-0.5 text-sm text-muted-foreground">
+              Todo lo que necesitas para reservar tu viaje y sacarle provecho a tu perfil.
+            </DialogDescription>
+          </div>
+        </header>
 
-        <div className="px-4 pb-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           <div role="tablist" className="mb-5 grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
             {(Object.keys(RECORRIDOS) as Recorrido[]).map((clave) => (
               <button
@@ -332,7 +341,7 @@ export default function GuiaUso() {
             </p>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

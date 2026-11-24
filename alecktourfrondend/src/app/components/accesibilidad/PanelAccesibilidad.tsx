@@ -53,14 +53,14 @@ export default function PanelAccesibilidad() {
     <>
       <Dialog open={panelAbierto} onOpenChange={setPanelAbierto}>
         <DialogContent className="max-h-[90vh] w-full overflow-y-auto rounded-2xl border-border bg-card p-0 shadow-2xl sm:max-w-xl">
-          <div className="border-b border-border bg-primary px-6 py-5 text-primary-foreground">
+          <div className="border-b border-border px-6 py-5 pr-12">
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15" aria-hidden>
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm" aria-hidden>
                 <Accessibility className="h-5 w-5" />
               </span>
               <div>
-                <DialogTitle className="text-lg font-bold text-primary-foreground">{t("a11y.titulo")}</DialogTitle>
-                <DialogDescription className="text-sm text-primary-foreground/80">{t("a11y.descripcion")}</DialogDescription>
+                <DialogTitle className="text-lg font-bold text-foreground">{t("a11y.titulo")}</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">{t("a11y.descripcion")}</DialogDescription>
               </div>
             </div>
           </div>

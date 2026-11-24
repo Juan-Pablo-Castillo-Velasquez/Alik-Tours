@@ -644,10 +644,12 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                         icon={<Lock className="w-4 h-4" />}
                                                         error={fieldError("password")}
                                                         suffix={
-                                                            <button type="button" tabIndex={-1}
+                                                            <button type="button"
                                                                 onClick={() => setShowPassword(s => !s)}
-                                                                className="text-muted-foreground hover:text-primary transition-colors p-1">
-                                                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                                aria-label={showPassword ? t("login.ocultar") : t("login.mostrar")}
+                                                                aria-pressed={showPassword}
+                                                                className="rounded-md text-muted-foreground hover:text-primary transition-colors p-1">
+                                                                {showPassword ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="w-4 h-4" aria-hidden />}
                                                             </button>
                                                         }
                                                     >
@@ -671,10 +673,12 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Regi
                                                         icon={<Lock className="w-4 h-4" />}
                                                         error={fieldError("confirmPassword")}
                                                         suffix={
-                                                            <button type="button" tabIndex={-1}
+                                                            <button type="button"
                                                                 onClick={() => setShowConfirmPassword(s => !s)}
-                                                                className="text-muted-foreground hover:text-primary transition-colors p-1">
-                                                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                                aria-label={showConfirmPassword ? t("login.ocultar") : t("login.mostrar")}
+                                                                aria-pressed={showConfirmPassword}
+                                                                className="rounded-md text-muted-foreground hover:text-primary transition-colors p-1">
+                                                                {showConfirmPassword ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="w-4 h-4" aria-hidden />}
                                                             </button>
                                                         }
                                                     >

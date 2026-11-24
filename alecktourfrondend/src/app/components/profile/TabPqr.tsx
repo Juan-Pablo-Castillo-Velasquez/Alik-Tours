@@ -20,6 +20,7 @@ import { DECISION_PQR, fechaCorta, TIPOS_PQR } from "../../utils/pqr";
 import { codigoReserva, tituloReserva } from "../../utils/reservaPresentacion";
 import { EstadoPqrBadge, EtiquetaEjemplo, HiloPqr, PlazoCorto, PlazoDetalle } from "../pqr/PqrPiezas";
 import ContadorCaracteres from "../ui/ContadorCaracteres";
+import { CampoArea, CampoTexto } from "../forms/Campos";
 import Pagination from "../ui/pagination";
 import EncabezadoTab, { PanelPerfil, VacioPerfil } from "./EncabezadoTab";
 
@@ -379,60 +380,41 @@ function FormularioPqr({
               </select>
             </div>
           )}
-          <div>
-            <label htmlFor="pqr-asunto" className="mb-1 block text-sm font-medium text-foreground">
-              Asunto
-            </label>
-            <input
-              id="pqr-asunto"
-              value={asunto}
-              onChange={(e) => setAsunto(e.target.value)}
-              maxLength={150}
-              placeholder="Ej.: No me llegaron los vouchers del hotel"
-              className={campo}
-            />
-          </div>
-          <div>
-            <label htmlFor="pqr-descripcion" className="mb-1 block text-sm font-medium text-foreground">
-              Descripción
-            </label>
-            <textarea
-              id="pqr-descripcion"
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              rows={6}
-              maxLength={4000}
-              placeholder="Qué pasó, cuándo y con quién. Incluye fechas, nombres o números que nos ayuden a revisarlo."
-              className={`${campo} resize-y`}
-            />
-            <p className={`mt-1 text-xs ${descripcion.trim().length < 20 ? "text-muted-foreground" : "text-success"}`}>
-              {descripcion.trim().length < 20
-                ? `Mínimo 20 caracteres (llevas ${descripcion.trim().length}).`
-                : `${descripcion.length}/4000`}
-            </p>
-          </div>
+          <CampoTexto
+            id="pqr-asunto"
+            label="Asunto"
+            value={asunto}
+            onChange={(e) => setAsunto(e.target.value)}
+            maxLength={150}
+            placeholder="Ej.: No me llegaron los vouchers del hotel"
+          />
+          <CampoArea
+            id="pqr-descripcion"
+            label="Descripción"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            rows={6}
+            maxLength={4000}
+            minimo={20}
+            placeholder="Qué pasó, cuándo y con quién. Incluye fechas, nombres o números que nos ayuden a revisarlo."
+          />
           {pidePretension && (
-            <div>
-              <label htmlFor="pqr-pretension" className="mb-1 block text-sm font-medium text-foreground">
-                ¿Qué esperas que hagamos?{" "}
-                {tipo !== "reclamo" && <span className="font-normal text-muted-foreground">(opcional)</span>}
-              </label>
-              <textarea
-                id="pqr-pretension"
-                value={pretension}
-                onChange={(e) => setPretension(e.target.value)}
-                rows={3}
-                maxLength={2000}
-                placeholder="Ej.: Que me reembolsen la noche que no se prestó."
-                className={`${campo} resize-y`}
-              />
-              <ContadorCaracteres valor={pretension} max={2000} />
-              {tipo === "reclamo" && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  En un reclamo es obligatorio: te diremos de forma expresa si accedemos o no y por qué.
-                </p>
-              )}
-            </div>
+            <CampoArea
+              id="pqr-pretension"
+              label="¿Qué esperas que hagamos?"
+              opcional={tipo !== "reclamo"}
+              value={pretension}
+              onChange={(e) => setPretension(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              minimo={tipo === "reclamo" ? 10 : undefined}
+              placeholder="Ej.: Que me reembolsen la noche que no se prestó."
+              ayuda={
+                tipo === "reclamo"
+                  ? "En un reclamo es obligatorio: te diremos de forma expresa si accedemos o no y por qué."
+                  : undefined
+              }
+            />
           )}
         </PanelPerfil>
 

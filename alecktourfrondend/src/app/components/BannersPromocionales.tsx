@@ -110,7 +110,7 @@ export default function BannersPromocionales() {
             className="absolute inset-0"
           >
             {banner.link_destino ? (
-              <Link to={banner.link_destino} aria-label={banner.titulo} className="group block relative w-full h-full">
+              <Link to={banner.link_destino} className="group block relative w-full h-full">
                 {Contenido}
               </Link>
             ) : (

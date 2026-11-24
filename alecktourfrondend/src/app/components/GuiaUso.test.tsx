@@ -15,7 +15,7 @@ function montar(ruta = "/") {
 describe("GuiaUso", () => {
   it("abre el recorrido de reserva y avanza paso a paso", () => {
     montar();
-    fireEvent.click(screen.getByRole("button", { name: /abrir guía/i }));
+    fireEvent.click(screen.getByRole("button", { name: /abrir la guía/i }));
 
     expect(screen.getByText(PASOS_RESERVA[0].titulo)).toBeInTheDocument();
     expect(screen.getByText(`Paso 1 de ${PASOS_RESERVA.length}`)).toBeInTheDocument();
@@ -29,14 +29,14 @@ describe("GuiaUso", () => {
 
   it("cambia al recorrido del perfil", () => {
     montar();
-    fireEvent.click(screen.getByRole("button", { name: /abrir guía/i }));
+    fireEvent.click(screen.getByRole("button", { name: /abrir la guía/i }));
     fireEvent.click(screen.getByRole("tab", { name: "Tu perfil" }));
     expect(screen.getByText(PASOS_PERFIL[0].titulo)).toBeInTheDocument();
   });
 
   it("en /profile abre directamente la guía del perfil", () => {
     montar("/profile");
-    fireEvent.click(screen.getByRole("button", { name: /abrir guía/i }));
+    fireEvent.click(screen.getByRole("button", { name: /abrir la guía/i }));
     expect(screen.getByRole("tab", { name: "Tu perfil" })).toHaveAttribute("aria-selected", "true");
   });
 
@@ -48,13 +48,13 @@ describe("GuiaUso", () => {
 
   it("no aparece en el panel de administración", () => {
     montar("/admin");
-    expect(screen.queryByRole("button", { name: /abrir guía/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /abrir la guía/i })).not.toBeInTheDocument();
   });
 
   it("marca la guía como vista la primera vez que se abre", () => {
     montar();
     expect(localStorage.getItem("guia_uso_vista")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /abrir guía/i }));
+    fireEvent.click(screen.getByRole("button", { name: /abrir la guía/i }));
     expect(localStorage.getItem("guia_uso_vista")).toBe("1");
   });
 });

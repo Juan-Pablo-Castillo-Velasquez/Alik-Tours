@@ -1,3 +1,4 @@
+import { useT } from "../i18n";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Mail, MessageCircle, UserPlus, X } from "lucide-react";
@@ -16,6 +17,7 @@ import BotonWhatsApp from "./BotonWhatsApp";
 // crear una cuenta, o escribir sin registrarse por el formulario de
 // contacto que ya existe.
 export default function WhatsAppButton() {
+  const t = useT();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const { isAuthenticated, usuario } = useAuth();
   const { openRegister } = useAuthModal();
@@ -83,7 +85,8 @@ export default function WhatsAppButton() {
         <button
           type="button"
           onClick={handleClick}
-          title="Hablar con un asesor"
+          title={t("flot.asesor")}
+          aria-label={t("flot.asesor")}
           className="flex items-center gap-2 bg-gradient-to-r from-primary to-[#A13B55] text-primary-foreground pl-3 pr-4 py-3 rounded-full shadow-lg shadow-black/20 hover:scale-105 hover:shadow-xl transition-all duration-200"
         >
           {menuAbierto && !puedeChatear ? (
@@ -92,7 +95,7 @@ export default function WhatsAppButton() {
             <MessageCircle className="w-6 h-6 shrink-0" />
           )}
           <span className="hidden sm:inline text-sm font-semibold whitespace-nowrap">
-            Hablar con un asesor
+            {t("flot.asesor")}
           </span>
         </button>
       </div>
