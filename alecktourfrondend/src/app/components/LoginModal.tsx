@@ -1,4 +1,5 @@
 import { AlertCircle, Eye, EyeOff, Lock, Mail, Plane, RefreshCw, Shield, User, X } from "lucide-react";
+import { tomarVuelta } from "../utils/volverTrasLogin";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { borradorLogin } from "../utils/borradorAuth";
@@ -137,7 +138,8 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Logi
 
         setTimeout(() => {
             resetAndClose();
-            navigate(isAdmin || isEmpleado ? "/admin" : "/profile");
+            const volver = tomarVuelta();
+            navigate(isAdmin || isEmpleado ? "/admin" : (volver ?? "/profile"));
         }, 1800);
     };
 

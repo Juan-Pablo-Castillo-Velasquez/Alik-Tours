@@ -312,6 +312,18 @@ export default function HotelDetail() {
   // Propaga las fechas/huéspedes que trajo el buscador (SearchBar → HotelCard
   // → acá) hasta Checkout, para que no haya que volver a escribirlas — antes
   // se perdían por completo entre la búsqueda y el pago.
+  // Noches y personas de la búsqueda, si vinieron en la URL.
+  const nochesBusqueda = (() => {
+    const start = searchParams.get("start");
+    const end = searchParams.get("end");
+    if (!start || !end) return 0;
+    const n = Math.round(
+      (new Date(`${end}T00:00:00`).getTime() - new Date(`${start}T00:00:00`).getTime()) / 86_400_000
+    );
+    return n > 0 && n < 60 ? n : 0;
+  })();
+  const personasBusqueda = Number(searchParams.get("people")) || null;
+
   const checkoutHref = (() => {
     if (!selectedHabitacion) return "#";
     const p = new URLSearchParams({ habitacion: String(selectedHabitacion.id_habitacion) });
@@ -640,7 +652,23 @@ export default function HotelDetail() {
                           onClick={() =>
                             disponible && setSelectedHabitacion(hab)
                           }
-                          className={`relative flex flex-col md:flex-row border rounded-2xl overflow-hidden transition-all duration-300 bg-card ${
+                          // Antes solo se podía elegir con el mouse: la tarjeta
+                          // no era un control (ni teclado ni lector de pantalla).
+                          role={disponible ? "button" : undefined}
+                          tabIndex={disponible ? 0 : undefined}
+                          aria-pressed={disponible ? seleccionada : undefined}
+                          aria-label={
+                            disponible
+                              ? `Elegir habitación ${hab.tipo_habitacion?.nombre_tipo ?? ""}, $${Number(hab.precio_noche).toLocaleString("es-CO")} por noche`
+                              : undefined
+                          }
+                          onKeyDown={(e) => {
+                            if (disponible && (e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
+                              e.preventDefault();
+                              setSelectedHabitacion(hab);
+                            }
+                          }}
+                          className={`relative flex flex-col md:flex-row border rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary overflow-hidden transition-all duration-300 bg-card ${
                             !disponible
                               ? "opacity-60 grayscale-[40%] cursor-not-allowed"
                               : seleccionada
@@ -912,26 +940,35 @@ export default function HotelDetail() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm text-muted-foreground mb-4">
+                    {/* Antes decía siempre "1 Noche" y mostraba la tarifa de
+                        una noche como "Total", aunque la búsqueda fuera de
+                        varias noches (la tarjeta del buscador sí sumaba). */}
                     <span>
-                      1 Noche,{" "}
-                      {selectedHabitacion
-                        ? selectedHabitacion.tipo_habitacion?.capacidad_personas
-                        : "2"}{" "}
+                      {nochesBusqueda > 0
+                        ? `${nochesBusqueda} ${nochesBusqueda === 1 ? "noche" : "noches"}`
+                        : "Precio por noche"}
+                      {" · "}
+                      {personasBusqueda ??
+                        (selectedHabitacion ? selectedHabitacion.tipo_habitacion?.capacidad_personas : 2)}{" "}
                       pers.
                     </span>
                   </div>
 
                   <div className="border-t border-border pt-4 flex justify-between items-end">
-                    <span className="font-bold text-foreground">Total</span>
+                    <span className="font-bold text-foreground">{nochesBusqueda > 0 ? "Total" : "Por noche"}</span>
                     <div className="text-right">
                       <span className="text-2xl font-black text-primary">
                         $
                         {(
-                          selectedHabitacion?.precio_noche ??
-                          precioMin ??
-                          0
+                          (selectedHabitacion?.precio_noche ?? precioMin ?? 0) * Math.max(nochesBusqueda, 1)
                         ).toLocaleString("es-CO")}
                       </span>
+                      {nochesBusqueda > 1 && (
+                        <p className="text-xs text-muted-foreground">
+                          ${(selectedHabitacion?.precio_noche ?? precioMin ?? 0).toLocaleString("es-CO")} × {nochesBusqueda}{" "}
+                          noches
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

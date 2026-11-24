@@ -22,6 +22,12 @@ import { useTema } from "../context/TemaContext";
 import { HotelDetailResponse, hotelService } from "../services/hotel.service";
 import { normalizarTexto } from "../utils/normalizarTexto";
 
+function fechaLegible(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" }).replace(/\./g, "");
+}
+
 export default function SearchResults() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { temaActivo } = useTema();
@@ -821,15 +827,17 @@ export default function SearchResults() {
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2 mt-3">
+                  {/* Fechas en formato colombiano ("20 dic 2026"); antes
+                      salían como 2026-12-20. */}
                   {startDate && (
                     <span className="px-2.5 py-1 rounded-full bg-muted text-xs text-muted-foreground">
-                      {startDate}
+                      Entrada {fechaLegible(startDate)}
                     </span>
                   )}
 
                   {endDate && (
                     <span className="px-2.5 py-1 rounded-full bg-muted text-xs text-muted-foreground">
-                      {endDate}
+                      Salida {fechaLegible(endDate)}
                     </span>
                   )}
 
@@ -1202,7 +1210,7 @@ export default function SearchResults() {
                         Estos {alternativas.length} {alternativas.length === 1 ? "hotel es" : "hoteles son"} coincidencia
                         {alternativas.length === 1 ? "" : "s"} para{" "}
                         <strong>{destinationSearch}</strong> pero no tienen
-                        habitaciones libres entre {startDate} y {endDate}. Te los
+                        habitaciones libres entre el {fechaLegible(startDate)} y el {fechaLegible(endDate)}. Te los
                         mostramos como alternativa: consulta otras fechas en su
                         detalle.
                       </p>

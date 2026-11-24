@@ -67,6 +67,12 @@ export default function AdminDashboard() {
   // Clave de idempotencia del formulario "Crear reserva" (ver submitReserva).
   const claveReservaRef = useRef(nuevoClientMsgId());
   const [activeModule, setActiveModule] = useState<Module>("dashboard");
+  // Al cambiar de sección se vuelve arriba: antes la página quedaba en la
+  // posición de la sección anterior (p. ej. al final del tablero) y la nueva
+  // sección, más corta, se veía en blanco hasta subir a mano.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [activeModule]);
   // Abierto en escritorio; en celular arranca cerrado (es un cajón).
   const [sidebarOpen, setSidebarOpen] = useState(
     () => typeof window.matchMedia !== "function" || window.matchMedia("(min-width: 1024px)").matches,
