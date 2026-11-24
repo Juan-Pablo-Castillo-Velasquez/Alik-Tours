@@ -1,4 +1,4 @@
-import { Heart, Loader2 } from "lucide-react";
+import { Heart, Search } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import Pagination from "../ui/pagination";
@@ -6,7 +6,7 @@ import { usePagination } from "../../hooks/usePagination";
 import { Link } from "react-router";
 import HotelCard from "../HotelCard";
 import { favoritoService, FavoritoResponse } from "../../services/favorito.service";
-import SectionHeader from "./TabReservas/SectionHeader";
+import EncabezadoTab, { PanelPerfil, VacioPerfil } from "./EncabezadoTab";
 
 export default function TabFavoritos() {
   const [favoritos, setFavoritos] = useState<FavoritoResponse[]>([]);
@@ -25,64 +25,77 @@ export default function TabFavoritos() {
     6,
   );
 
+  const conHotel = favoritos.filter((f) => f.hotel);
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-foreground tracking-tight">
-          Tus Hoteles Favoritos
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Los hoteles que guardaste para comparar o reservar más adelante.
-        </p>
-      </div>
-
-      {loading ? (
-        <div className="bg-card text-card-foreground border border-border rounded-xl p-12 text-center shadow-sm">
-          <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Cargando tus favoritos...</p>
-        </div>
-      ) : favoritos.length === 0 ? (
-        <div className="bg-card text-card-foreground border border-border rounded-xl p-12 text-center shadow-sm">
-          <Heart className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-foreground tracking-tight">
-            Aún no tienes favoritos
-          </h3>
-          <p className="text-sm text-muted-foreground mb-5 max-w-xs mx-auto">
-            Toca el corazón en cualquier hotel del catálogo para guardarlo aquí.
-          </p>
+      <EncabezadoTab
+        titulo="Favoritos"
+        descripcion="Los hoteles que guardaste para comparar o reservar más adelante."
+        accion={
           <Link
             to="/search"
-            className="inline-block px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-95 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold hover:bg-muted"
           >
-            Explorar Catálogo
+            <Search className="h-4 w-4 text-primary" /> Buscar hoteles
           </Link>
+        }
+      />
+
+      {loading ? (
+        <div className="grid gap-5 md:grid-cols-2" aria-busy="true" aria-label="Cargando tus favoritos">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-96 animate-pulse rounded-3xl border border-border bg-muted/40" />
+          ))}
         </div>
-      ) : (
-        <section>
-          <SectionHeader
-            title="Hoteles guardados"
-            subtitle={`${favoritos.length} hotel${favoritos.length !== 1 ? "es" : ""} en tu lista`}
-            icon={Heart}
+      ) : conHotel.length === 0 ? (
+        <PanelPerfil>
+          <VacioPerfil
+            icono={Heart}
+            titulo="Aún no tienes favoritos"
+            texto="Toca el corazón en cualquier hotel para guardarlo aquí y compararlo con calma."
+            accion={
+              <Link
+                to="/search"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
+              >
+                Explorar hoteles
+              </Link>
+            }
           />
-          <div className="flex flex-col gap-5">
+        </PanelPerfil>
+      ) : (
+        <>
+          <p className="mb-3 text-sm text-muted-foreground">
+            {conHotel.length} {conHotel.length === 1 ? "hotel guardado" : "hoteles guardados"}
+          </p>
+          {/* Dos por fila: la tarjeta se acomoda sola a su ancho (vertical). */}
+          <div className="grid gap-5 md:grid-cols-2">
             <AnimatePresence mode="popLayout">
-              {pagFavoritos.slice
-                .map((f) => (
-                  <motion.div
-                    key={f.id_favorito}
-                    layout
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <HotelCard hotel={f.hotel!} />
-                  </motion.div>
-                ))}
+              {pagFavoritos.slice.map((f) => (
+                <motion.div
+                  key={f.id_favorito}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <HotelCard hotel={f.hotel!} />
+                </motion.div>
+              ))}
             </AnimatePresence>
           </div>
-          <Pagination page={pagFavoritos.page} pageCount={pagFavoritos.pageCount} onPageChange={pagFavoritos.setPage} className="mt-5" />
-        </section>
+          <Pagination
+            page={pagFavoritos.page}
+            pageCount={pagFavoritos.pageCount}
+            onPageChange={pagFavoritos.setPage}
+            total={conHotel.length}
+            pageSize={6}
+            etiqueta="hoteles"
+            className="mt-6"
+          />
+        </>
       )}
     </div>
   );

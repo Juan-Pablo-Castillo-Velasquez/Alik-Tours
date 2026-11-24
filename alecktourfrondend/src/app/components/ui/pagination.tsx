@@ -13,6 +13,10 @@ interface PaginationProps {
   className?: string;
   /** Máximo de botones numéricos visibles a la vez (el resto se colapsa con …). */
   siblingCount?: number;
+  /** Si se pasan, muestra "Mostrando 1–6 de 14" y la palabra de lo que se cuenta. */
+  total?: number;
+  pageSize?: number;
+  etiqueta?: string;
 }
 
 function rangoPaginado(total: number, actual: number, hermanos: number): (number | "…")[] {
@@ -51,8 +55,15 @@ export default function Pagination({
   onPageChange,
   className,
   siblingCount = 1,
+  total,
+  pageSize,
+  etiqueta,
 }: PaginationProps) {
   if (pageCount <= 1) return null;
+  const resumen =
+    total != null && pageSize
+      ? `Mostrando ${page * pageSize + 1}–${Math.min(total, (page + 1) * pageSize)} de ${total}${etiqueta ? ` ${etiqueta}` : ""}`
+      : null;
 
   const paginas = rangoPaginado(pageCount, page, siblingCount);
 
@@ -60,7 +71,16 @@ export default function Pagination({
     "min-w-8 h-8 px-1.5 inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
-    <div className={cn("flex items-center justify-center gap-1 flex-wrap", className)}>
+    <nav
+      aria-label="Paginación"
+      className={cn(
+        "flex flex-wrap items-center gap-2",
+        resumen ? "justify-between" : "justify-center",
+        className,
+      )}
+    >
+      {resumen && <p className="text-xs text-muted-foreground tabular-nums">{resumen}</p>}
+      <div className="flex flex-wrap items-center justify-center gap-1">
       <button
         type="button"
         disabled={page === 0}
@@ -103,6 +123,7 @@ export default function Pagination({
       >
         <ChevronRight className="w-4 h-4" />
       </button>
-    </div>
+      </div>
+    </nav>
   );
 }

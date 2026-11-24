@@ -1,4 +1,5 @@
 import { Camera, Check, Eye, EyeOff, Lock, Loader2, Pencil, ShieldAlert, User, X } from "lucide-react";
+import EncabezadoTab from "./EncabezadoTab";
 import ErrorCampo from "../shared/ErrorCampo";
 import { limpiarTelefono, mensajeErrorEnvio, validarFormulario, type Reglas } from "../../utils/validacionFormulario";
 import { useEffect, useRef, useState } from "react";
@@ -223,16 +224,9 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
   const inputPersonalCls = "w-full bg-transparent text-base font-bold text-foreground focus:outline-none placeholder:text-muted-foreground/50 placeholder:font-normal";
 
   return (
-    <div className="w-full max-w-4xl">
+    <div className="w-full">
       {/* ── Encabezado ── */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
-          Mi Cuenta
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Información de tu perfil y configuración de seguridad
-        </p>
-      </div>
+      <EncabezadoTab titulo="Mi cuenta" descripcion="Tu información personal, tu foto y la seguridad de tu cuenta." />
 
       <div className="space-y-8">
 
@@ -340,14 +334,14 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
                   key={item.label}
                   className="bg-background border border-border/50 rounded-2xl p-4 hover:border-primary/30 transition-colors"
                 >
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">
                     {item.label}
                   </label>
                   <p className="text-base font-bold text-foreground truncate">{item.value}</p>
                 </div>
               ))}
               <div className="bg-background border border-border/50 rounded-2xl p-4 opacity-70">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
                   Documento de Identidad / Cédula
                 </label>
                 <p className="text-base font-bold text-foreground truncate">{clienteData?.cedula || "—"}</p>
@@ -360,7 +354,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
                   key={campo.name}
                   className="bg-background border border-primary/30 rounded-2xl p-4"
                 >
-                  <label htmlFor={`cuenta-${campo.name}`} className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
+                  <label htmlFor={`cuenta-${campo.name}`} className="text-xs font-medium text-muted-foreground block mb-1">
                     {campo.label}{"required" in campo && campo.required && <span className="text-destructive" aria-hidden> *</span>}
                   </label>
                   <input
@@ -381,7 +375,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
                 </div>
               ))}
               <div className="bg-muted/40 border border-border/50 rounded-2xl p-4 opacity-70">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
                   Documento de Identidad / Cédula
                 </label>
                 <p className="text-base font-bold text-foreground truncate">{clienteData?.cedula || "—"}</p>

@@ -8,6 +8,8 @@ import { ReservaResponse } from "../../data/reservaTypes";
 import { generarFacturaPdf } from "../../utils/generarFacturaPdf";
 import DateRangeFilter, { dentroDeRango } from "../shared/DateRangeFilter";
 import SearchInput from "../shared/SearchInput";
+import EncabezadoTab, { PanelPerfil, VacioPerfil } from "./EncabezadoTab";
+import { codigoReserva } from "../../utils/reservaPresentacion";
 
 interface Props {
   reservas: ReservaResponse[];
@@ -61,27 +63,31 @@ export default function TabFacturas({ reservas, clienteData }: Props) {
   const pagFacturas = usePagination(filtrados, 8);
   const hayFiltros = busqueda.trim() !== "" || rango.desde !== "" || rango.hasta !== "";
 
+  const totalPagado = comprobantes.reduce((acc, c) => acc + Number(c.pago.monto ?? 0), 0);
+
   return (
-    <div className="w-full max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Comprobantes de pago</h1>
-        <p className="text-muted-foreground mt-1">
-          Tus pagos aprobados. Son comprobantes de pago, no facturas electrónicas de venta.
-        </p>
-      </div>
+    <div className="w-full">
+      <EncabezadoTab
+        titulo="Comprobantes"
+        descripcion="Los comprobantes de tus pagos aprobados, listos para descargar en PDF. Son comprobantes de pago, no facturas electrónicas de venta."
+      />
 
-      <div className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 shadow-sm">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-            <Receipt className="w-5 h-5 text-primary" />
+      {comprobantes.length > 0 && (
+        <div className="mb-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Total pagado</p>
+            <p className="mt-0.5 text-2xl font-bold tabular-nums">${Math.round(totalPagado).toLocaleString("es-CO")}</p>
           </div>
-          <h2 className="text-xl font-bold text-foreground">
-            {filtrados.length} {filtrados.length === 1 ? "comprobante" : "comprobantes"}
-          </h2>
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Último pago</p>
+            <p className="mt-0.5 text-2xl font-bold">{formatFecha(comprobantes[0].pago.fecha_pago)}</p>
+          </div>
         </div>
+      )}
 
+      <PanelPerfil>
         {comprobantes.length > 0 && (
-          <div className="space-y-3 mb-5">
+          <div className="mb-5 space-y-3">
             <SearchInput value={busqueda} onChange={setBusqueda} placeholder="Buscar por número, reserva o destino..." />
             <div className="flex flex-wrap items-center justify-between gap-2">
               <DateRangeFilter desde={rango.desde} hasta={rango.hasta} onChange={setRango} label="Fecha de pago" />
@@ -91,7 +97,7 @@ export default function TabFacturas({ reservas, clienteData }: Props) {
                     setBusqueda("");
                     setRango({ desde: "", hasta: "" });
                   }}
-                  className="text-xs font-medium text-primary hover:underline cursor-pointer"
+                  className="cursor-pointer text-xs font-medium text-primary hover:underline"
                 >
                   Limpiar filtros
                 </button>
@@ -101,60 +107,59 @@ export default function TabFacturas({ reservas, clienteData }: Props) {
         )}
 
         {filtrados.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center py-10">
-            <FileText className="w-10 h-10 text-muted-foreground/40 mb-3" />
-            <p className="text-sm font-medium text-foreground">
-              {comprobantes.length === 0 ? "Todavía no tienes comprobantes" : "Ningún comprobante coincide con los filtros"}
-            </p>
-            {comprobantes.length === 0 && (
-              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                Aparecerán aquí apenas se apruebe el pago de alguna de tus reservas.
-              </p>
-            )}
-          </div>
+          <VacioPerfil
+            icono={FileText}
+            titulo={comprobantes.length === 0 ? "Todavía no tienes comprobantes" : "Ningún comprobante coincide con los filtros"}
+            texto={
+              comprobantes.length === 0
+                ? "Aparecerán aquí apenas se apruebe el pago de alguna de tus reservas."
+                : "Prueba con otra palabra o quita el rango de fechas."
+            }
+          />
         ) : (
-        <>
-          <div className="space-y-3">
-            {pagFacturas.slice.map(({ pago, reserva }) => {
-              const concepto =
-                reserva.nombre_paquete ?? reserva.hotel_nombre ?? reserva.destino ?? `Reserva #${reserva.id_reserva}`;
-              return (
-                <div
-                  key={pago.id_pago}
-                  className="flex items-center justify-between gap-3 bg-background border border-border/50 rounded-2xl p-4"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                      <Receipt className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground truncate">{pago.numero_factura}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {concepto} · {formatFecha(pago.fecha_pago)}
+          <>
+            <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+              {pagFacturas.slice.map(({ pago, reserva }) => {
+                const concepto =
+                  reserva.nombre_paquete ?? reserva.hotel_nombre ?? reserva.destino ?? `Reserva #${reserva.id_reserva}`;
+                return (
+                  <li key={pago.id_pago} className="flex flex-wrap items-center gap-3 bg-background px-4 py-3.5 sm:flex-nowrap">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                      <Receipt className="h-4 w-4 text-primary" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">{concepto}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {pago.numero_factura} · {codigoReserva(reserva.id_reserva)} · {formatFecha(pago.fecha_pago)}
                       </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-sm font-bold text-foreground tabular-nums hidden sm:block">
-                      ${pago.monto.toLocaleString("es-CO")}
+                    <span className="text-sm font-bold tabular-nums text-foreground">
+                      ${Number(pago.monto).toLocaleString("es-CO")}
                     </span>
                     <button
                       onClick={() => generarFacturaPdf(pago, reserva, clienteData ?? undefined)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-border text-muted-foreground text-xs font-medium rounded-lg hover:bg-muted hover:text-foreground transition-all"
-                      title="Descargar comprobante de pago en PDF"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-all hover:bg-muted"
+                      aria-label={`Descargar el comprobante ${pago.numero_factura} en PDF`}
                     >
-                      <Download className="w-3.5 h-3.5" />
-                      Descargar
+                      <Download className="h-3.5 w-3.5 text-primary" />
+                      PDF
                     </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <Pagination page={pagFacturas.page} pageCount={pagFacturas.pageCount} onPageChange={pagFacturas.setPage} className="mt-4" />
-        </>
+                  </li>
+                );
+              })}
+            </ul>
+            <Pagination
+              page={pagFacturas.page}
+              pageCount={pagFacturas.pageCount}
+              onPageChange={pagFacturas.setPage}
+              total={filtrados.length}
+              pageSize={8}
+              etiqueta="comprobantes"
+              className="mt-4"
+            />
+          </>
         )}
-      </div>
+      </PanelPerfil>
     </div>
   );
 }

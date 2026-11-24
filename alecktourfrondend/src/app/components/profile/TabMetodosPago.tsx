@@ -1,4 +1,5 @@
 import {
+  ShieldCheck,
   Banknote,
   Building2,
   Check,
@@ -12,6 +13,7 @@ import {
   Trash2,
   Wallet,
 } from "lucide-react";
+import EncabezadoTab, { PanelPerfil, VacioPerfil } from "./EncabezadoTab";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -224,52 +226,46 @@ export default function TabMetodosPago({ obligatorio = false, onMetodosChange }:
   };
 
   return (
-    <div className="w-full max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
-          Métodos de Pago
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Administra las tarjetas y cuentas que usas para pagar tus reservas
-        </p>
-      </div>
-
-      <div className="bg-card border border-border/50 rounded-3xl p-6 md:p-8 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Wallet className="w-5 h-5 text-primary" />
-            </div>
-            <h2 className="text-xl font-bold text-foreground">Tus métodos guardados</h2>
-          </div>
-          {!mostrarFormMetodo && (
+    <div className="w-full">
+      <EncabezadoTab
+        titulo="Métodos de pago"
+        descripcion="Las cuentas y tarjetas con las que pagas tus reservas. Al pagar, eliges una y la confirmas con tu clave."
+        accion={
+          !mostrarFormMetodo && (
             <button
               onClick={() => setMostrarFormMetodo(true)}
-              className="text-sm font-semibold text-primary hover:text-primary/80 flex items-center gap-1.5 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
             >
-              <Plus className="w-3.5 h-3.5" />
-              Agregar
+              <Plus className="h-4 w-4" />
+              Agregar método
             </button>
-          )}
+          )
+        }
+      />
+
+      <PanelPerfil>
+        <div className="mb-5 flex gap-3 rounded-xl bg-muted/60 p-3 text-xs leading-relaxed text-muted-foreground">
+          <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
+          <p>
+            Nunca guardamos el número completo de tu tarjeta o cuenta: solo un alias, los últimos 4 dígitos y tu clave
+            protegida con hash, igual que tu contraseña.
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground mb-6">
-          Guarda un método de pago con una clave de confirmación propia. Nunca almacenamos el
-          número completo de tu tarjeta o cuenta — solo un alias, los últimos 4 dígitos y tu
-          clave protegida con hash, la misma técnica que usamos para tu contraseña.
-        </p>
 
         {cargandoMetodos ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin" /> Cargando métodos guardados...
           </div>
         ) : (
-          <div className="space-y-3 mb-2">
+          <div className="mb-2 grid gap-3 sm:grid-cols-2">
             {metodosGuardados.map((metodo) => {
               const Icon = iconoMetodoPago(metodo.tipo);
               return (
                 <div
                   key={metodo.id_metodo_guardado}
-                  className="flex items-center justify-between gap-3 bg-background border border-border/50 rounded-2xl p-4"
+                  className={`flex items-center justify-between gap-3 rounded-2xl border bg-background p-4 ${
+                    metodo.predeterminado ? "border-primary/40 ring-1 ring-primary/15" : "border-border"
+                  }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
@@ -279,8 +275,8 @@ export default function TabMetodosPago({ obligatorio = false, onMetodosChange }:
                       <p className="text-sm font-bold text-foreground truncate flex items-center gap-2">
                         {metodo.alias}
                         {metodo.predeterminado && (
-                          <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                            Predeterminado
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                            Principal
                           </span>
                         )}
                       </p>
@@ -316,9 +312,21 @@ export default function TabMetodosPago({ obligatorio = false, onMetodosChange }:
             })}
 
             {metodosGuardados.length === 0 && !mostrarFormMetodo && (
-              <p className="text-sm text-muted-foreground italic bg-background p-4 rounded-xl border border-border/50">
-                Aún no tienes métodos de pago guardados.
-              </p>
+              <div className="sm:col-span-2">
+                <VacioPerfil
+                  icono={Wallet}
+                  titulo="Aún no tienes métodos de pago"
+                  texto="Agrega Nequi, una tarjeta o tu cuenta para pagar tus reservas en pocos pasos."
+                  accion={
+                    <button
+                      onClick={() => setMostrarFormMetodo(true)}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+                    >
+                      <Plus className="h-4 w-4" /> Agregar método
+                    </button>
+                  }
+                />
+              </div>
             )}
           </div>
         )}
@@ -438,7 +446,7 @@ export default function TabMetodosPago({ obligatorio = false, onMetodosChange }:
             </div>
           </div>
         )}
-      </div>
+      </PanelPerfil>
     </div>
   );
 }

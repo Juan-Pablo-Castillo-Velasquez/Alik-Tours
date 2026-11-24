@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import EncabezadoTab from "./EncabezadoTab";
 import { EnlaceAdjunto, ImagenAdjunto } from "../shared/AdjuntoChat";
 import {
   CalendarDays,
@@ -197,12 +198,10 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-foreground tracking-tight">Mensajes</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Escríbele directo a nuestro equipo -- por aquí puedes hablar de tus reservas o enviar capturas de pantalla.
-        </p>
-      </div>
+      <EncabezadoTab
+        titulo="Mensajes"
+        descripcion="Escríbele directo a nuestro equipo: habla de tus reservas o envía capturas de pantalla."
+      />
 
       <div className="bg-card text-card-foreground border border-border rounded-xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-320px)] min-h-[420px]">
         {loading ? (

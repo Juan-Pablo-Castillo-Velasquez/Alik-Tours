@@ -14,6 +14,7 @@ import {
   User,
   Utensils,
 } from "lucide-react";
+import EncabezadoTab, { PanelPerfil, VacioPerfil } from "./EncabezadoTab";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { preferenciasService } from "../../services/preferencias.service";
@@ -63,49 +64,41 @@ export default function TabPreferencias({ preferencias, idCliente }: Props) {
   }, [preferencias, idCliente]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full">
       {/* ── Header de Sección ── */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-5 border-b border-border/50 pb-6">
-        <div>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">
-            Mis Preferencias
-          </h2>
-          <p className="text-muted-foreground text-sm md:text-base mt-2">
-            Calibramos nuestro motor de recomendaciones basándonos en tu estilo
-            de viaje.
-          </p>
-        </div>
-        <Link
-          to="/preferences"
-          state={{ preferencias }}
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-sm font-bold hover:shadow-lg hover:opacity-90 hover:-translate-y-0.5 transition-all duration-200 shrink-0"
-        >
-          <PenSquare className="w-4 h-4" />
-          <span>{preferencias ? "Actualizar perfil" : "Completar perfil"}</span>
-        </Link>
-      </div>
-
-      {/* ── Estado Vacío (Sin Preferencias) ── */}
-      {!preferencias ? (
-        <div className="bg-card/50 border-2 border-dashed border-border rounded-3xl p-12 md:p-16 text-center hover:bg-card/80 transition-colors duration-300">
-          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-            <Heart className="w-10 h-10 text-primary" />
-          </div>
-          <h3 className="text-2xl font-bold text-foreground tracking-tight mb-2">
-            Descubre tu viaje ideal
-          </h3>
-          <p className="text-base text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
-            Aún no conocemos tus gustos. Cuéntanos qué te apasiona y deja que
-            diseñemos la experiencia perfecta para ti.
-          </p>
+      <EncabezadoTab
+        titulo="Preferencias de viaje"
+        descripcion="Con tus gustos te recomendamos hoteles y paquetes que de verdad van contigo."
+        accion={
           <Link
             to="/preferences"
             state={{ preferencias }}
-            className="inline-block px-8 py-3.5 bg-foreground text-background rounded-full text-sm font-bold hover:bg-primary hover:text-primary-foreground transition-all duration-300 shadow-md"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
           >
-            Configurar preferencias ahora
+            <PenSquare className="h-4 w-4" />
+            {preferencias ? "Actualizar" : "Completar"}
           </Link>
-        </div>
+        }
+      />
+
+      {/* ── Estado Vacío (Sin Preferencias) ── */}
+      {!preferencias ? (
+        <PanelPerfil>
+          <VacioPerfil
+            icono={Heart}
+            titulo="Cuéntanos cómo te gusta viajar"
+            texto="Tres pasos cortos: tu tipo de viaje, tu presupuesto y lo que no puede faltar. Con eso te recomendamos mejor."
+            accion={
+              <Link
+                to="/preferences"
+                state={{ preferencias }}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
+              >
+                Empezar ahora
+              </Link>
+            }
+          />
+        </PanelPerfil>
       ) : (
         // ── Vista de Datos Estructurada ──
         <div className="space-y-8">
