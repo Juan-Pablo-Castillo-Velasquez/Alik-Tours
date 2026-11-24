@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import en from "./en";
 import es from "./es";
+import { aplicarIdiomaDom } from "./dom/traductorDom";
 
 /**
  * Multi idioma (español / inglés).
@@ -59,6 +60,11 @@ export function IdiomaProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = idioma === "en" ? "en" : "es-CO";
+    // El resto del sitio (admin, perfil, reservas, avisos) se traduce en
+    // el DOM con el diccionario generado del código fuente.
+    void aplicarIdiomaDom(idioma).catch(() => {
+      /* sin diccionario: queda en español */
+    });
   }, [idioma]);
 
   const setIdioma = useCallback((i: Idioma) => {

@@ -445,7 +445,7 @@ export default function ModulePagos({
                             <FileText className="w-4 h-4" />
                           </button>
                         )}
-                        <button
+                        <button aria-label="Cambiar estado"
                           onClick={() => openEdit(p)}
                           className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                           title="Cambiar estado"
@@ -455,7 +455,7 @@ export default function ModulePagos({
                         {/* Un pago aprobado o con comprobante es registro de dinero
                             recibido: el backend rechaza borrarlo (409). */}
                         {p.estado !== "pagado" && !p.numero_factura && (
-                          <button
+                          <button aria-label="Eliminar pago"
                             onClick={() => onDelete(p.id_pago)}
                             className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
                             title="Eliminar pago"
@@ -615,7 +615,7 @@ export default function ModulePagos({
                     <Paperclip className="w-3.5 h-3.5" />
                     Ver comprobante
                   </button>
-                  <button
+                  <button aria-label="Eliminar comprobante"
                     onClick={handleDeleteComprobante}
                     disabled={comprobanteLoading}
                     className="p-2 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all disabled:opacity-50"

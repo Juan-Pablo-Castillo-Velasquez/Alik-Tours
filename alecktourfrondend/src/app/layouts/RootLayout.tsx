@@ -6,6 +6,8 @@ import ConfirmacionGlobal from "../components/ui/ConfirmacionGlobal";
 import AvisoLimiteEnvios from "../components/ui/AvisoLimiteEnvios";
 import PanelAccesibilidad from "../components/accesibilidad/PanelAccesibilidad";
 import SaltarContenido from "../components/accesibilidad/SaltarContenido";
+import AsistenteVoz from "../components/accesibilidad/AsistenteVoz";
+import AnunciadorRuta from "../components/accesibilidad/AnunciadorRuta";
 import { AuthModalProvider } from "../context/AuthModalContext";
 import WhatsAppButton from "../components/WhatsAppButton";
 import CookieConsent from "../components/CookieConsent";
@@ -29,6 +31,7 @@ export default function RootLayout() {
     return (
         <AuthModalProvider>
             <SaltarContenido />
+            <AnunciadorRuta />
             <Toaster />
             <ConfirmacionGlobal />
             <AvisoLimiteEnvios />
@@ -49,6 +52,7 @@ export default function RootLayout() {
             <WhatsAppButton />
             <CookieConsent />
             <PanelAccesibilidad />
+            <AsistenteVoz />
         </AuthModalProvider>
     );
 }

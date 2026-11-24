@@ -470,7 +470,7 @@ export default function SearchResults() {
     <>
       {/* PRECIO POR NOCHE */}
       <div className="mb-6">
-        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground/80">
+        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">
           Precio por noche
         </h3>
 
@@ -499,7 +499,7 @@ export default function SearchResults() {
 
       {/* CALIFICACIÓN */}
       <div className="mb-6 border-t border-border/60 pt-5">
-        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground/80">
+        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">
           Estrellas del hotel
         </h3>
 
@@ -570,7 +570,7 @@ export default function SearchResults() {
                   )
                 )}
               </span>
-              <span className="sr-only">{n} {n === 1 ? "estrella" : "estrellas"}</span>
+              <span className="sr-only">{`${n} ${n === 1 ? "estrella" : "estrellas"}`}</span>
               <span className="ml-auto text-xs tabular-nums text-muted-foreground">{totalEstrellas}</span>
             </motion.label>
             );
@@ -580,7 +580,7 @@ export default function SearchResults() {
 
       {/* PAÍS */}
       <div className="mb-6 border-t border-border/60 pt-5">
-        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground/80">
+        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">
           País
         </h3>
 
@@ -635,7 +635,7 @@ export default function SearchResults() {
 
       {/* CIUDAD */}
       <div className="mb-6 border-t border-border/60 pt-5">
-        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground/80">
+        <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">
           Ciudad
         </h3>
 
@@ -653,7 +653,7 @@ export default function SearchResults() {
           />
 
           {ciudadSearch && (
-            <button
+            <button aria-label="Cerrar"
               type="button"
               onClick={() =>
                 setCiudadSearch("")
@@ -736,7 +736,7 @@ export default function SearchResults() {
       {/* SERVICIOS POPULARES */}
       {serviciosPopulares.length > 0 && (
         <div className="mb-6 border-t border-border/60 pt-5">
-          <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground/80">
+          <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">
             Servicios populares
           </h3>
 
@@ -758,7 +758,7 @@ export default function SearchResults() {
                   {nombre}
                 </span>
 
-                <span className="text-xs text-muted-foreground/70 font-medium tabular-nums">
+                <span className="text-xs text-muted-foreground font-medium tabular-nums">
                   ({cantidad})
                 </span>
               </motion.label>
@@ -962,7 +962,7 @@ export default function SearchResults() {
                         </h2>
                       </div>
 
-                      <button
+                      <button aria-label="Cerrar"
                         type="button"
                         onClick={() =>
                           setShowFilters(
@@ -1207,7 +1207,7 @@ export default function SearchResults() {
                         No hay disponibilidad en esas fechas exactas
                       </p>
                       <p className="text-xs text-amber-800/90 mt-0.5">
-                        Estos {alternativas.length} {alternativas.length === 1 ? "hotel es" : "hoteles son"} coincidencia
+                        Estos {`${alternativas.length} ${alternativas.length === 1 ? "hotel es" : "hoteles son"}`} coincidencia
                         {alternativas.length === 1 ? "" : "s"} para{" "}
                         <strong>{destinationSearch}</strong> pero no tienen
                         habitaciones libres entre el {fechaLegible(startDate)} y el {fechaLegible(endDate)}. Te los

@@ -12,7 +12,7 @@ interface Props {
 export default function SearchInput({ value, onChange, placeholder = "Buscar...", className = "", ariaLabel }: Props) {
   return (
     <div className={`relative ${className}`}>
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60 pointer-events-none" />
+      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
       <input maxLength={100}
         type="search"
         // Accesibilidad (bootcamp, semana 3): sin label ni aria-label, el

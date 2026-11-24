@@ -1,4 +1,5 @@
 import { CalendarClock, FileText, MessageSquareText, Scale, ShieldCheck, Star } from "lucide-react";
+import { AvisoVersionLegal } from "../components/AvisoVersionLegal";
 import { Link } from "react-router";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
@@ -132,6 +133,7 @@ export default function Pqr() {
 
       <section id="politica" className="mx-auto max-w-3xl scroll-mt-24 px-4 pb-16">
         <h2 className="text-2xl font-bold tracking-tight text-foreground">Política de atención de PQR</h2>
+<AvisoVersionLegal />
         <p className="mt-1 text-sm text-muted-foreground">
           {BRAND.name} · Versión del {POLITICA_PQR_FECHA} · Borrador pendiente de revisión jurídica
         </p>

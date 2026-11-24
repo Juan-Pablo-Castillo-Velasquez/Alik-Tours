@@ -319,8 +319,9 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
 
             {reservas.length > 0 && (
               <div className="px-5 pt-2.5 flex items-center gap-2 flex-wrap border-t border-border/60">
-                <span className="text-[11px] text-muted-foreground">¿De qué reserva hablas? (opcional)</span>
+                <label htmlFor="mensaje-reserva" className="text-[11px] text-muted-foreground">¿De qué reserva hablas? (opcional)</label>
                 <select
+                  id="mensaje-reserva"
                   value={idReservaSeleccionada ?? ""}
                   onChange={(e) => setIdReservaSeleccionada(e.target.value ? Number(e.target.value) : null)}
                   className="text-xs bg-muted/40 border border-border rounded-lg px-2 py-1 text-foreground outline-none focus:ring-2 focus:ring-primary/40 max-w-[220px]"
@@ -333,7 +334,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
                   ))}
                 </select>
                 {reservaSeleccionada && (
-                  <button
+                  <button aria-label="Quitar reserva"
                     type="button"
                     onClick={() => setIdReservaSeleccionada(null)}
                     className="text-muted-foreground hover:text-destructive transition-colors"
@@ -348,7 +349,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
             {archivo && (
               <div className="px-5 pt-2 flex items-center gap-2">
                 <span className="text-xs text-muted-foreground truncate">{archivo.name}</span>
-                <button onClick={limpiarArchivo} className="text-muted-foreground hover:text-destructive transition-colors">
+                <button aria-label="Cerrar" onClick={limpiarArchivo} className="text-muted-foreground hover:text-destructive transition-colors">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -362,7 +363,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
                 className="hidden"
                 onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
               />
-              <button
+              <button aria-label="Adjuntar imagen o PDF"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2.5 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-shrink-0"
                 title="Adjuntar imagen o PDF"
@@ -391,7 +392,7 @@ export default function TabMensajes({ reservas = [], reservaIdInicial = null }: 
                   </span>
                 )}
               </div>
-              <button
+              <button aria-label="Enviar"
                 onClick={enviar}
                 disabled={enviando || excedeLimite || (!texto.trim() && !archivo)}
                 className="p-2.5 rounded-xl bg-primary text-primary-foreground disabled:opacity-40 transition-all flex-shrink-0"

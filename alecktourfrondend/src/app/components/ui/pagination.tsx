@@ -93,7 +93,7 @@ export default function Pagination({
 
       {paginas.map((p, i) =>
         p === "…" ? (
-          <span key={`d-${i}`} className="min-w-5 h-8 inline-flex items-center justify-center text-xs text-muted-foreground/60 select-none">
+          <span key={`d-${i}`} className="min-w-5 h-8 inline-flex items-center justify-center text-xs text-muted-foreground select-none">
             …
           </span>
         ) : (

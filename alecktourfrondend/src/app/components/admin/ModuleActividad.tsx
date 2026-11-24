@@ -171,7 +171,7 @@ export default function ModuleActividad({ actividad, loading, loadingMore, agota
                   {item.comentarios && (
                     <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.comentarios}</p>
                   )}
-                  <p className="text-[11px] text-muted-foreground/80 mt-1">
+                  <p className="text-[11px] text-muted-foreground mt-1">
                     {tiempoRelativo(item.fecha_cambio)}
                     {item.nombre_empleado && ` · ${item.nombre_empleado}`}
                   </p>

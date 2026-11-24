@@ -418,7 +418,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5 text-xs text-foreground">
-                      <Star className="w-3.5 h-3.5 text-[#C9A227] fill-[#C9A227]" />
+                      <Star className="w-3.5 h-3.5 text-[#7A5F08] dark:text-[#E3C55A] fill-[#C9A227]" />
                       <span className="font-medium">{h.calificacion_promedio ?? h.calificacion}</span>
                       {!!h.total_resenas && (
                         <span className="text-[11px] text-muted-foreground">({h.total_resenas} reseña{h.total_resenas === 1 ? "" : "s"})</span>
@@ -466,20 +466,20 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
-                      <button
+                      <button aria-label="Ver habitaciones y ocupación"
                         onClick={() => abrirDetalle(h)}
                         className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
                         title="Ver habitaciones y ocupación"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button
+                      <button aria-label="Editar"
                         onClick={() => openEdit(h)}
                         className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button
+                      <button aria-label="Eliminar"
                         onClick={() => onDelete(h.id_hotel)}
                         className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
                       >
@@ -662,9 +662,9 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
                         {hab.tipo_habitacion?.capacidad_personas ? ` · hasta ${hab.tipo_habitacion.capacidad_personas} personas` : ""}
                       </p>
                       {cargandoFechas ? (
-                        <p className="text-[11px] text-muted-foreground/70 flex items-center gap-1 mt-0.5"><Loader2 className="w-3 h-3 animate-spin" /> Consultando ocupación...</p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5"><Loader2 className="w-3 h-3 animate-spin" /> Consultando ocupación...</p>
                       ) : ocupacion ? (
-                        <p className="text-[11px] text-[#C9A227] flex items-center gap-1 mt-0.5"><Clock className="w-3 h-3" /> Ocupada {ocupacion}</p>
+                        <p className="text-[11px] text-[#7A5F08] dark:text-[#E3C55A] flex items-center gap-1 mt-0.5"><Clock className="w-3 h-3" /> Ocupada {ocupacion}</p>
                       ) : (
                         <p className="text-[11px] text-success mt-0.5">Sin reservas futuras</p>
                       )}
@@ -677,10 +677,10 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
                       {hab.estado}
                     </span>
                     <div className="flex items-center gap-0.5 flex-shrink-0">
-                      <button type="button" onClick={() => openHabEdit(hab)} className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
+                      <button aria-label="Editar" type="button" onClick={() => openHabEdit(hab)} className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
-                      <button type="button" onClick={() => handleHabDelete(hab.id_habitacion)} className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all">
+                      <button aria-label="Eliminar" type="button" onClick={() => handleHabDelete(hab.id_habitacion)} className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -717,7 +717,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
                 {(detailHotel.imagenes ?? []).map((img) => (
                   <div key={img.id_imagen} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
                     <img src={resolveFotoUrl(img.url)} alt="" className="w-full h-full object-cover" />
-                    <button
+                    <button aria-label="Eliminar foto"
                       type="button"
                       onClick={() => handleBorrarFotoGaleria(img.id_imagen)}
                       className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
@@ -743,7 +743,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
                 </label>
               </div>
               {(detailHotel.imagenes ?? []).length === 0 && (
-                <p className="text-[11px] text-muted-foreground/70">Este hotel todavía no tiene ninguna foto en su galería.</p>
+                <p className="text-[11px] text-muted-foreground">Este hotel todavía no tiene ninguna foto en su galería.</p>
               )}
             </div>
           </div>

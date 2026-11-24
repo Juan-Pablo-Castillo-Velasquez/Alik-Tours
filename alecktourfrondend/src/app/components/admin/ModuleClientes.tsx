@@ -325,13 +325,13 @@ export default function ModuleClientes({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end" onClick={e => e.stopPropagation()}>
-                      <button
+                      <button aria-label="Editar"
                         onClick={() => openEdit(c)}
                         className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button
+                      <button aria-label="Eliminar"
                         onClick={() => onDelete(c.id_cliente)}
                         className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
                       >
@@ -492,7 +492,7 @@ export default function ModuleClientes({
                   label="Solicitudes de cancelación"
                   value={
                     solicitudesCliente.length > 0 ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400">
                         <AlertCircle className="w-3 h-3" /> {solicitudesCliente.length}
                       </span>
                     ) : 0

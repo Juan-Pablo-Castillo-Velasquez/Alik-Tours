@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AvisoVersionLegal } from "./AvisoVersionLegal";
 import ModalBackdrop from "./ui/ModalBackdrop";
 
 interface PrivacidadModalProps {
@@ -58,6 +59,7 @@ export default function PrivacidadModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar"
             className="bg-white/10 hover:bg-white/20 text-primary-foreground rounded-md p-2 transition-all duration-200"
           >
             <svg
@@ -78,6 +80,7 @@ export default function PrivacidadModal({
 
         {/* ── Contenido adaptivo a Light/Dark ── */}
         <div className="overflow-y-auto px-6 py-5 flex-1 text-sm text-foreground/90 space-y-5 bg-card">
+<AvisoVersionLegal className="mt-0" />
           <Section title="1. Información que recopilamos">
             Al registrarte en{" "}
             <strong className="text-foreground font-bold">alik tours</strong>,

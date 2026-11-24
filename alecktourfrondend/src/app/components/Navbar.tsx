@@ -165,7 +165,7 @@ export default function Navbar() {
                     uppercase
                     tracking-[1.8px]
                     font-bold
-                    text-muted-foreground/70
+                    text-muted-foreground
                   "
                   >
                     {t("nav.agencia")}

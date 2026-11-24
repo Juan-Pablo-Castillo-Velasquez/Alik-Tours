@@ -221,7 +221,7 @@ export default function AdminSidebar({
                 Panel de control
               </p>
             )}
-            <button
+            <button aria-label={collapsed ? "Expandir menú" : "Colapsar menú"}
               onClick={() => setCollapsed((c) => !c)}
               title={collapsed ? "Expandir menú" : "Colapsar menú"}
               className="p-1.5 rounded-lg text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors flex-shrink-0"
@@ -234,7 +234,7 @@ export default function AdminSidebar({
             {NAV_SECTIONS_FILTRADAS.map((section) => (
               <div key={section.label}>
                 {!collapsed && (
-                  <p className="px-2.5 mb-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                  <p className="px-2.5 mb-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     {section.label}
                   </p>
                 )}
@@ -272,7 +272,7 @@ export default function AdminSidebar({
                         {!collapsed && !ready && (
                           <span
                             className={`ml-auto text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                              isActive ? "bg-white/20 text-white" : "bg-muted text-muted-foreground/70"
+                              isActive ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
                             }`}
                           >
                             Próx.

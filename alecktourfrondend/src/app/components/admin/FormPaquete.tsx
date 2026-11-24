@@ -345,7 +345,7 @@ export default function FormPaquete({ paquete, hoteles, loading, onSubmit, onCer
                 </L>
                 <div className="flex items-center justify-between sm:col-span-2">
                   <div><p className="text-sm font-medium">Paquete publicado</p><p className="text-xs text-muted-foreground">Visible y reservable en el sitio</p></div>
-                  <Switch checked={f.activo} onCheckedChange={(v) => set("activo", v)} />
+                  <Switch checked={f.activo} onCheckedChange={(v) => set("activo", v)} aria-label="Paquete publicado" />
                 </div>
               </div>
             )}
@@ -609,7 +609,7 @@ function L({ t, req, ayuda, className = "", children }: { t: string; req?: boole
     <label className={`block ${className}`}>
       <span className={labelCls}>{t} {req && <span className="text-destructive" aria-hidden>*</span>}</span>
       {children}
-      {ayuda && <span className="mt-0.5 block text-[11px] text-muted-foreground/80">{ayuda}</span>}
+      {ayuda && <span className="mt-0.5 block text-[11px] text-muted-foreground">{ayuda}</span>}
     </label>
   );
 }

@@ -311,7 +311,7 @@ export default function ModuleComunidad() {
                         {p.comentarios.map((c) => (
                           <div key={c.id_comentario} className={`flex items-start justify-between gap-2 text-xs ${c.oculto ? "opacity-50" : ""}`}>
                             <span className="break-words"><strong>{c.autor.nombre}:</strong> {c.contenido}</span>
-                            <button onClick={() => alternarComentario(p.id_publicacion, c.id_comentario, !c.oculto)}
+                            <button aria-label={c.oculto ? "Mostrar comentario" : "Ocultar comentario"} onClick={() => alternarComentario(p.id_publicacion, c.id_comentario, !c.oculto)}
                               className="shrink-0 p-1 rounded hover:bg-muted" title={c.oculto ? "Mostrar comentario" : "Ocultar comentario"}>
                               {c.oculto ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                             </button>
@@ -452,7 +452,7 @@ export default function ModuleComunidad() {
                         {v.comentarios.filter((c) => c.oculto).map((c) => (
                           <div key={c.id_comentario} className="flex items-start justify-between gap-2 text-xs opacity-60">
                             <span className="break-words"><strong>{c.autor.nombre}</strong> (oculto): {c.contenido}</span>
-                            <button onClick={() => alternarComentarioVideo(v.id_video, c.id_comentario, false)} className="shrink-0 p-1 rounded hover:bg-muted" title="Mostrar comentario">
+                            <button aria-label="Mostrar comentario" onClick={() => alternarComentarioVideo(v.id_video, c.id_comentario, false)} className="shrink-0 p-1 rounded hover:bg-muted" title="Mostrar comentario">
                               <Eye className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -479,7 +479,7 @@ export default function ModuleComunidad() {
                             {v.comentarios.filter((c) => !c.oculto).map((c) => (
                               <div key={c.id_comentario} className="flex items-center justify-between gap-2 text-xs">
                                 <span className="truncate">{c.autor.nombre}: {c.contenido}</span>
-                                <button onClick={() => alternarComentarioVideo(v.id_video, c.id_comentario, true)} className="shrink-0 p-1 rounded hover:bg-muted" title="Ocultar comentario">
+                                <button aria-label="Ocultar comentario" onClick={() => alternarComentarioVideo(v.id_video, c.id_comentario, true)} className="shrink-0 p-1 rounded hover:bg-muted" title="Ocultar comentario">
                                   <EyeOff className="w-3.5 h-3.5" />
                                 </button>
                               </div>

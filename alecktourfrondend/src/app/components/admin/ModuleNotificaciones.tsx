@@ -103,7 +103,7 @@ export default function ModuleNotificaciones({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <SectionHeader
           title="Notificaciones"
-          subtitle={`${notificaciones.length} notificación${notificaciones.length === 1 ? "" : "es"}${noLeidas > 0 ? ` · ${noLeidas} sin leer` : ""}`}
+          subtitle={`${notificaciones.length} ${notificaciones.length === 1 ? "notificación" : "notificaciones"}${noLeidas > 0 ? ` · ${noLeidas} sin leer` : ""}`}
         />
         {noLeidas > 0 && (
           <button
@@ -182,7 +182,7 @@ export default function ModuleNotificaciones({
                 </p>
                 {contacto ? (
                   <>
-                    <p className="text-xs text-muted-foreground/80 mt-0.5">{contacto.correo}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{contacto.correo}</p>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{contacto.cuerpo}</p>
                     <a
                       href={`mailto:${contacto.correo}?subject=${encodeURIComponent(`Re: ${n.titulo.replace(/^Nuevo mensaje de contacto:\s*/, "")}`)}`}
@@ -194,16 +194,16 @@ export default function ModuleNotificaciones({
                 ) : (
                   n.mensaje && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.mensaje}</p>
                 )}
-                <p className="text-[11px] text-muted-foreground/70 mt-1">{tiempoRelativo(n.fecha_creacion)}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">{tiempoRelativo(n.fecha_creacion)}</p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {!n.leido && (
-                  <button onClick={() => onMarcarLeida(n.id_notificacion)} className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Marcar como leída">
+                  <button aria-label="Marcar como leída" onClick={() => onMarcarLeida(n.id_notificacion)} className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Marcar como leída">
                     <Check className="w-4 h-4" />
                   </button>
                 )}
                 {!soloEmpleado && (
-                  <button onClick={() => onDelete(n.id_notificacion)} className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all" title="Eliminar">
+                  <button aria-label="Eliminar" onClick={() => onDelete(n.id_notificacion)} className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all" title="Eliminar">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}

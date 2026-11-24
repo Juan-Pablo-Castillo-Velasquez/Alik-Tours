@@ -84,21 +84,21 @@ export default function StepProgress({
                       "cursor-pointer rounded-lg px-2 py-1.5 border select-none",
                       activo
                         ? "border-primary/40 bg-primary/5 text-foreground"
-                        : "border-transparent text-muted-foreground/60 hover:border-border hover:text-foreground",
+                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                     )
                   : completado
                     ? "text-foreground"
-                    : "text-muted-foreground/60",
+                    : "text-muted-foreground",
               )}
             >
               <span
                 className={cn(
                   "w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300",
                   esFiltro
-                    ? cn("bg-muted text-muted-foreground/60", activo && "bg-primary text-primary-foreground")
+                    ? cn("bg-muted text-muted-foreground", activo && "bg-primary text-primary-foreground")
                     : completado
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground/50",
+                      : "bg-muted text-muted-foreground",
                 )}
               >
                 {esFiltro ? (

@@ -108,7 +108,7 @@ export default function Testimonials() {
           {/* Rating general */}
           <div className="flex items-center gap-4 bg-card rounded-2xl px-5 py-4 border border-border shadow-xl shadow-primary/5 dark:shadow-none">
             <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-              <Star className="w-6 h-6 text-[#C9A227] fill-[#C9A227]" />
+              <Star className="w-6 h-6 text-[#7A5F08] dark:text-[#E3C55A] fill-[#C9A227]" />
             </div>
 
             <div>
@@ -120,7 +120,7 @@ export default function Testimonials() {
                         key={star}
                         className={`w-3.5 h-3.5 ${
                           star <= Math.round(ratingPromedio)
-                            ? "fill-[#C9A227] text-[#C9A227]"
+                            ? "fill-[#C9A227] text-[#7A5F08] dark:text-[#E3C55A]"
                             : "text-muted-foreground/40"
                         }`}
                       />
@@ -152,7 +152,7 @@ export default function Testimonials() {
           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-5">
             {testimonials.length === 0 && (
               <div className="md:col-span-3 flex flex-col items-center justify-center text-center gap-2 bg-card rounded-3xl p-10 border border-dashed border-border">
-                <Quote className="w-8 h-8 text-muted-foreground/50" />
+                <Quote className="w-8 h-8 text-muted-foreground" />
                 <p className="text-foreground font-semibold text-sm">
                   Todavía no hay reseñas destacadas
                 </p>
@@ -186,7 +186,7 @@ export default function Testimonials() {
                   {Array.from({ length: t.rating }, (_, index) => (
                     <Star
                       key={index}
-                      className="w-4 h-4 fill-[#C9A227] text-[#C9A227]"
+                      className="w-4 h-4 fill-[#C9A227] text-[#7A5F08] dark:text-[#E3C55A]"
                     />
                   ))}
                   <span className="ml-1 text-[11px] text-muted-foreground">
@@ -253,7 +253,7 @@ export default function Testimonials() {
             <div className="relative">
               <div className="flex items-center justify-between mb-5">
                 <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center">
-                  <PlaneTakeoff className="w-7 h-7 text-[#C9A227]" />
+                  <PlaneTakeoff className="w-7 h-7 text-[#7A5F08] dark:text-[#E3C55A]" />
                 </div>
                 <span className="text-[10px] uppercase tracking-wider font-bold text-white/80 bg-white/10 px-3 py-1.5 rounded-full">
                   Grupos
@@ -269,7 +269,7 @@ export default function Testimonials() {
               >
                 Tu próximo viaje
                 <br />
-                <span className="text-[#C9A227]">empieza aquí.</span>
+                <span className="text-[#7A5F08] dark:text-[#E3C55A]">empieza aquí.</span>
               </h3>
 
               <p className="text-white/80 text-sm leading-relaxed">
@@ -338,7 +338,7 @@ export default function Testimonials() {
 
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-[#C9A227]/15 flex items-center justify-center">
-                <Heart className="w-4 h-4 text-[#C9A227]" />
+                <Heart className="w-4 h-4 text-[#7A5F08] dark:text-[#E3C55A]" />
               </div>
               <div>
                 <p className="text-foreground text-xs font-bold">

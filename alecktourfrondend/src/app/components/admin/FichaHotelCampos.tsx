@@ -99,7 +99,7 @@ export default function FichaHotelCampos({ ficha, onChange }: { ficha: FichaHote
         </div>
         <div className="flex items-center justify-between">
           <div><p className="text-sm font-medium">Publicado en el sitio</p><p className="text-xs text-muted-foreground">Si lo ocultas, sigue en el panel pero el público no lo ve</p></div>
-          <Switch checked={ficha.publicado} onCheckedChange={(v) => set("publicado", v)} />
+          <Switch checked={ficha.publicado} onCheckedChange={(v) => set("publicado", v)} aria-label="Publicado en el sitio" />
         </div>
       </Seccion>
 

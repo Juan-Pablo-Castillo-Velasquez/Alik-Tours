@@ -142,7 +142,7 @@ export default function ModuleRoles({
                     </p>
                   </div>
                   {!protegido && (
-                    <button
+                    <button aria-label="Eliminar rol"
                       onClick={() => onDeleteRol(rol.id_rol)}
                       title="Eliminar rol"
                       className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all flex-shrink-0"
@@ -230,7 +230,7 @@ export default function ModuleRoles({
             <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
               {categorias.map((categoria) => (
                 <div key={categoria}>
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-1.5">{categoria}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">{categoria}</p>
                   <div className="flex flex-wrap gap-2">
                     {permisos
                       .filter((p) => p.categoria === categoria)

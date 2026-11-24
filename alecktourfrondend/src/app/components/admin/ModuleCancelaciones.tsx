@@ -421,7 +421,7 @@ export default function ModuleCancelaciones({
 
               {montoYaPagado > 0 && selected.estado === "pendiente" && (
                 <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#fdf6e3] border border-[#C9A227]/30">
-                  <AlertCircle className="w-4 h-4 text-[#C9A227] flex-shrink-0" />
+                  <AlertCircle className="w-4 h-4 text-[#7A5F08] dark:text-[#E3C55A] flex-shrink-0" />
                   <p className="text-xs text-[#8a6d10] dark:text-[#C9A227]">
                     El cliente ya pagó ${montoYaPagado.toLocaleString("es-CO")} por esta reserva. Aprobar la
                     cancelación NO reembolsa el dinero automáticamente — el sistema todavía no tiene un estado

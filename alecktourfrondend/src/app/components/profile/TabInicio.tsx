@@ -457,7 +457,7 @@ export default function TabInicio({
               href={enlaceWhatsAppAgencia()}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#0E8043] px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5"
             >
               <IconoWhatsApp className="h-4 w-4" /> WhatsApp
             </a>

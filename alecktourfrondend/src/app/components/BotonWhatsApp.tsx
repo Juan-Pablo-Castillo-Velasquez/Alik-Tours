@@ -42,7 +42,7 @@ export default function BotonWhatsApp({
       target="_blank"
       rel="noopener noreferrer"
       onClick={onClick}
-      className={`inline-flex items-center gap-2.5 rounded-xl bg-[#25D366] text-white font-semibold shadow-sm transition-colors hover:bg-[#1EBE5A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 ${
+      className={`inline-flex items-center gap-2.5 rounded-xl bg-[#0E8043] text-white font-semibold shadow-sm transition-colors hover:bg-[#0B6B37] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 ${
         bloque ? "w-full px-4 py-3" : "px-3 py-2 text-xs"
       } ${className}`}
     >

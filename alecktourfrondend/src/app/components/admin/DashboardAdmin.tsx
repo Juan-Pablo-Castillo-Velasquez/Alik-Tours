@@ -120,6 +120,8 @@ const ESTADO_COLOR: Record<string, string> = {
   cancelada: "#94a3b8",
 };
 const PALETA = ["var(--primary)", "var(--gold)", "#0ea5e9", "#10b981", "#a855f7", "#94a3b8"];
+// Misma gama, más oscura: fondo de las iniciales con texto blanco (contraste AA).
+const PALETA_FONDO_TEXTO = ["var(--primary)", "#7A5F08", "#0369A1", "#047857", "#7E22CE", "#475569"];
 const ICONO_PRODUCTO: Record<string, typeof Package> = { Paquetes: Package, Hoteles: Hotel, Vuelos: Plane };
 const ICONO_CANAL: Record<string, typeof Globe> = { "Sitio web": Globe, Asesor: Headset, Teléfono: Phone };
 
@@ -503,7 +505,7 @@ export default function DashboardAdmin({
             <p className="mt-2 text-sm text-white/85 sm:text-base">
               Hoy llevas <b className="text-[var(--gold-surface,#f5d77a)]">{pesos(r.ingresos_hoy)}</b> cobrados y{" "}
               <b className="text-white">
-                {r.reservas_hoy} reserva{r.reservas_hoy === 1 ? "" : "s"} nueva{r.reservas_hoy === 1 ? "" : "s"}
+                {`${r.reservas_hoy} ${r.reservas_hoy === 1 ? "reserva nueva" : "reservas nuevas"}`}
               </b>
               .{" "}
               {alertas.length > 0
@@ -750,10 +752,12 @@ export default function DashboardAdmin({
             <p className="py-10 text-center text-sm text-muted-foreground">Todavía no hay ventas registradas.</p>
           ) : (
             <div className="flex items-center gap-4">
-              <div className="relative h-36 w-36 shrink-0">
+              {/* El gráfico es decorativo: la lista de al lado tiene los mismos datos. */}
+              <div className="relative h-36 w-36 shrink-0" aria-hidden="true">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart accessibilityLayer={false}>
                     <Pie
+                      rootTabIndex={-1}
                       data={r.ventas_por_producto.map((v) => ({ name: v.nombre, value: v.monto || v.total }))}
                       dataKey="value"
                       innerRadius={44}
@@ -836,8 +840,9 @@ export default function DashboardAdmin({
                 return (
                   <li key={m.nombre} className="flex items-center gap-3">
                     <span
+                      aria-hidden="true"
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white"
-                      style={{ background: PALETA[i % PALETA.length] }}
+                      style={{ background: PALETA_FONDO_TEXTO[i % PALETA_FONDO_TEXTO.length] }}
                     >
                       {m.nombre.slice(0, 2).toUpperCase()}
                     </span>

@@ -1,4 +1,5 @@
 import { Download, FileText } from "lucide-react";
+import { AvisoVersionLegal } from "../components/AvisoVersionLegal";
 import { Link } from "react-router";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -24,6 +25,7 @@ export default function TermsAndConditions() {
       <div className="max-w-3xl mx-auto px-4 py-12">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-2">Términos y Condiciones</h1>
+<AvisoVersionLegal />
           <p className="text-muted-foreground text-sm">
             {BRAND.name} · RNT {BRAND.rnt} · Versión {TERMINOS_VERSION} · {TERMINOS_FECHA}
           </p>

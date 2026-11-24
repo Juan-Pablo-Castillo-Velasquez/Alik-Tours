@@ -357,7 +357,7 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
               <div className="leading-tight">
                 <p className="text-sm font-bold text-foreground">{etiquetaPuntaje}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {hotel.total_resenas} {hotel.total_resenas === 1 ? "reseña" : "reseñas"}
+                  {`${hotel.total_resenas} ${hotel.total_resenas === 1 ? "reseña" : "reseñas"}`}
                 </p>
               </div>
               <span className="flex h-10 w-10 items-center justify-center rounded-xl rounded-bl-sm bg-primary text-sm font-extrabold text-primary-foreground">
@@ -473,7 +473,7 @@ export default function HotelCard({ hotel, index = 0 }: HotelCardProps) {
                   <p className="mt-0.5 text-[11px] text-muted-foreground">por noche</p>
                   {noches > 0 && (
                     <p className="mt-1 text-[11px] font-semibold text-foreground">
-                      {noches} {noches === 1 ? "noche" : "noches"}: ${(precioMin * noches).toLocaleString("es-CO")}
+                      {`${noches} ${noches === 1 ? "noche" : "noches"}`}: ${(precioMin * noches).toLocaleString("es-CO")}
                     </p>
                   )}
                 </div>

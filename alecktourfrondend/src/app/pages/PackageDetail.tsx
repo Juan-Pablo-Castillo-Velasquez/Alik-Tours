@@ -343,7 +343,7 @@ export default function PackageDetail() {
               {pkg.duracion_dias && (
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
-                  <span>{pkg.duracion_dias} {pkg.duracion_dias === 1 ? "día" : "días"}</span>
+                  <span>{`${pkg.duracion_dias} ${pkg.duracion_dias === 1 ? "día" : "días"}`}</span>
                 </div>
               )}
               {pkg.destinos.length > 0 && (
@@ -463,7 +463,7 @@ export default function PackageDetail() {
                             ))}
                             {delDia.map((s) => (
                               <li key={s.id_servicio} className="flex items-start gap-2 text-sm">
-                                <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${s.incluido ? "text-primary" : "text-muted-foreground/50"}`} />
+                                <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${s.incluido ? "text-primary" : "text-muted-foreground"}`} />
                                 <span>{s.nombre_servicio}{!s.incluido && <span className="ml-2 text-[10px] font-bold uppercase text-muted-foreground">Opcional{s.precio_por_persona != null ? ` · +$${s.precio_por_persona.toLocaleString("es-CO")} p/p` : ""}</span>}</span>
                               </li>
                             ))}
@@ -489,7 +489,7 @@ export default function PackageDetail() {
                         {items.map((servicio) => (
                           <div key={servicio.id_servicio} className="flex items-start gap-3">
                             <CheckCircle2
-                              className={`w-5 h-5 flex-shrink-0 mt-0.5 ${servicio.incluido ? "text-primary" : "text-muted-foreground/50"}`}
+                              className={`w-5 h-5 flex-shrink-0 mt-0.5 ${servicio.incluido ? "text-primary" : "text-muted-foreground"}`}
                             />
                             <div>
                               <span className="text-foreground font-medium">

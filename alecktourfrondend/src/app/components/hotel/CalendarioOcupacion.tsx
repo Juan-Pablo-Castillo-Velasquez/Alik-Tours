@@ -104,7 +104,7 @@ export default function CalendarioOcupacion({
           {MESES[month]} {year}
         </span>
         <div className="flex items-center gap-1">
-          <button
+          <button aria-label="Mes anterior"
             type="button"
             onClick={() => irMeses(-1)}
             disabled={prevDisabled}
@@ -122,7 +122,7 @@ export default function CalendarioOcupacion({
           >
             Hoy
           </button>
-          <button
+          <button aria-label="Mes siguiente"
             type="button"
             onClick={() => irMeses(1)}
             disabled={nextDisabled}
@@ -137,7 +137,7 @@ export default function CalendarioOcupacion({
       {/* Días de la semana */}
       <div className="grid grid-cols-7 text-center mb-1">
         {DIAS_SEMANA.map((d) => (
-          <span key={d} className="text-[10px] font-bold text-muted-foreground/60">
+          <span key={d} className="text-[10px] font-bold text-muted-foreground">
             {d}
           </span>
         ))}

@@ -19,7 +19,7 @@ export default function Avatar({ nombre, apellido, fotoUrl, color = "primary", s
   const [fallback, setFallback] = useState(false);
   const initials = `${nombre?.[0] ?? ""}${apellido?.[0] ?? ""}`.toUpperCase() || "?";
   const sizeCls = size === "sm" ? "w-7 h-7 text-xs" : "w-9 h-9 text-sm";
-  const colorCls = color === "primary" ? "bg-primary/10 text-primary" : "bg-[#C9A227]/15 text-[#C9A227]";
+  const colorCls = color === "primary" ? "bg-primary/10 text-primary" : "bg-[#C9A227]/15 text-[#7A5F08] dark:text-[#E3C55A]";
 
   if (fotoUrl && !fallback) {
     return (

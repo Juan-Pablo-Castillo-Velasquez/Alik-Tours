@@ -209,11 +209,11 @@ export default function ModuleMiCuenta({ usuario, onFotoActualizada }: Props) {
                 className={`${inputCls} pr-10`}
                 placeholder="••••••••"
               />
-              <button
+              <button aria-label={verActual ? "Ocultar contraseña" : "Ver contraseña"}
                 type="button"
                 onClick={() => setVerActual(v => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                tabIndex={-1}
+                aria-pressed={verActual}
               >
                 {verActual ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -231,11 +231,11 @@ export default function ModuleMiCuenta({ usuario, onFotoActualizada }: Props) {
                   className={`${inputCls} pr-10`}
                   placeholder="Mínimo 8 caracteres"
                 />
-                <button
+                <button aria-label={verNueva ? "Ocultar contraseña" : "Ver contraseña"}
                   type="button"
                   onClick={() => setVerNueva(v => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  tabIndex={-1}
+                  aria-pressed={verNueva}
                 >
                   {verNueva ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

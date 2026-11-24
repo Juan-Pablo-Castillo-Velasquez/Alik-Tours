@@ -635,7 +635,7 @@ export default function ModalReservaDetalle({
                     {hab && noches > 0 && (
                       <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
                         Tarifa de la habitación: <b className="text-foreground">{money(hab.precio_noche)}</b> por noche ×{" "}
-                        {noches} {noches === 1 ? "noche" : "noches"}
+                        {`${noches} ${noches === 1 ? "noche" : "noches"}`}
                       </p>
                     )}
 

@@ -320,7 +320,7 @@ export default function ModuleUsuarios({ usuarios, roles, onDelete, onSubmit, on
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end" onClick={e => e.stopPropagation()}>
-                      <button
+                      <button aria-label={u.activo ? "Desactivar" : "Activar"}
                         onClick={() => setPendingToggle({ usuario: u, tipo: "activo" })}
                         title={u.activo ? "Desactivar" : "Activar"}
                         className={`p-1.5 rounded-lg transition-all ${u.activo ? "text-success hover:bg-success/10" : "text-muted-foreground hover:bg-muted"}`}
@@ -328,16 +328,16 @@ export default function ModuleUsuarios({ usuarios, roles, onDelete, onSubmit, on
                         {u.activo ? <ShieldCheck className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
                       </button>
                       {!u.verificado && (
-                        <button
+                        <button aria-label="Verificar manualmente (el correo de confirmación nunca le llegó)"
                           onClick={() => setPendingToggle({ usuario: u, tipo: "verificado" })}
                           title="Verificar manualmente (el correo de confirmación nunca le llegó)"
-                          className="p-1.5 rounded-lg text-[#C9A227] hover:bg-[#C9A227]/10 transition-all"
+                          className="p-1.5 rounded-lg text-[#7A5F08] dark:text-[#E3C55A] hover:bg-[#C9A227]/10 transition-all"
                         >
                           <UserCheck className="w-4 h-4" />
                         </button>
                       )}
                       {u.verificado && (
-                        <button
+                        <button aria-label="Quitar verificación"
                           onClick={() => setPendingToggle({ usuario: u, tipo: "verificado" })}
                           title="Quitar verificación"
                           className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted transition-all"
@@ -345,7 +345,7 @@ export default function ModuleUsuarios({ usuarios, roles, onDelete, onSubmit, on
                           <UserX className="w-4 h-4" />
                         </button>
                       )}
-                      <button
+                      <button aria-label="Eliminar"
                         onClick={() => onDelete(u.id_usuario)}
                         className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
                       >

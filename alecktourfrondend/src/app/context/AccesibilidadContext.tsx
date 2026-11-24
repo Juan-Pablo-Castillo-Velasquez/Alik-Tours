@@ -14,6 +14,8 @@ export interface PreferenciasA11y {
   lectura: boolean;
   foco: boolean;
   cursor: boolean;
+  /** Dice en voz alta el nombre de cada control al enfocarlo o tocarlo. */
+  leerAlEnfocar: boolean;
 }
 
 const INICIAL: PreferenciasA11y = {
@@ -24,6 +26,7 @@ const INICIAL: PreferenciasA11y = {
   lectura: false,
   foco: false,
   cursor: false,
+  leerAlEnfocar: false,
 };
 const CLAVE = "alik_accesibilidad";
 

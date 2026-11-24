@@ -314,7 +314,7 @@ export default function DashboardEmpleado({
                 <span className="block text-sm font-semibold text-foreground">{t.titulo}</span>
                 <span className="block truncate text-xs text-muted-foreground">{t.n > 0 ? t.detalle : "Al día"}</span>
               </span>
-              <span className={`text-2xl font-bold tabular-nums ${t.n > 0 ? "text-foreground" : "text-muted-foreground/50"}`}>{t.n}</span>
+              <span className={`text-2xl font-bold tabular-nums ${t.n > 0 ? "text-foreground" : "text-muted-foreground"}`}>{t.n}</span>
               <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
             </motion.button>
           ))}
@@ -474,7 +474,7 @@ export default function DashboardEmpleado({
                       {tiempoRelativo(a.fecha_cambio)}
                       {a.nombre_empleado ? ` · ${a.nombre_empleado}` : ""}
                     </span>
-                    {a.comentarios && <span className="block truncate text-xs text-muted-foreground/80">{a.comentarios}</span>}
+                    {a.comentarios && <span className="block truncate text-xs text-muted-foreground">{a.comentarios}</span>}
                   </button>
                 </li>
               ))}
