@@ -159,7 +159,7 @@ export default function AdminHeader({
     // derivados de --primary que ya usa PromoBar.tsx/footer-brand), así
     // que también se recolorea solo si cambia el tema de temporada.
     <header className="h-16 bg-gradient-to-r from-[var(--primary-deep)] via-[var(--primary-shade)] to-[var(--primary)] flex items-center px-4 sm:px-6 gap-3 sm:gap-4 sticky top-0 z-40 shadow-lg">
-      <button
+      <button aria-label={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
         onClick={onToggleSidebar}
         className="text-white/80 hover:text-white transition-colors lg:hidden flex-shrink-0"
       >
@@ -251,7 +251,7 @@ export default function AdminHeader({
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
             className="w-5 h-5 rounded-full bg-white shadow flex items-center justify-center"
           >
-            {dark ? <Moon className="w-3 h-3 text-[#7B1E3A]" /> : <Sun className="w-3 h-3 text-[#C9A227]" />}
+            {dark ? <Moon className="w-3 h-3 text-[#7B1E3A]" /> : <Sun className="w-3 h-3 text-[#7A5F08] dark:text-[#E3C55A]" />}
           </motion.div>
         </button>
 
@@ -279,9 +279,11 @@ export default function AdminHeader({
         </button>
         <button
           onClick={onLogout}
-          className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
+          className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
         >
-          <LogOut className="w-5 h-5" />
+          <LogOut className="w-5 h-5" aria-hidden />
         </button>
       </div>
     </header>

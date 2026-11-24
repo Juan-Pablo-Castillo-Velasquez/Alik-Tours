@@ -81,7 +81,7 @@ export default function FAQ() {
             animate={{ opacity: 1, y: 0 }}
             className="relative max-w-xl mx-auto mb-10"
           >
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <input maxLength={100}
               type="text"
               placeholder="Buscar pregunta o palabra clave..."
@@ -129,7 +129,7 @@ export default function FAQ() {
                         className="w-full flex items-center justify-between p-6 text-left group transition-colors hover:bg-primary/5 cursor-pointer"
                       >
                         <div className="flex items-start gap-4 pr-4">
-                          <HelpCircle className={`w-6 h-6 mt-0.5 flex-shrink-0 transition-colors ${isOpen ? 'text-primary' : 'text-muted-foreground/60 group-hover:text-primary'}`} />
+                          <HelpCircle className={`w-6 h-6 mt-0.5 flex-shrink-0 transition-colors ${isOpen ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
                           <span className="font-bold text-card-foreground text-base md:text-lg group-hover:text-primary transition-colors">
                             {faq.pregunta}
                           </span>

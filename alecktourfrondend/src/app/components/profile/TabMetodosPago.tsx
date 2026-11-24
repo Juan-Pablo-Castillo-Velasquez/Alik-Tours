@@ -287,7 +287,7 @@ export default function TabMetodosPago({ obligatorio = false, onMetodosChange }:
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button
+                    <button aria-label="Editar método de pago"
                       onClick={() => iniciarEdicionMetodo(metodo)}
                       className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-colors shrink-0"
                       title="Editar método de pago"

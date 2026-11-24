@@ -67,7 +67,7 @@ export default function TabFavoritos() {
       ) : (
         <>
           <p className="mb-3 text-sm text-muted-foreground">
-            {conHotel.length} {conHotel.length === 1 ? "hotel guardado" : "hoteles guardados"}
+            {`${conHotel.length} ${conHotel.length === 1 ? "hotel guardado" : "hoteles guardados"}`}
           </p>
           {/* Dos por fila: la tarjeta se acomoda sola a su ancho (vertical). */}
           <div className="grid gap-5 md:grid-cols-2">

@@ -73,7 +73,7 @@ export default function PackageResultCard({ pkg, index = 0 }: PackageResultCardP
           {pkg.duracion_dias > 0 && (
             <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
-              {pkg.duracion_dias} {pkg.duracion_dias === 1 ? "día" : "días"}
+              {`${pkg.duracion_dias} ${pkg.duracion_dias === 1 ? "día" : "días"}`}
             </div>
           )}
 

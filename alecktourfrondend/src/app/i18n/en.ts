@@ -186,6 +186,22 @@ const en: Partial<Record<keyof typeof es, string>> = {
   "a11y.lectores": "Works with screen readers (NVDA, JAWS, VoiceOver and TalkBack).",
   "a11y.declaracion": "Accessibility statement",
   "a11y.abrir": "Open accessibility options",
+  "a11y.velocidad": "Speed",
+  "a11y.vozElegida": "Voice",
+  "a11y.vozAuto": "Automatic",
+  "a11y.leerAlEnfocar": "Read on focus or tap",
+  "a11y.leerAlEnfocarDesc": "Says the name of each button, link or field when you reach it with the keyboard or tap it.",
+  "a11y.pausar": "Pause",
+  "a11y.continuar": "Resume",
+  "a11y.barraLectura": "Read-aloud controls",
+  "a11y.leyendo": "Reading aloud",
+  "a11y.pausada": "Reading paused",
+  "a11y.atajosVoz": "Alt + L reads the page or the selection · Alt + P pauses or resumes · Alt + S stops.",
+  "a11y.probarVoz": "Test voice",
+  "a11y.muestraVoz": "Hi, this is how this voice sounds on Alik Tours.",
+  "a11y.pagina": "Page: {titulo}",
+  "a11y.masLenta": "Slower",
+  "a11y.masRapida": "Faster",
 
   // Inicio
   "hero.tarifas": "Exclusive rates for Colombia",
@@ -228,6 +244,12 @@ const en: Partial<Record<keyof typeof es, string>> = {
   "flot.asesor": "Talk to an advisor",
   "flot.comoFunciona": "How does it work?",
   "flot.abrirGuia": "How does it work? Open the guide to booking and your profile",
+
+  // Límite de envíos
+  "limite.titulo": "Too many submissions in a row",
+  "limite.segundos": "For security, wait {n} seconds and try again.",
+  "limite.minuto": "For security, wait 1 minute and try again.",
+  "limite.minutos": "For security, wait {n} minutes and try again.",
 };
 
 export default en;

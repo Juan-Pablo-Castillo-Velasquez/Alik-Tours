@@ -244,7 +244,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
                 <User className="w-10 h-10 text-primary" />
               )}
             </div>
-            <button
+            <button aria-label={cuentaVerificada ? "Cambiar foto de perfil" : "Verifica tu cuenta para poder cambiar tu foto"}
               onClick={() => fileInputRef.current?.click()}
               disabled={subiendoFoto || !cuentaVerificada}
               className="absolute bottom-0 right-0 p-2 bg-primary text-primary-foreground rounded-full border-2 border-card shadow-md hover:scale-110 active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
@@ -411,7 +411,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
                   placeholder="••••••••"
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 />
-                <button
+                <button aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -432,7 +432,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
                   placeholder="••••••••"
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 />
-                <button
+                <button aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -453,7 +453,7 @@ export default function TabCuenta({ clienteData, onClienteActualizado }: Props) 
                   placeholder="••••••••"
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 />
-                <button
+                <button aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"

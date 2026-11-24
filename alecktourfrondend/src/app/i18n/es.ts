@@ -192,6 +192,22 @@ const es = {
   "a11y.lectores": "Compatible con lectores de pantalla (NVDA, JAWS, VoiceOver y TalkBack).",
   "a11y.declaracion": "Declaración de accesibilidad",
   "a11y.abrir": "Abrir opciones de accesibilidad",
+  "a11y.velocidad": "Velocidad",
+  "a11y.vozElegida": "Voz",
+  "a11y.vozAuto": "Automática",
+  "a11y.leerAlEnfocar": "Leer al enfocar o tocar",
+  "a11y.leerAlEnfocarDesc": "Dice el nombre de cada botón, enlace o campo al llegar con el teclado o tocarlo.",
+  "a11y.pausar": "Pausar",
+  "a11y.continuar": "Continuar",
+  "a11y.barraLectura": "Controles de lectura en voz alta",
+  "a11y.leyendo": "Leyendo en voz alta",
+  "a11y.pausada": "Lectura en pausa",
+  "a11y.atajosVoz": "Alt + L lee la página o lo seleccionado · Alt + P pausa o continúa · Alt + S detiene.",
+  "a11y.probarVoz": "Probar voz",
+  "a11y.muestraVoz": "Hola, así suena esta voz en Alik Tours.",
+  "a11y.pagina": "Página: {titulo}",
+  "a11y.masLenta": "Más lenta",
+  "a11y.masRapida": "Más rápida",
 
   // Inicio
   "hero.tarifas": "Tarifas exclusivas para Colombia",
@@ -234,6 +250,12 @@ const es = {
   "flot.asesor": "Hablar con un asesor",
   "flot.comoFunciona": "¿Cómo funciona?",
   "flot.abrirGuia": "¿Cómo funciona? Abrir la guía para reservar y usar tu perfil",
+
+  // Límite de envíos
+  "limite.titulo": "Hiciste demasiados envíos seguidos",
+  "limite.segundos": "Por seguridad, espera {n} segundos e inténtalo de nuevo.",
+  "limite.minuto": "Por seguridad, espera 1 minuto e inténtalo de nuevo.",
+  "limite.minutos": "Por seguridad, espera {n} minutos e inténtalo de nuevo.",
 } as const;
 
 export default es;

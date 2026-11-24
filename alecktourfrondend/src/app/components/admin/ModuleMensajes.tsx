@@ -574,7 +574,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                   )}
                 </p>
                 {clienteFallback && (
-                  <button
+                  <button aria-label="Ver información del cliente"
                     type="button"
                     onClick={() => setInfoClienteAbierta((v) => !v)}
                     className={`p-1.5 rounded-full transition-colors ${
@@ -600,7 +600,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                     >
                       <div className="flex items-center justify-between mb-2.5">
                         <p className="text-xs font-semibold text-foreground">Información del cliente</p>
-                        <button
+                        <button aria-label="Cerrar"
                           type="button"
                           onClick={() => setInfoClienteAbierta(false)}
                           className="text-muted-foreground hover:text-foreground transition-colors"
@@ -840,7 +840,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                     {reservasFiltradas.length === 0 && <option value="">Sin resultados</option>}
                   </select>
                   {idReservaSeleccionada != null && (
-                    <button
+                    <button aria-label="Quitar reserva"
                       type="button"
                       onClick={() => setIdReservaSeleccionada(null)}
                       className="text-muted-foreground hover:text-destructive transition-colors"
@@ -855,7 +855,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
               {archivo && (
                 <div className="px-5 pt-2 flex items-center gap-2">
                   <span className="text-xs text-muted-foreground truncate">{archivo.name}</span>
-                  <button onClick={limpiarArchivo} className="text-muted-foreground hover:text-destructive transition-colors">
+                  <button aria-label="Cerrar" onClick={limpiarArchivo} className="text-muted-foreground hover:text-destructive transition-colors">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -869,7 +869,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                   className="hidden"
                   onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
                 />
-                <button
+                <button aria-label="Adjuntar imagen o PDF"
                   onClick={() => fileInputRef.current?.click()}
                   className="p-2.5 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-shrink-0"
                   title="Adjuntar imagen o PDF"
@@ -897,7 +897,7 @@ export default function ModuleMensajes({ reservas = [], clientes = [], pagos = [
                     </span>
                   )}
                 </div>
-                <button
+                <button aria-label="Enviar"
                   onClick={enviar}
                   disabled={enviando || excedeLimite || (!texto.trim() && !archivo)}
                   className="p-2.5 rounded-xl bg-primary text-primary-foreground disabled:opacity-40 transition-all flex-shrink-0"
@@ -947,7 +947,7 @@ function CampoInfoCliente({
       <Icon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
       <span className="text-muted-foreground flex-shrink-0">{label}:</span>
       <span className="text-foreground truncate flex-1">{valor}</span>
-      <button
+      <button aria-label={copiado ? "Copiado" : "Copiar"}
         type="button"
         onClick={onCopiar}
         className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"

@@ -43,7 +43,7 @@ export default function CalendarioGrid({
         {["D", "L", "M", "X", "J", "V", "S"].map((d) => (
           <span
             key={d}
-            className="text-[10px] font-bold text-muted-foreground/60"
+            className="text-[10px] font-bold text-muted-foreground"
           >
             {d}
           </span>

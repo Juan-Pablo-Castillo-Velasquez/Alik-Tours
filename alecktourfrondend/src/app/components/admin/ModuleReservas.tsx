@@ -299,7 +299,7 @@ function MetricCard({ label, value, color = "default" }: {
   const colorCls: Record<string, string> = {
     default: "text-foreground",
     green:   "text-primary",
-    amber:   "text-[#C9A227]",
+    amber:   "text-[#7A5F08] dark:text-[#E3C55A]",
     red:     "text-destructive",
   };
   return (
@@ -322,7 +322,7 @@ const ESTADO_OPTIONS: {
     value: "pendiente",
     label: "Pendiente",
     icon: <Clock className="w-3.5 h-3.5" />,
-    cls: "border-[#C9A227]/40 bg-[#C9A227]/10 text-[#C9A227] ring-[#C9A227]/50",
+    cls: "border-[#C9A227]/40 bg-[#C9A227]/10 text-[#7A5F08] dark:text-[#E3C55A] ring-[#C9A227]/50",
   },
   {
     value: "confirmada",
@@ -640,7 +640,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
             href={enlaceWhatsApp(cliente.celular, `Hola ${cliente.nombre}, te escribimos de Alik Tours por tu reserva #${reserva.id_reserva}.`) ?? undefined}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-2 text-xs font-semibold text-white transition-transform hover:-translate-y-0.5"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#0E8043] px-3 py-2 text-xs font-semibold text-white transition-transform hover:-translate-y-0.5"
           >
             <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
           </a>
@@ -1073,7 +1073,7 @@ function SidePanel({ reserva, cliente, empleado, paquete, pago, solicitudesReser
                 className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all
                   ${hasChanges
                     ? "bg-gradient-to-r from-primary to-[#A13B55] text-white hover:shadow-md hover:shadow-primary/20"
-                    : "bg-muted text-muted-foreground/60 cursor-not-allowed"
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
                   } disabled:opacity-60`}
               >
                 <Save className="w-3.5 h-3.5" />
@@ -1823,7 +1823,7 @@ export default function ModuleReservas({
           ].map((t) => (
             <div key={t.label} className={`bg-card px-4 py-3 ${t.label === "Reservas" ? "col-span-2 sm:col-span-1" : ""}`}>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t.label}</p>
-              <p className={`mt-0.5 text-lg font-bold tabular-nums ${t.destacado ? "text-amber-600 dark:text-amber-400" : "text-foreground"}`}>{t.valor}</p>
+              <p className={`mt-0.5 text-lg font-bold tabular-nums ${t.destacado ? "text-amber-700 dark:text-amber-400" : "text-foreground"}`}>{t.valor}</p>
               <p className="text-[11px] text-muted-foreground">{t.sub}</p>
             </div>
           ))}
@@ -1983,7 +1983,7 @@ export default function ModuleReservas({
                     {isVisible("fechas") && (
                       <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">
                         <p className="text-foreground">{formatFechaCorta(r.fecha_inicio)}</p>
-                        <p className={`text-[11px] font-medium ${r.estado === "cancelada" ? "text-muted-foreground/60" : cuandoViaja(r.fecha_inicio, r.fecha_fin).startsWith("En ") || cuandoViaja(r.fecha_inicio, r.fecha_fin).startsWith("Sale") ? "text-primary" : "text-muted-foreground/70"}`}>
+                        <p className={`text-[11px] font-medium ${r.estado === "cancelada" ? "text-muted-foreground" : cuandoViaja(r.fecha_inicio, r.fecha_fin).startsWith("En ") || cuandoViaja(r.fecha_inicio, r.fecha_fin).startsWith("Sale") ? "text-primary" : "text-muted-foreground"}`}>
                           {r.estado === "cancelada" ? `→ ${formatFechaCorta(r.fecha_fin)}` : cuandoViaja(r.fecha_inicio, r.fecha_fin)}
                         </p>
                       </td>
@@ -2015,7 +2015,7 @@ export default function ModuleReservas({
                             <div className="h-full rounded-full bg-primary" style={{ width: `${cobro.pct}%` }} />
                           </div>
                           {pg && (pg.estado === "pendiente" || pg.estado === "procesando") && (
-                            <span className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400" title="Hay un pago esperando revisión">
+                            <span className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-amber-700 dark:text-amber-400" title="Hay un pago esperando revisión">
                               <Clock className="h-3 w-3" /> Pago por revisar
                             </span>
                           )}
@@ -2100,7 +2100,7 @@ export default function ModuleReservas({
                             <p className="font-semibold uppercase tracking-wide text-muted-foreground">Dinero</p>
                             <p className="flex justify-between gap-2"><span className="text-muted-foreground">Total</span><b className="text-foreground">{pesosCOP(Number(r.precio_total ?? 0))}</b></p>
                             <p className="flex justify-between gap-2"><span className="text-muted-foreground">Pagado</span><b className="text-emerald-600 dark:text-emerald-400">{pesosCOP(Number(rd.total_pagado ?? 0))}</b></p>
-                            <p className="flex justify-between gap-2"><span className="text-muted-foreground">Saldo</span><b className={cobro.saldo > 0 ? "text-amber-600 dark:text-amber-400" : "text-foreground"}>{pesosCOP(cobro.saldo)}</b></p>
+                            <p className="flex justify-between gap-2"><span className="text-muted-foreground">Saldo</span><b className={cobro.saldo > 0 ? "text-amber-700 dark:text-amber-400" : "text-foreground"}>{pesosCOP(cobro.saldo)}</b></p>
                           </div>
                           <div className="space-y-1.5">
                             <p className="font-semibold uppercase tracking-wide text-muted-foreground">Pagos ({r.pagos?.length ?? 0})</p>

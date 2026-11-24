@@ -151,13 +151,13 @@ export default function ModuleConfiguracion() {
                     : (item.valor || <span className="text-muted-foreground italic">sin valor</span>)}
                 </p>
                 {item.descripcion && <p className="text-xs text-muted-foreground mt-1">{item.descripcion}</p>}
-                <p className="text-[11px] text-muted-foreground/70 mt-1.5">Actualizado {formatFecha(item.actualizado_en)}</p>
+                <p className="text-[11px] text-muted-foreground mt-1.5">Actualizado {formatFecha(item.actualizado_en)}</p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => openEdit(item)} className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Editar">
+                <button aria-label="Editar" onClick={() => openEdit(item)} className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Editar">
                   <Pencil className="w-4 h-4" />
                 </button>
-                <button onClick={() => setDeleting(item)} className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all" title="Eliminar">
+                <button aria-label="Eliminar" onClick={() => setDeleting(item)} className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all" title="Eliminar">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

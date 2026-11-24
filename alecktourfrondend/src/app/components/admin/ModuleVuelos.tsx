@@ -335,7 +335,7 @@ function Campo({ label, obligatorio, children, ayuda, className = "" }: { label:
         {label} {obligatorio && <span className="text-destructive" aria-hidden>*</span>}
       </span>
       {children}
-      {ayuda && <span className="mt-0.5 block text-[11px] text-muted-foreground/80">{ayuda}</span>}
+      {ayuda && <span className="mt-0.5 block text-[11px] text-muted-foreground">{ayuda}</span>}
     </label>
   );
 }

@@ -121,27 +121,27 @@ const ReservaCard = forwardRef<HTMLDivElement, Props>(function ReservaCard(
           </div>
 
           <dl className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
-            <div className="inline-flex items-center gap-1.5">
-              <CalendarDays className="h-4 w-4 text-primary" />
+            <div>
               <dt className="sr-only">Fechas</dt>
-              <dd className="font-medium">
+              <dd className="inline-flex items-center gap-1.5 font-medium">
+                <CalendarDays className="h-4 w-4 text-primary" aria-hidden />
                 {fmt(reserva.fecha_inicio, { day: "numeric", month: "short" })} → {fmt(reserva.fecha_fin)}
               </dd>
             </div>
             {tipo !== "vuelo" && (
-              <div className="inline-flex items-center gap-1.5">
-                <Moon className="h-4 w-4 text-primary" />
+              <div>
                 <dt className="sr-only">Noches</dt>
-                <dd>
-                  {noches} {noches === 1 ? "noche" : "noches"}
+                <dd className="inline-flex items-center gap-1.5">
+                  <Moon className="h-4 w-4 text-primary" aria-hidden />
+                  {`${noches} ${noches === 1 ? "noche" : "noches"}`}
                 </dd>
               </div>
             )}
-            <div className="inline-flex items-center gap-1.5">
-              <Users className="h-4 w-4 text-primary" />
+            <div>
               <dt className="sr-only">Viajeros</dt>
-              <dd>
-                {reserva.numero_personas ?? "—"} {reserva.numero_personas === 1 ? "viajero" : "viajeros"}
+              <dd className="inline-flex items-center gap-1.5">
+                <Users className="h-4 w-4 text-primary" aria-hidden />
+                {`${reserva.numero_personas ?? "—"} ${reserva.numero_personas === 1 ? "viajero" : "viajeros"}`}
               </dd>
             </div>
           </dl>

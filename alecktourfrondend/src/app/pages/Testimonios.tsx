@@ -231,7 +231,7 @@ export default function Testimonios() {
                     key={s}
                     className={`w-4 h-4 ${
                       s <= Math.round(promedio)
-                        ? "fill-[#C9A227] text-[#C9A227]"
+                        ? "fill-[#C9A227] text-[#7A5F08] dark:text-[#E3C55A]"
                         : "text-muted-foreground/40"
                     }`}
                   />
@@ -241,7 +241,7 @@ export default function Testimonios() {
                 {promedio.toFixed(1)} / 5.0
               </p>
               <span className="text-muted-foreground text-sm">
-                · {totalGlobal} {totalGlobal === 1 ? "reseña" : "reseñas"}
+                · {`${totalGlobal} ${totalGlobal === 1 ? "reseña" : "reseñas"}`}
               </span>
             </div>
           ) : (
@@ -338,7 +338,7 @@ export default function Testimonios() {
                       {Array.from({ length: r.rating }, (_, idx) => (
                         <Star
                           key={idx}
-                          className="w-4 h-4 fill-[#C9A227] text-[#C9A227]"
+                          className="w-4 h-4 fill-[#C9A227] text-[#7A5F08] dark:text-[#E3C55A]"
                         />
                       ))}
                     </div>
@@ -461,7 +461,7 @@ export default function Testimonios() {
                         <Star
                           className={`w-6 h-6 transition-colors ${
                             s <= (hoverStar || calificacion)
-                              ? "fill-[#C9A227] text-[#C9A227]"
+                              ? "fill-[#C9A227] text-[#7A5F08] dark:text-[#E3C55A]"
                               : "text-muted-foreground"
                           }`}
                         />
@@ -531,7 +531,7 @@ export default function Testimonios() {
                               onClick={() => setEdicion((e) => ({ ...e, calificacion: s }))}
                             >
                               <Star
-                                className={`w-5 h-5 ${s <= edicion.calificacion ? "fill-[#C9A227] text-[#C9A227]" : "text-muted-foreground"}`}
+                                className={`w-5 h-5 ${s <= edicion.calificacion ? "fill-[#C9A227] text-[#7A5F08] dark:text-[#E3C55A]" : "text-muted-foreground"}`}
                               />
                             </button>
                           ))}
@@ -565,7 +565,7 @@ export default function Testimonios() {
                         <div className="flex items-center justify-between gap-2">
                           <span className="flex gap-0.5">
                             {Array.from({ length: r.calificacion }, (_, i) => (
-                              <Star key={i} className="w-3.5 h-3.5 fill-[#C9A227] text-[#C9A227]" />
+                              <Star key={i} className="w-3.5 h-3.5 fill-[#C9A227] text-[#7A5F08] dark:text-[#E3C55A]" />
                             ))}
                           </span>
                           <span className="flex gap-1">

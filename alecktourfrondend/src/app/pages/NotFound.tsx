@@ -40,7 +40,7 @@ export default function NotFound() {
             </div>
 
             {/* Footer minimalista */}
-            <div className="absolute bottom-10 text-xs text-muted-foreground/50">
+            <div className="absolute bottom-10 text-xs text-muted-foreground">
                 © 2026 Agencia
             </div>
 

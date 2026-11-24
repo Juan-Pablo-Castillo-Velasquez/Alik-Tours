@@ -101,7 +101,7 @@ function SelectorIcono({
         {TEMA_ICONOS_OPCIONES.map(({ valor, etiqueta, Icono }) => {
           const seleccionado = value === valor;
           return (
-            <button
+            <button aria-label={etiqueta}
               key={valor}
               type="button"
               onClick={() => onChange(valor)}
@@ -340,7 +340,7 @@ export default function ModuleTemas({
                       {tema.activo ? "Activo" : activando === tema.id_tema ? "Activando..." : "Activar"}
                     </button>
                     <div className="flex items-center gap-1">
-                      <button
+                      <button aria-label="Editar"
                         onClick={() => abrirEditar(tema)}
                         className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted transition-all"
                         title="Editar"
@@ -350,7 +350,7 @@ export default function ModuleTemas({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span>
-                            <button
+                            <button aria-label="Eliminar"
                               onClick={() => !bloqueadoParaBorrar && onDelete(tema)}
                               disabled={bloqueadoParaBorrar}
                               className="p-1.5 rounded-lg text-destructive/60 hover:text-destructive hover:bg-destructive/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"

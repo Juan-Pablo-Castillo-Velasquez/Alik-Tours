@@ -200,7 +200,7 @@ export default function ModuleBanners({ banners, onSubmit, onDelete, onToggleAct
 
                       <div className="mt-auto pt-3 flex items-center justify-between border-t border-border/60">
                         <div className="flex items-center gap-1">
-                          <button
+                          <button aria-label="Subir"
                             onClick={() => moverEnLista(bannersOrdenados, i, -1)}
                             disabled={i === 0}
                             className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -208,7 +208,7 @@ export default function ModuleBanners({ banners, onSubmit, onDelete, onToggleAct
                           >
                             <ArrowUp className="w-3.5 h-3.5" />
                           </button>
-                          <button
+                          <button aria-label="Bajar"
                             onClick={() => moverEnLista(bannersOrdenados, i, 1)}
                             disabled={i === bannersOrdenados.length - 1}
                             className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -221,15 +221,16 @@ export default function ModuleBanners({ banners, onSubmit, onDelete, onToggleAct
                           <Switch
                             checked={banner.activo}
                             onCheckedChange={() => onToggleActivo(banner)}
+                            aria-label={banner.activo ? "Banner activo: desactivar" : "Banner inactivo: activar"}
                           />
-                          <button
+                          <button aria-label="Editar"
                             onClick={() => abrirEditar(banner)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted transition-all"
                             title="Editar"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
-                          <button
+                          <button aria-label="Eliminar"
                             onClick={() => onDelete(banner.id_banner)}
                             className="p-1.5 rounded-lg text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all"
                             title="Eliminar"
@@ -284,7 +285,7 @@ export default function ModuleBanners({ banners, onSubmit, onDelete, onToggleAct
 
                       <div className="mt-auto pt-3 flex items-center justify-between border-t border-border/60">
                         <div className="flex items-center gap-1">
-                          <button
+                          <button aria-label="Subir"
                             onClick={() => moverEnLista(folletosOrdenados, i, -1)}
                             disabled={i === 0}
                             className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -292,7 +293,7 @@ export default function ModuleBanners({ banners, onSubmit, onDelete, onToggleAct
                           >
                             <ArrowUp className="w-3.5 h-3.5" />
                           </button>
-                          <button
+                          <button aria-label="Bajar"
                             onClick={() => moverEnLista(folletosOrdenados, i, 1)}
                             disabled={i === folletosOrdenados.length - 1}
                             className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
@@ -305,15 +306,16 @@ export default function ModuleBanners({ banners, onSubmit, onDelete, onToggleAct
                           <Switch
                             checked={banner.activo}
                             onCheckedChange={() => onToggleActivo(banner)}
+                            aria-label={banner.activo ? "Banner activo: desactivar" : "Banner inactivo: activar"}
                           />
-                          <button
+                          <button aria-label="Editar"
                             onClick={() => abrirEditar(banner)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted transition-all"
                             title="Editar"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
-                          <button
+                          <button aria-label="Eliminar"
                             onClick={() => onDelete(banner.id_banner)}
                             className="p-1.5 rounded-lg text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all"
                             title="Eliminar"

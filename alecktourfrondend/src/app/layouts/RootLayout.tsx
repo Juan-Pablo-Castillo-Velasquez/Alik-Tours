@@ -3,8 +3,11 @@ import { Suspense } from "react";
 import { Plane } from "lucide-react";
 import { Toaster } from "../components/ui/sonner";
 import ConfirmacionGlobal from "../components/ui/ConfirmacionGlobal";
+import AvisoLimiteEnvios from "../components/ui/AvisoLimiteEnvios";
 import PanelAccesibilidad from "../components/accesibilidad/PanelAccesibilidad";
 import SaltarContenido from "../components/accesibilidad/SaltarContenido";
+import AsistenteVoz from "../components/accesibilidad/AsistenteVoz";
+import AnunciadorRuta from "../components/accesibilidad/AnunciadorRuta";
 import { AuthModalProvider } from "../context/AuthModalContext";
 import WhatsAppButton from "../components/WhatsAppButton";
 import CookieConsent from "../components/CookieConsent";
@@ -28,8 +31,10 @@ export default function RootLayout() {
     return (
         <AuthModalProvider>
             <SaltarContenido />
+            <AnunciadorRuta />
             <Toaster />
             <ConfirmacionGlobal />
+            <AvisoLimiteEnvios />
             {/* La nieve (y demás partículas de temporada) va DETRÁS del
                 contenido: la capa del ambiente tiene z-index -1 (ver
                 temporada.css), así los copos solo se ven en el fondo y pasan
@@ -47,6 +52,7 @@ export default function RootLayout() {
             <WhatsAppButton />
             <CookieConsent />
             <PanelAccesibilidad />
+            <AsistenteVoz />
         </AuthModalProvider>
     );
 }

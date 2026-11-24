@@ -289,7 +289,7 @@ export default function FormHabitacion({ idHotel, habitacion, tipos, onCambio, o
             </div>
           </div>
         ))}
-        <p className="text-[10px] text-muted-foreground/70">"Sin definir" no se muestra al cliente.</p>
+        <p className="text-[10px] text-muted-foreground">"Sin definir" no se muestra al cliente.</p>
       </div>
 
       {/* Fotos */}
@@ -389,7 +389,7 @@ export default function FormHabitacion({ idHotel, habitacion, tipos, onCambio, o
           )}
         </div>
         {progreso && <p className="text-[11px] text-muted-foreground">{progreso}</p>}
-        <p className="text-[10px] text-muted-foreground/70">
+        <p className="text-[10px] text-muted-foreground">
           Puedes elegir varias a la vez (JPG, PNG o WEBP). Sugerencia: cama, baño, vista y zona de estar.
           {!editando && " Se suben al crear la habitación."}
         </p>
@@ -402,7 +402,7 @@ export default function FormHabitacion({ idHotel, habitacion, tipos, onCambio, o
       >
         <Plus className="w-4 h-4" /> {guardando ? progreso ?? "Guardando..." : editando ? "Guardar cambios" : "Agregar habitación"}
       </button>
-      {tipos.length === 0 && <p className="text-[11px] text-muted-foreground/70">Todavía no hay ningún tipo de habitación registrado en el sistema.</p>}
+      {tipos.length === 0 && <p className="text-[11px] text-muted-foreground">Todavía no hay ningún tipo de habitación registrado en el sistema.</p>}
     </form>
   );
 }

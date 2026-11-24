@@ -174,7 +174,7 @@ export default function NotificacionesBell({ idCliente }: Props) {
                               {item.mensaje}
                             </p>
                           )}
-                          <p className="text-[10px] text-muted-foreground/70 mt-1">
+                          <p className="text-[10px] text-muted-foreground mt-1">
                             {tiempoRelativo(item.fecha)}
                           </p>
                         </div>

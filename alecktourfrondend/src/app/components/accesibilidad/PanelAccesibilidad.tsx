@@ -6,7 +6,9 @@ import {
   Link2,
   MousePointer2,
   Pause,
+  Play,
   RotateCcw,
+  Speech,
   Type,
   Volume2,
   WholeWord,
@@ -17,7 +19,18 @@ import { Link } from "react-router";
 import { useAccesibilidad, type PreferenciasA11y } from "../../context/AccesibilidadContext";
 import { IDIOMAS, useIdioma } from "../../i18n";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../ui/dialog";
-import { detenerVoz, leerEnVoz, vozDisponible } from "./lecturaVoz";
+import {
+  VELOCIDADES,
+  continuarVoz,
+  guardarAjustesVoz,
+  hablar,
+  leerAjustesVoz,
+  leerEnVoz,
+  pausarVoz,
+  useEstadoVoz,
+  vocesPara,
+  vozDisponible,
+} from "./lecturaVoz";
 
 type Interruptor = { clave: keyof Omit<PreferenciasA11y, "texto">; icono: ElementType; titulo: string; desc?: string };
 
@@ -26,9 +39,24 @@ type Interruptor = { clave: keyof Omit<PreferenciasA11y, "texto">; icono: Elemen
 export default function PanelAccesibilidad() {
   const { prefs, cambiar, restablecer, panelAbierto, setPanelAbierto } = useAccesibilidad();
   const { idioma, setIdioma, t } = useIdioma();
-  const [leyendo, setLeyendo] = useState(false);
+  const estadoVoz = useEstadoVoz();
+  const [ajustesVoz, setAjustesVoz] = useState(leerAjustesVoz);
+  const [voces, setVoces] = useState<SpeechSynthesisVoice[]>(() => vocesPara(idioma));
 
-  useEffect(() => () => detenerVoz(), []);
+  // Las voces del navegador cargan tarde (evento voiceschanged).
+  useEffect(() => {
+    if (!vozDisponible()) return;
+    const cargar = () => setVoces(vocesPara(idioma));
+    cargar();
+    window.speechSynthesis.addEventListener?.("voiceschanged", cargar);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", cargar);
+  }, [idioma]);
+
+  const cambiarVoz = (cambio: Partial<typeof ajustesVoz>) => {
+    const nuevo = { ...ajustesVoz, ...cambio };
+    setAjustesVoz(nuevo);
+    guardarAjustesVoz(nuevo);
+  };
 
   const interruptores: Interruptor[] = [
     { clave: "contraste", icono: Contrast, titulo: t("a11y.contraste"), desc: t("a11y.contrasteDesc") },
@@ -37,6 +65,7 @@ export default function PanelAccesibilidad() {
     { clave: "lectura", icono: WholeWord, titulo: t("a11y.lectura"), desc: t("a11y.lecturaDesc") },
     { clave: "foco", icono: Focus, titulo: t("a11y.foco"), desc: t("a11y.focoDesc") },
     { clave: "cursor", icono: MousePointer2, titulo: t("a11y.cursor") },
+    { clave: "leerAlEnfocar", icono: Speech, titulo: t("a11y.leerAlEnfocar"), desc: t("a11y.leerAlEnfocarDesc") },
   ];
   const tamanos = [t("a11y.textoNormal"), t("a11y.textoGrande"), t("a11y.textoMuyGrande")];
 
@@ -44,9 +73,7 @@ export default function PanelAccesibilidad() {
     const texto = seleccion ? window.getSelection()?.toString().trim() : undefined;
     if (seleccion && !texto) return;
     setPanelAbierto(false);
-    setTimeout(() => {
-      if (leerEnVoz(idioma, texto, () => setLeyendo(false))) setLeyendo(true);
-    }, 250);
+    setTimeout(() => leerEnVoz(idioma, texto), 250);
   };
 
   return (
@@ -161,22 +188,85 @@ export default function PanelAccesibilidad() {
                 {vozDisponible() ? t("a11y.vozDesc") : t("a11y.sinVoz")}
               </p>
               {vozDisponible() && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => leer(false)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-                  >
-                    <Volume2 className="h-4 w-4" aria-hidden /> {t("a11y.leer")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => leer(true)}
-                    className="rounded-xl border border-border px-4 py-2 text-sm font-semibold hover:bg-muted"
-                  >
-                    {t("a11y.leerSeleccion")}
-                  </button>
-                </div>
+                <>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => leer(false)}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                    >
+                      <Volume2 className="h-4 w-4" aria-hidden /> {t("a11y.leer")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => leer(true)}
+                      className="rounded-xl border border-border px-4 py-2 text-sm font-semibold hover:bg-muted"
+                    >
+                      {t("a11y.leerSeleccion")}
+                    </button>
+                    {estadoVoz !== "inactiva" && (
+                      <button
+                        type="button"
+                        onClick={estadoVoz === "leyendo" ? pausarVoz : continuarVoz}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-semibold hover:bg-muted"
+                      >
+                        {estadoVoz === "leyendo" ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
+                        {estadoVoz === "leyendo" ? t("a11y.pausar") : t("a11y.continuar")}
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <span id="a11y-velocidad" className="mb-1.5 block text-xs font-semibold text-foreground">
+                        {t("a11y.velocidad")}
+                      </span>
+                      <div role="radiogroup" aria-labelledby="a11y-velocidad" className="flex flex-wrap gap-1">
+                        {VELOCIDADES.map((v) => (
+                          <button
+                            key={v}
+                            type="button"
+                            role="radio"
+                            aria-checked={ajustesVoz.velocidad === v}
+                            onClick={() => cambiarVoz({ velocidad: v })}
+                            className={`min-w-11 rounded-lg border px-2 py-1.5 text-xs font-semibold tabular-nums transition-colors ${
+                              ajustesVoz.velocidad === v ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted"
+                            }`}
+                          >
+                            {v}×
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="a11y-voz-elegida" className="mb-1.5 block text-xs font-semibold text-foreground">
+                        {t("a11y.vozElegida")}
+                      </label>
+                      <div className="flex gap-1.5">
+                        <select
+                          id="a11y-voz-elegida"
+                          value={voces.some((v) => v.name === ajustesVoz.voz) ? ajustesVoz.voz : ""}
+                          onChange={(e) => cambiarVoz({ voz: e.target.value })}
+                          className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+                        >
+                          <option value="">{t("a11y.vozAuto")}</option>
+                          {voces.map((v) => (
+                            <option key={v.voiceURI} value={v.name} translate="no">
+                              {v.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => hablar(t("a11y.muestraVoz"), idioma)}
+                          className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold hover:bg-muted"
+                        >
+                          {t("a11y.probarVoz")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">{t("a11y.atajosVoz")}</p>
+                </>
               )}
             </section>
 
@@ -200,18 +290,6 @@ export default function PanelAccesibilidad() {
         </DialogContent>
       </Dialog>
 
-      {leyendo && (
-        <button
-          type="button"
-          onClick={() => {
-            detenerVoz();
-            setLeyendo(false);
-          }}
-          className="fixed bottom-6 left-1/2 z-[95] inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-semibold text-background shadow-2xl"
-        >
-          <Pause className="h-4 w-4" aria-hidden /> {t("a11y.detener")}
-        </button>
-      )}
     </>
   );
 }

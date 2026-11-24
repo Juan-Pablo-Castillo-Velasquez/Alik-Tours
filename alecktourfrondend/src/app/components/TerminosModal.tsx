@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AvisoVersionLegal } from "./AvisoVersionLegal";
 import { TERMINOS_ES_BORRADOR, TERMINOS_FECHA, TERMINOS_SECCIONES, TERMINOS_VERSION } from "../content/terminos";
 import ModalBackdrop from "./ui/ModalBackdrop";
 
@@ -76,6 +77,7 @@ export default function TerminosModal({ isOpen, onClose }: TerminosModalProps) {
 
                     {/* ── Contenido Semántico ── */}
                     <div className="modal-scrollbar overflow-y-auto px-6 py-8 flex-1 text-sm bg-card space-y-8">
+<AvisoVersionLegal className="mt-0" />
                         {TERMINOS_ES_BORRADOR && (
                             <p className="rounded-xl border border-warning/40 bg-warning/10 px-4 py-2.5 text-xs text-foreground">
                                 Borrador pendiente de revisión jurídica · Versión {TERMINOS_VERSION} · {TERMINOS_FECHA}

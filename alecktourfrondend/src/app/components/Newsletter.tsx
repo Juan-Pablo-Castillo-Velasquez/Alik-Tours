@@ -20,7 +20,7 @@ export default function Newsletter() {
           transition={{ duration: 0.6 }}
         >
           <Mail
-            className="w-7 h-7 text-[#C9A227] mx-auto mb-5"
+            className="w-7 h-7 text-[#7A5F08] dark:text-[#E3C55A] mx-auto mb-5"
             strokeWidth={1.5}
           />
           <h2

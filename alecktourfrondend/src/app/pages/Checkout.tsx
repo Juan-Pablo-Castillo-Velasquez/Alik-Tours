@@ -901,12 +901,12 @@ export default function Checkout() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
                       <div className="border border-border rounded-xl p-3.5">
-                        <ShieldCheck className="w-4 h-4 text-[#C9A227] mb-1.5" />
+                        <ShieldCheck className="w-4 h-4 text-[#7A5F08] dark:text-[#E3C55A] mb-1.5" />
                         <b className="block text-xs text-foreground">Datos protegidos</b>
                         <span className="text-[11px] text-muted-foreground">Tratamiento seguro</span>
                       </div>
                       <div className="border border-border rounded-xl p-3.5">
-                        <Mail className="w-4 h-4 text-[#C9A227] mb-1.5" />
+                        <Mail className="w-4 h-4 text-[#7A5F08] dark:text-[#E3C55A] mb-1.5" />
                         <b className="block text-xs text-foreground">Confirmación por correo</b>
                         <span className="text-[11px] text-muted-foreground">Recibirás el comprobante</span>
                       </div>

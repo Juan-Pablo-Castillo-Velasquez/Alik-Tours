@@ -168,7 +168,7 @@ export default function RevisionHotel({
           </div>
           <div className="flex flex-col items-center gap-1 px-2 text-center">
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-              <Moon className="h-3.5 w-3.5" /> {noches} {noches === 1 ? "noche" : "noches"}
+              <Moon className="h-3.5 w-3.5" /> {`${noches} ${noches === 1 ? "noche" : "noches"}`}
             </span>
             <span className="h-px w-16 border-t border-dashed border-border sm:w-24" aria-hidden />
           </div>
@@ -262,7 +262,7 @@ export default function RevisionHotel({
         <dl className="space-y-1.5 text-sm">
           <div className="flex justify-between text-muted-foreground">
             <dt>
-              {pesos(precioNoche)} × {noches} {noches === 1 ? "noche" : "noches"}
+              {pesos(precioNoche)} × {`${noches} ${noches === 1 ? "noche" : "noches"}`}
             </dt>
             <dd className="text-foreground">{pesos(total)}</dd>
           </div>

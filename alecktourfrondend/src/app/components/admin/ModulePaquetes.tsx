@@ -227,7 +227,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
                     {p.ciudad_salida ? (
                       <span className="flex items-center gap-1"><Plane className="w-3 h-3" /> {p.ciudad_salida}</span>
                     ) : (
-                      <span className="text-muted-foreground/50">Sin definir</span>
+                      <span className="text-muted-foreground">Sin definir</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
@@ -240,7 +240,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
                     {(() => {
                       const r = rendimientoPorPaquete.get(p.id_paquete);
                       if (!r || r.activas === 0) {
-                        return <span className="text-muted-foreground/60">Sin reservas</span>;
+                        return <span className="text-muted-foreground">Sin reservas</span>;
                       }
                       return (
                         <div>
@@ -263,21 +263,21 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
                           Reactivar
                         </button>
                       )}
-                      <button
+                      <button aria-label="Ver detalle comercial"
                         onClick={() => abrirDetalle(p)}
                         className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all"
                         title="Ver detalle comercial"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button
+                      <button aria-label="Editar"
                         onClick={() => openEdit(p)}
                         className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       {p.activo && (
-                        <button
+                        <button aria-label="Desactivar paquete"
                           onClick={() => onDelete(p.id_paquete)}
                           className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
                           title="Desactivar paquete"
@@ -369,7 +369,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
                 <Hotel className="w-3.5 h-3.5" /> Hoteles incluidos
               </p>
               {detalle.hoteles.length === 0 ? (
-                <p className="text-xs text-muted-foreground/70">Este paquete todavía no tiene ningún hotel vinculado.</p>
+                <p className="text-xs text-muted-foreground">Este paquete todavía no tiene ningún hotel vinculado.</p>
               ) : (
                 <div className="space-y-1.5">
                   {detalle.hoteles.map((h) => (
@@ -393,12 +393,12 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
                 <Sparkles className="w-3.5 h-3.5" /> Qué incluye
               </p>
               {detalle.servicios.length === 0 ? (
-                <p className="text-xs text-muted-foreground/70">Este paquete todavía no tiene ningún servicio vinculado.</p>
+                <p className="text-xs text-muted-foreground">Este paquete todavía no tiene ningún servicio vinculado.</p>
               ) : (
                 <div className="space-y-1.5">
                   {detalle.servicios.map((s) => (
                     <div key={s.id_servicio} className="flex items-center gap-2.5 p-2 border border-border rounded-lg bg-card">
-                      <Sparkles className="w-3.5 h-3.5 text-[#C9A227] flex-shrink-0" />
+                      <Sparkles className="w-3.5 h-3.5 text-[#7A5F08] dark:text-[#E3C55A] flex-shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-foreground truncate">
                           {s.nombre_servicio} {s.dia_actividad ? <span className="text-muted-foreground font-normal">· día {s.dia_actividad}</span> : null}
@@ -429,7 +429,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
                 {detalle.imagenes.map((img) => (
                   <div key={img.id_imagen} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
                     <img loading="lazy" decoding="async" src={resolveFotoUrl(img.url)} alt="" className="w-full h-full object-cover" />
-                    <button
+                    <button aria-label="Eliminar foto"
                       type="button"
                       onClick={() => handleBorrarFotoGaleriaPaquete(img.id_imagen)}
                       className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
@@ -455,7 +455,7 @@ export default function ModulePaquetes({ paquetes, reservas = [], hoteles = [], 
                 </label>
               </div>
               {detalle.imagenes.length === 0 && (
-                <p className="text-[11px] text-muted-foreground/70">Este paquete todavía no tiene ninguna foto en su galería.</p>
+                <p className="text-[11px] text-muted-foreground">Este paquete todavía no tiene ninguna foto en su galería.</p>
               )}
             </div>
           </div>

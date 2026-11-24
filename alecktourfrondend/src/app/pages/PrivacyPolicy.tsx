@@ -1,4 +1,5 @@
 import { Database, Cookie, Lock, Share2, UserCog, Mail } from "lucide-react";
+import { AvisoVersionLegal } from "../components/AvisoVersionLegal";
 import { Link } from "react-router";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -24,6 +25,7 @@ export default function PrivacyPolicy() {
           <p className="text-muted-foreground text-sm">
             Última actualización: vigente desde la publicación de esta página.
           </p>
+<AvisoVersionLegal />
         </div>
 
         <div className="space-y-8">
@@ -110,7 +112,7 @@ export default function PrivacyPolicy() {
           </section>
         </div>
 
-        <p className="text-xs text-muted-foreground/70 mt-10 leading-relaxed">
+        <p className="text-xs text-muted-foreground mt-10 leading-relaxed">
           Este documento describe en lenguaje claro qué datos maneja Alik Tours hoy y cómo. Antes de tratarlo
           como política definitiva frente a una autoridad de protección de datos, te recomendamos que lo
           revise un abogado especializado en tratamiento de datos personales (en Colombia, Ley 1581 de 2012).

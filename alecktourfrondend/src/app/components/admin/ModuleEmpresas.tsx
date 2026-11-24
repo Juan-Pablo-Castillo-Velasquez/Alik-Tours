@@ -197,10 +197,10 @@ export default function ModuleEmpresas({ solicitudes, onUpdateEstado, onDelete, 
                   <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{formatFecha(s.fecha_creacion)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end">
-                      <button onClick={() => openEdit(s)} className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Cambiar estado / ver mensaje">
+                      <button aria-label="Cambiar estado / ver mensaje" onClick={() => openEdit(s)} className="p-1.5 text-primary/60 hover:text-primary hover:bg-primary/10 rounded-lg transition-all" title="Cambiar estado / ver mensaje">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button onClick={() => onDelete(s.id_solicitud)} className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all" title="Eliminar">
+                      <button aria-label="Eliminar" onClick={() => onDelete(s.id_solicitud)} className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all" title="Eliminar">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

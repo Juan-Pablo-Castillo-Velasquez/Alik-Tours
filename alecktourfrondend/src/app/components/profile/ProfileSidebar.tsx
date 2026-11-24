@@ -74,7 +74,7 @@ export function PerfilTabsMovil({ activeTab, setActiveTab, bloqueado = false, no
               aria-current={activo ? "page" : undefined}
               className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition-colors ${
                 deshabilitado
-                  ? "cursor-not-allowed bg-muted/50 text-muted-foreground/50"
+                  ? "cursor-not-allowed bg-muted/50 text-muted-foreground"
                   : activo
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-card text-muted-foreground ring-1 ring-border hover:text-foreground"

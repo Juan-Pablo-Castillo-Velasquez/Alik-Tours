@@ -81,6 +81,11 @@ const copiar = <T,>(datos: T): T =>
   typeof structuredClone === "function" ? structuredClone(datos) : JSON.parse(JSON.stringify(datos));
 
 // ─── Cliente general para todos los demás endpoints ──────────────────────────
+const escriturasEnCurso = new Map<string, Promise<unknown>>();
+
+/** Evento global cuando el servidor corta por exceso de envíos (429). */
+export const EVENTO_LIMITE = "api:limite-envios";
+
 export async function apiFetch<T>(
   endpoint: string,
   options: FetchOptions = {},
@@ -90,7 +95,16 @@ export async function apiFetch<T>(
   const metodo = (options.method || "GET").toUpperCase();
   if (metodo !== "GET") {
     limpiarCacheApi();
-    return apiFetchRed<T>(endpoint, options);
+    // Doble clic o envío repetido del MISMO formulario mientras el primero
+    // sigue en camino: se reutiliza la misma petición en vez de mandar dos
+    // (evita reservas, PQR o mensajes duplicados).
+    const cuerpo = options.body instanceof FormData ? `form:${Math.random()}` : JSON.stringify(options.body ?? null);
+    const claveEscritura = `${metodo}|${ruta}|${cuerpo}`;
+    const enVuelo = escriturasEnCurso.get(claveEscritura) as Promise<T> | undefined;
+    if (enVuelo) return enVuelo;
+    const promesa = apiFetchRed<T>(endpoint, options).finally(() => escriturasEnCurso.delete(claveEscritura));
+    escriturasEnCurso.set(claveEscritura, promesa);
+    return promesa;
   }
   if (!esLecturaCacheable(ruta, metodo)) {
     return apiFetchRed<T>(endpoint, options);
@@ -191,6 +205,11 @@ async function apiFetchRed<T>(
     // -- AuthContext ya escuchaba "auth:session-expired" pero se quedaba
     // sin usar, y una sesión invalidada en el backend seguía viéndose
     // "logueada" en el frontend hasta que el usuario cerraba sesión a mano.
+    if (response.status === 429) {
+      const segundos = Number(response.headers.get("Retry-After") ?? errorData?.reintentar_en ?? 60) || 60;
+      window.dispatchEvent(new CustomEvent(EVENTO_LIMITE, { detail: { mensaje: msg, segundos } }));
+    }
+
     if (
       response.status === 401 ||
       (response.status === 403 && msg.includes("está desactivada"))

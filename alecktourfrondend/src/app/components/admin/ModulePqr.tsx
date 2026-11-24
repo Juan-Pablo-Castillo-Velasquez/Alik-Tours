@@ -339,7 +339,7 @@ export default function ModulePqr({
               <span>Plazo</span>
               <span>Responsable</span>
             </div>
-            <ul className={`divide-y divide-border ${cargando ? "opacity-60" : ""}`}>
+            <ul aria-busy={cargando} className={`divide-y divide-border ${cargando ? "cursor-progress" : ""}`}>
               {datos.items.map((p) => (
                 <li key={p.id_pqr}>
                   <button
@@ -825,7 +825,7 @@ function DetalleGestion({
               className={`${inputCls} resize-y ${actual === "nota" ? "border-warning/50 bg-warning/5" : ""}`}
             />
             <div className="mt-3 flex items-center justify-between gap-3">
-              <span className={`text-xs ${listo ? "text-muted-foreground" : "text-muted-foreground/80"}`}>
+              <span className={`text-xs ${listo ? "text-muted-foreground" : "text-muted-foreground"}`}>
                 {texto.trim().length < minimo[actual]
                   ? `Mínimo ${minimo[actual]} caracteres · ${texto.length}/${maximo[actual].toLocaleString("es-CO")}`
                   : `${texto.length.toLocaleString("es-CO")}/${maximo[actual].toLocaleString("es-CO")}`}

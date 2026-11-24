@@ -244,7 +244,7 @@ export interface Rol {
 // reservado solo para "cancelada"). Usan opacidad en vez de mapas dark/light
 // separados para que se vean bien en ambos temas sin duplicar clases.
 export const ESTADO_COLOR: Record<string, string> = {
-  pendiente: "bg-[#C9A227]/15 text-[#C9A227]",
+  pendiente: "bg-[#C9A227]/15 text-[#7A5F08] dark:text-[#E3C55A]",
   confirmada: "bg-primary/10 text-primary",
   cancelada: "bg-destructive/10 text-destructive",
   finalizada: "bg-[#A13B55]/15 text-[#A13B55]",
@@ -253,7 +253,7 @@ export const ESTADO_COLOR: Record<string, string> = {
   // StatusBadge se vea consistente sin importar el dominio. pagado/aprobada/
   // activo usan --success (antes emerald-500 suelto, sin relación con la
   // paleta ni con el resto de estados "positivos" del panel).
-  procesando: "bg-[#C9A227]/15 text-[#C9A227]",
+  procesando: "bg-[#C9A227]/15 text-[#7A5F08] dark:text-[#E3C55A]",
   pagado: "bg-success/10 text-success",
   rechazado: "bg-destructive/10 text-destructive",
   rechazada: "bg-destructive/10 text-destructive",
@@ -264,7 +264,7 @@ export const ESTADO_COLOR: Record<string, string> = {
   inactivo: "bg-muted text-muted-foreground",
   // Estados de Usuario.verificado (ver ModuleUsuarios.tsx -- override manual
   // de admin para cuando el correo de verificación nunca llegó)
-  verificado: "bg-[#C9A227]/15 text-[#C9A227]",
+  verificado: "bg-[#C9A227]/15 text-[#7A5F08] dark:text-[#E3C55A]",
   no_verificado: "bg-muted text-muted-foreground",
 };
 

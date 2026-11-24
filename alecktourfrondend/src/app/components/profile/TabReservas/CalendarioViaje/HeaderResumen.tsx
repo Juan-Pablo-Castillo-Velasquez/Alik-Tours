@@ -58,7 +58,7 @@ export default function HeaderResumen({ proxima, diasRestantes, noches }: Props)
         <div className="col-span-1 flex flex-col items-center justify-center gap-0.5">
           <Plane className="w-4 h-4 rotate-45 text-primary" />
           <span className="text-[9px] font-semibold tracking-tight text-muted-foreground">
-            {noches} {noches === 1 ? "noche" : "noches"}
+            {`${noches} ${noches === 1 ? "noche" : "noches"}`}
           </span>
         </div>
         <div className="col-span-3 text-right pr-1">

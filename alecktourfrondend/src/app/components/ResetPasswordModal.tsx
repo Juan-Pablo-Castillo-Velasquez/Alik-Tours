@@ -72,7 +72,7 @@ export default function ResetPasswordModal({ isOpen, onClose, token }: ResetPass
                         className="relative w-full max-w-md bg-card text-card-foreground border border-border rounded-3xl shadow-2xl p-8"
                     >
                         {!msg && (
-                            <button
+                            <button aria-label="Cerrar"
                                 onClick={handleClose}
                                 className="absolute top-5 right-5 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors"
                             >

@@ -117,7 +117,7 @@ export default function PaquetesDestacadosCarousel({ paquetes }: PaquetesDestaca
                   {pkg.duracion_dias > 0 && (
                     <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-white/80">
                       <Calendar className="h-3.5 w-3.5" />
-                      {pkg.duracion_dias} {pkg.duracion_dias === 1 ? "día" : "días"}
+                      {`${pkg.duracion_dias} ${pkg.duracion_dias === 1 ? "día" : "días"}`}
                     </div>
                   )}
                   <h3 className="text-base font-bold leading-tight mb-1.5 line-clamp-2">

@@ -144,3 +144,53 @@ def test_publicar_en_la_comunidad_con_titulo_de_espacios(client, crear_usuario):
         headers=headers,
     )
     assert r.status_code == 422
+
+
+# ─── Ampliación nov. 2026: PQR, perfil y red general para todo formulario ──
+
+
+@pytest.mark.parametrize(
+    ("metodo", "ruta", "bucket"),
+    [
+        ("POST", "/api/pqr", "/pqr-radicar"),
+        ("POST", "/api/pqr/7/mensajes", "/pqr-escribir"),
+        ("POST", "/api/pqr/7/calificar", "/pqr-escribir"),
+        ("GET", "/api/clientes/buscar", "/buscar-clientes"),
+        ("PUT", "/api/clientes/3", "/editar-perfil"),
+        ("POST", "/api/metodos-pago-guardados", "/guardar-metodo-pago"),
+        # Cualquier otro formulario cae en la regla general de escritura.
+        ("POST", "/api/hoteles", "/escritura"),
+        ("PATCH", "/api/pqr/7/gestion", "/escritura"),
+        ("DELETE", "/api/favoritos/4", "/escritura"),
+        ("PUT", "/api/usuarios/3/vincular-cliente", "/escritura"),
+    ],
+)
+def test_todos_los_formularios_tienen_limite(metodo, ruta, bucket):
+    assert security_middleware._rate_limit_base_config_for(ruta, metodo)[0] == bucket
+
+
+def test_la_regla_general_corta_envios_en_bucle(client):
+    codigos = [client.post("/api/no-existe-formulario", json={}).status_code for _ in range(125)]
+    assert codigos.count(429) == 5
+
+
+def test_con_sesion_el_limite_es_por_usuario_y_no_por_ip(client, crear_usuario):
+    """Dos personas en la misma oficina (misma IP) no se bloquean entre sí."""
+    _, h1 = crear_usuario()
+    _, h2 = crear_usuario()
+    pqr = {
+        "tipo": "sugerencia",
+        "asunto": "Más tours en Santa Marta",
+        "descripcion": "Me gustaría ver tours a la Sierra Nevada en el catálogo.",
+        "autoriza_datos": True,
+    }
+    primero = [client.post("/api/pqr", json=pqr, headers=h1).status_code for _ in range(11)]
+    assert primero[-1] == 429
+    assert client.post("/api/pqr", json=pqr, headers=h2).status_code == 201
+
+
+def test_el_429_explica_cuanto_esperar(client):
+    for i in range(6):
+        r = client.post("/api/contacto", json=_contacto(i))
+    assert r.json()["reintentar_en"] == 600
+    assert "10 minutos" in r.json()["detail"]
