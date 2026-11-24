@@ -20,11 +20,19 @@
 .temporada-ambiente {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  /* Detrás del contenido (ver RootLayout: la página va en z-[1]). */
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
   contain: strict;
 }
+/* La raíz de cada página pinta el mismo color que el body: se deja
+   transparente para que la nieve se vea en el fondo, detrás de las
+   tarjetas y secciones (que conservan su propio fondo y la tapan). */
+.temporada-contenido > .min-h-screen.bg-background {
+  background-color: transparent;
+}
+
 .temporada-particula {
   position: absolute;
   top: 0;
