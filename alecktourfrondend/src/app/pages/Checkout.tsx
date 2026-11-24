@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { nuevoClientMsgId } from "../services/mensajeChat.service";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import HalloweenAccentDiscreto from "../components/HalloweenAccentDiscreto";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
@@ -712,7 +712,6 @@ export default function Checkout() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
       <Navbar />
-      <Toaster position="top-center" richColors />
       <ReservationLoader
         step={loaderStep}
         isVisible={(isProcessing && paymentStatus === 'idle') || !!loaderError}

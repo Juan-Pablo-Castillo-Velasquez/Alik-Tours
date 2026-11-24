@@ -1,7 +1,7 @@
 import { CheckCircle2, Loader2, Plane } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import PagoDeReserva from "../components/payment/PagoDeReserva";
@@ -123,7 +123,6 @@ export default function ReservarVuelo() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <Toaster position="top-center" richColors />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <CabeceraReserva
           volverA={`/vuelos/${o.id_oferta}`}

@@ -24,6 +24,7 @@ import { useAuthModal } from "../context/AuthModalContext";
 import { ReservaResponse } from "../data/reservaTypes";
 import { resenaService, ResenaResponse } from "../services/resena.service";
 import { reservaService } from "../services/services";
+import { confirmar } from "../utils/confirmar";
 
 const PAGE_SIZE = 9;
 
@@ -138,7 +139,7 @@ export default function Testimonios() {
   };
 
   const borrarMiResena = async (r: ResenaResponse) => {
-    if (!window.confirm("¿Borrar tu reseña? Podrás escribir una nueva para esa reserva.")) return;
+    if (!(await confirmar({ titulo: "¿Borrar tu reseña?", mensaje: "Podrás escribir una nueva para esa reserva.", confirmar: "Borrar", peligro: true }))) return;
     try {
       await resenaService.borrar(r.id_resena);
       toast.success("Reseña eliminada");

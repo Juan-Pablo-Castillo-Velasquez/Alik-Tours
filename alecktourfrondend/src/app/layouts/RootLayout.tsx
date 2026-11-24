@@ -2,6 +2,7 @@ import { Outlet } from "react-router";
 import { Suspense } from "react";
 import { Plane } from "lucide-react";
 import { Toaster } from "../components/ui/sonner";
+import ConfirmacionGlobal from "../components/ui/ConfirmacionGlobal";
 import { AuthModalProvider } from "../context/AuthModalContext";
 import WhatsAppButton from "../components/WhatsAppButton";
 import CookieConsent from "../components/CookieConsent";
@@ -24,7 +25,8 @@ function RouteFallback() {
 export default function RootLayout() {
     return (
         <AuthModalProvider>
-            <Toaster position="top-right" richColors closeButton />
+            <Toaster />
+            <ConfirmacionGlobal />
             {/* La nieve (y demás partículas de temporada) va DETRÁS del
                 contenido: la capa del ambiente tiene z-index -1 (ver
                 temporada.css), así los copos solo se ven en el fondo y pasan

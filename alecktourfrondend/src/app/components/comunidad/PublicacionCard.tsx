@@ -12,6 +12,7 @@ import {
 import EtiquetaEjemplo from "../EtiquetaEjemplo";
 import ComentariosHilo from "./ComentariosHilo";
 import Estrellas from "./Estrellas";
+import { confirmar } from "../../utils/confirmar";
 
 interface Props {
   publicacion: PublicacionComunidad;
@@ -46,7 +47,7 @@ export default function PublicacionCard({ publicacion, puedeComentar, onPedirLog
   const p = publicacion;
 
   const borrarPublicacion = async () => {
-    if (!window.confirm("¿Borrar esta publicación? No se puede deshacer.")) return;
+    if (!(await confirmar({ titulo: "¿Borrar esta publicación?", mensaje: "No se puede deshacer.", confirmar: "Borrar", peligro: true }))) return;
     try {
       await comunidadService.borrarPublicacion(p.id_publicacion);
       onBorrada?.(p.id_publicacion);

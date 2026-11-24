@@ -2,6 +2,7 @@ import { BadgeCheck, CornerDownRight, Send, Trash2 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ComentarioComunidad, LIMITES_COMUNIDAD, resolveMediaComunidad } from "../../services/comunidad.service";
+import { confirmar } from "../../utils/confirmar";
 
 interface Props {
   comentarios: ComentarioComunidad[];
@@ -144,7 +145,7 @@ export default function ComentariosHilo({ comentarios, onChange, puedeComentar, 
   };
 
   const quitar = async (c: ComentarioComunidad) => {
-    if (!window.confirm("¿Borrar tu comentario?")) return;
+    if (!(await confirmar({ titulo: "¿Borrar tu comentario?", confirmar: "Borrar", peligro: true }))) return;
     try {
       await borrar(c.id_comentario);
       // Con el comentario se van sus respuestas (igual que en el servidor).

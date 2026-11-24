@@ -544,3 +544,19 @@ def test_correo_de_respuesta_con_la_marca_y_la_decision(client, cliente, asesor,
     assert "Accedemos a lo que pediste." in cuerpo
     assert "Te reenviamos los vouchers" in cuerpo
     assert "/profile?tab=pqr" in cuerpo
+
+
+def test_buscar_clientes_por_nombre_cedula_o_correo(client, cliente, asesor, db):
+    from app.models.cliente_model import Cliente
+
+    c = db.get(Cliente, cliente[0].id_cliente)
+    c.nombre, c.apellido = "Valentina", "Ríos Gómez"
+    db.commit()
+    h = asesor[1]
+    assert client.get("/api/clientes/buscar?q=va", headers=cliente[1]).status_code == 403
+    assert client.get("/api/clientes/buscar?q=valentina", headers=h).json()[0]["id_cliente"] == c.id_cliente
+    r = client.get("/api/clientes/buscar?q=Valentina Ríos", headers=h).json()
+    assert r[0]["id_cliente"] == c.id_cliente and r[0]["tiene_cuenta"] is True
+    assert client.get(f"/api/clientes/buscar?q={c.cedula}", headers=h).json()[0]["id_cliente"] == c.id_cliente
+    assert client.get("/api/clientes/buscar?q=zzzz-nadie", headers=h).json() == []
+    assert client.get("/api/clientes/buscar?q=a", headers=h).status_code == 422

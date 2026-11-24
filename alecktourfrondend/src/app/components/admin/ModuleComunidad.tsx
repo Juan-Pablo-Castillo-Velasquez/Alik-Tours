@@ -35,6 +35,7 @@ import FilterChip from "../shared/FilterChip";
 import EmptyState from "./ui/EmptyState";
 import SectionHeader from "./ui/SectionHeader";
 import { inputCls, labelCls } from "./types";
+import { confirmar } from "../../utils/confirmar";
 
 type Pestana = "moderacion" | "videos" | "resenas";
 
@@ -131,7 +132,7 @@ export default function ModuleComunidad() {
   };
 
   const borrar = async (p: PublicacionComunidad) => {
-    if (!window.confirm(`¿Eliminar definitivamente «${p.titulo}» y sus archivos?`)) return;
+    if (!(await confirmar({ titulo: "¿Eliminar la publicación?", mensaje: `«${p.titulo}» y sus archivos se borran definitivamente.`, confirmar: "Eliminar", peligro: true }))) return;
     try {
       await comunidadService.adminBorrarPublicacion(p.id_publicacion);
       setItems((prev) => prev.filter((x) => x.id_publicacion !== p.id_publicacion));
@@ -225,7 +226,7 @@ export default function ModuleComunidad() {
   };
 
   const borrarVideo = async (v: VideoAgencia) => {
-    if (!window.confirm(`¿Eliminar el video «${v.titulo}»?`)) return;
+    if (!(await confirmar({ titulo: "¿Eliminar el video?", mensaje: `«${v.titulo}»`, confirmar: "Eliminar", peligro: true }))) return;
     try {
       await comunidadService.adminBorrarVideo(v.id_video);
       setVideos((prev) => prev.filter((x) => x.id_video !== v.id_video));

@@ -4,3 +4,4 @@
 @import './theme.css';
 /* aquí solo quedan las variables y @layer base */
 @import './temporada.css';
+@import './avisos.css';

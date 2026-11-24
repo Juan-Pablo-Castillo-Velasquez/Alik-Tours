@@ -1,7 +1,7 @@
 import { AlertTriangle, Baby, Bed, CalendarDays, CheckCircle2, Loader2, Minus, Plane, Plus, Sparkles, User, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import PagoDeReserva from "../components/payment/PagoDeReserva";
@@ -270,7 +270,6 @@ export default function ReservarPaquete() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <Toaster position="top-center" richColors />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <CabeceraReserva
           volverA={`/package/${pkg.id_paquete}`}
