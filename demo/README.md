@@ -8,7 +8,8 @@ Basado en la guía *«Demos en video de tu aplicación, grabados con código»* 
 |---|---|
 | `sembrar.mjs` | Deja listos los datos de ejemplo por la API real: carga las historias y reseñas de ejemplo de la comunidad y el método de pago de la cliente. |
 | `guion.mjs` | El recorrido: portada, escenas, rótulos, voz, video y subtítulos. |
-| `voz-elevenlabs.mjs` | Opcional: voz natural con ElevenLabs. |
+| `voz-kokoro.py` | Voz natural en español, **gratis y sin internet al grabar** (Kokoro). Es la que se usó. |
+| `voz-elevenlabs.mjs` | Opcional: voz natural con ElevenLabs (de pago por caracteres). |
 | `.run/` | Resultados (no se sube a git): `voz/` (caché de audios) y `video/` (`aliktours.webm` y `aliktours.vtt`). |
 
 ## Qué muestra (≈ 2 min)
@@ -49,7 +50,17 @@ pnpm install
 # 1. Probar el recorrido: rápido, sin voz y viendo el navegador
 VER=1 RITMO=0.5 node guion.mjs
 
-# 2. Grabar con voz gratuita
+# 2. Grabar con voz natural y gratuita (Kokoro). Instala el modelo una vez
+#    (instrucciones al inicio de voz-kokoro.py) y graba DOS veces: la primera
+#    genera y guarda los audios; la segunda ya los toma de la caché y el
+#    recorrido no se queda quieto mientras se genera cada frase.
+VOZ_CMD="python3 $PWD/voz-kokoro.py" node guion.mjs
+VOZ_CMD="python3 $PWD/voz-kokoro.py" node guion.mjs
+
+#    Voz femenina (ef_dora, la predeterminada) o masculina:
+KOKORO_VOZ=em_alex VOZ_CMD="python3 $PWD/voz-kokoro.py" node guion.mjs
+
+#    Voz básica, más robótica, sin instalar nada más:
 VOZ_CMD="espeak-ng -v es-419 -s 150 --stdin -w" node guion.mjs
 
 # 3. O con voz natural (ElevenLabs); la llave va en un archivo fuera del repo
@@ -70,3 +81,4 @@ Grabar fue también una revisión funcional. Se corrigió en la aplicación, no 
 - **Las habitaciones solo se podían elegir con el mouse**: la tarjeta no era un botón (ni teclado ni lector de pantalla).
 - **Fechas en formato 2026-12-20** en el buscador; ahora «20 dic 2026».
 - **En el panel de administración**, al cambiar de sección la página quedaba abajo y la sección nueva se veía en blanco.
+- **El detalle de una reserva** era una lista de datos sin un siguiente paso claro y mostraba textos internos («web», «(simulado)»). Ahora dice qué sigue (pagar, prepararse, contar el viaje), con fechas, dónde se queda, el pago y el historial en lenguaje claro.

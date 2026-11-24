@@ -26,11 +26,14 @@ export default function RootLayout() {
         <AuthModalProvider>
             <Toaster position="top-right" richColors closeButton />
             {/* La nieve (y demás partículas de temporada) va DETRÁS del
-                contenido: la capa del ambiente queda en z-0 y la página en
-                z-[1], así los copos solo se ven en el fondo y pasan por
-                detrás de tarjetas, textos y formularios, sin taparlos. */}
+                contenido: la capa del ambiente tiene z-index -1 (ver
+                temporada.css), así los copos solo se ven en el fondo y pasan
+                por detrás de tarjetas, textos y formularios. Este contenedor
+                NO crea un contexto de apilamiento propio: si lo hiciera, los
+                modales de las páginas quedarían debajo de los botones
+                flotantes (ayuda, asesor). */}
             <AmbienteTemporada />
-            <div className="temporada-contenido relative z-[1]">
+            <div className="temporada-contenido">
                 <Suspense fallback={<RouteFallback />}>
                     <Outlet />
                 </Suspense>

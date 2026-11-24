@@ -92,6 +92,8 @@ test('una reserva nueva aparece en Mis reservas con su código y botón de pago'
   await tarjeta.getByRole('button', { name: 'Ver detalle', exact: true }).click();
   const detalle = page.getByRole('dialog');
   await expect(detalle.getByRole('heading', { name: /^Vuelo Bogotá/ })).toBeVisible();
-  await expect(detalle.getByText(`Reserva ${codigo}`, { exact: true })).toBeVisible();
+  await expect(detalle.getByRole('button', { name: `Copiar el código de la reserva ${codigo}` })).toBeVisible();
+  // "Lo que sigue": como no está pagada, lo primero es pagarla
+  await expect(detalle.getByText(/^Te falta pagar/)).toBeVisible();
   await expect(detalle.getByRole('link', { name: /Pagar reserva/ })).toBeVisible();
 });

@@ -3,7 +3,8 @@
 // grabados con código" (SENA · CGMLTI). Ver demo/README.md.
 //
 // Sin voz:  node guion.mjs
-// Con voz:  VOZ_CMD="espeak-ng -v es-419 -s 150 --stdin -w" node guion.mjs
+// Con voz natural (gratis, sin internet): VOZ_CMD="python3 $PWD/voz-kokoro.py" node guion.mjs
+// Con voz básica: VOZ_CMD="espeak-ng -v es-419 -s 150 --stdin -w" node guion.mjs
 import { chromium } from "playwright-core";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -248,8 +249,22 @@ async function escenaPerfil(page) {
   await dormir(1000);
   await esperarRotulo();
   await rotulo(page, "Cada reserva muestra si está pagada y el estado del viaje.");
-  await resaltar(page.locator("article").first());
+  const tarjeta = page.locator("article").first();
+  await resaltar(tarjeta);
   await esperarRotulo();
+  await quitarResalte(tarjeta);
+
+  await rotulo(page, "En el detalle encuentra lo que sigue: aquí, contar cómo le fue.");
+  await click(tarjeta.getByRole("button", { name: "Ver detalle", exact: true }));
+  const detalle = page.getByRole("dialog");
+  await detalle.getByText("Tu estadía").waitFor();
+  await esperarRotulo();
+  await rotulo(page, "También sus fechas, dónde se queda, el pago y el historial.");
+  await detalle.locator(".overflow-y-auto").evaluate((e) => e.scrollTo({ top: 520, behavior: "smooth" }));
+  await dormir(2200);
+  await detalle.locator(".overflow-y-auto").evaluate((e) => e.scrollTo({ top: e.scrollHeight, behavior: "smooth" }));
+  await esperarRotulo();
+  await click(detalle.getByRole("button", { name: "Cerrar" }));
 }
 
 async function escenaComunidad(page) {

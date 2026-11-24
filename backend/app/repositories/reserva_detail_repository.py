@@ -11,7 +11,10 @@ class ReservaDetailRepository:
             text("""
             SELECT rh.id_habitacion, rh.fecha_checkin, rh.fecha_checkout,
                    rh.precio_acordado, h.numero_habitacion, h.precio_noche,
-                   h.estado, th.nombre_tipo, hot.nombre_hotel
+                   h.estado, th.nombre_tipo, hot.nombre_hotel,
+                   hot.id_hotel, hot.direccion, hot.ciudad, hot.pais, hot.telefono,
+                   hot.hora_checkin, hot.hora_checkout, hot.imagen_url AS imagen_hotel,
+                   hot.politica_cancelacion
             FROM reserva_habitaciones rh
             JOIN habitaciones h ON h.id_habitacion = rh.id_habitacion
             JOIN tipo_habitacion th ON th.id_tipo_habitacion = h.id_tipo_habitacion

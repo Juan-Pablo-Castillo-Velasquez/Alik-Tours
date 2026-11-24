@@ -20,8 +20,9 @@
 .temporada-ambiente {
   position: fixed;
   inset: 0;
-  /* Detrás del contenido (ver RootLayout: la página va en z-[1]). */
-  z-index: 0;
+  /* Detrás del contenido: con z-index negativo se pinta debajo de todo lo
+     que está en el flujo de la página, pero encima del fondo del lienzo. */
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
   contain: strict;
