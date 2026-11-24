@@ -813,3 +813,84 @@ El equipo de Alik Tours
     # cliente en el formulario -- su resultado se sigue devolviendo, pero
     # ya no puede tumbar la solicitud completa (ver enviar_contacto).
     return await send_email(correo, subject_confirmacion, body_confirmacion, html_confirmacion)
+
+
+async def send_pqr_email(
+    email: str,
+    *,
+    nombre: str | None,
+    asunto_correo: str,
+    titulo: str,
+    radicado: str,
+    asunto_pqr: str,
+    parrafos: list[str],
+    destacado: tuple[str, str] | None = None,
+    tono: str = "info",
+    datos: list[tuple[str, str]] | None = None,
+    nota: str | None = None,
+    base_url: str = os.getenv("FRONTEND_URL", "http://localhost:5173"),
+) -> bool:
+    """Correo de una PQR (acuse, mensaje, solicitud de información, prórroga
+    o respuesta) con la misma marca que el resto de correos.
+
+    - `destacado`: (etiqueta, texto) en una caja de color según `tono`
+      (info, exito, alerta, error), por ejemplo la decisión de la respuesta.
+    - `datos`: filas etiqueta/valor (radicado, fecha límite...).
+    - `nota`: texto pequeño al final (por ejemplo, el aviso de la SIC).
+    Todo el texto se escapa: viene de lo que escriben cliente y asesor.
+    """
+    e = html.escape
+    colores = {
+        "info": (_CARD_ALT_BG, _GARNET),
+        "exito": (_SUCCESS_BG, _SUCCESS),
+        "alerta": (_WARNING_BG, _WARNING_TEXT),
+        "error": (_DANGER_BG, _DANGER),
+    }
+    fondo, color = colores.get(tono, colores["info"])
+    saludo = f"Hola {e(nombre)}," if nombre else "Hola,"
+    filas = [("Radicado", radicado), ("Asunto", asunto_pqr), *(datos or [])]
+    tabla = "".join(
+        f"""<tr>
+                  <td style="padding:6px 0; font-size:13px; color:{_MUTED}; width:130px; vertical-align:top;">{e(k)}</td>
+                  <td style="padding:6px 0; font-size:14px; color:{_HEADING}; font-weight:600;">{e(v)}</td>
+                </tr>"""
+        for k, v in filas
+    )
+    cuerpo = "".join(
+        f'<p style="margin:0 0 14px 0; font-size:15px; line-height:1.6; color:{_BODY_TEXT}; white-space:pre-line;">{e(p)}</p>'
+        for p in parrafos
+    )
+    caja = ""
+    if destacado:
+        etiqueta, texto = destacado
+        caja = f"""
+              <div style="background-color:{fondo}; border-left:4px solid {color}; border-radius:10px; padding:16px 18px; margin:0 0 20px 0;">
+                <div style="font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:{color}; margin-bottom:6px;">{e(etiqueta)}</div>
+                <div style="font-size:15px; line-height:1.6; color:{_HEADING}; white-space:pre-line;">{e(texto)}</div>
+              </div>"""
+    pie = f'<p style="margin:0 0 8px 0; font-size:12px; line-height:1.6; color:{_MUTED};">{e(nota)}</p>' if nota else ""
+    content_html = f"""
+              <h1 style="margin:0 0 8px 0; font-family:Georgia,'Times New Roman',serif; font-size:24px; color:{_HEADING};">{e(titulo)}</h1>
+              <p style="margin:0 0 20px 0; font-size:15px; color:{_BODY_TEXT};">{saludo}</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{_CARD_ALT_BG}; border-radius:12px; padding:14px 18px; margin:0 0 22px 0;">
+                {tabla}
+              </table>
+              {caja}
+              {cuerpo}
+              {_boton("Ver mi solicitud", f"{base_url}/profile?tab=pqr")}
+              {pie}
+              <p style="margin:0; font-size:12px; color:{_MUTED_LIGHT};">Plazos y reglas en {e(base_url)}/pqr</p>"""
+    texto_plano = "\n\n".join(
+        [
+            saludo,
+            titulo,
+            *(f"{k}: {v}" for k, v in filas),
+            *([f"{destacado[0]}: {destacado[1]}"] if destacado else []),
+            *parrafos,
+            f"Ver tu solicitud: {base_url}/profile?tab=pqr",
+            *([nota] if nota else []),
+            "El equipo de Alik Tours",
+        ]
+    )
+    html_body = _email_shell(e(asunto_correo), e(f"{radicado} · {titulo}"), content_html)
+    return await send_email(email, asunto_correo, texto_plano, html_body)

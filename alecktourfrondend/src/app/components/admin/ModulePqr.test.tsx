@@ -25,6 +25,10 @@ const fila = {
   decision: null,
   fecha_respuesta: null,
   satisfaccion: null,
+  categoria: null,
+  categoria_nombre: null,
+  motivo: null,
+  es_ejemplo: false,
   ultima_actividad: null,
 };
 
@@ -33,7 +37,7 @@ const pagina: PqrPagina = {
   total: 1,
   page: 1,
   page_size: 10,
-  resumen: { abiertas: 1, sin_asignar: 1, por_vencer: 1, vencidas: 0, respondidas: 4, a_tiempo_pct: 75, satisfaccion_promedio: 4.5 },
+  resumen: { abiertas: 1, sin_asignar: 1, por_vencer: 1, vencidas: 0, respondidas: 4, a_tiempo_pct: 75, satisfaccion_promedio: 4.5, sin_tipificar: 1, ejemplos: 0, por_categoria: [{ categoria: "hotel", nombre: "Hotel y alojamiento", total: 3 }] },
 };
 
 const detalle: PqrDetalle = {
@@ -53,6 +57,9 @@ const detalle: PqrDetalle = {
 
 const servicio = vi.hoisted(() => ({
   gestion: vi.fn(),
+  tipificaciones: vi.fn(),
+  cargarEjemplos: vi.fn(),
+  borrarEjemplos: vi.fn(),
   responsables: vi.fn(),
   ver: vi.fn(),
   responder: vi.fn(),
@@ -74,6 +81,10 @@ describe("ModulePqr (equipo)", () => {
     servicio.gestion.mockResolvedValue(pagina);
     servicio.responsables.mockResolvedValue([{ id_usuario: 1, nombre: "Laura" }]);
     servicio.ver.mockResolvedValue(detalle);
+    servicio.tipificaciones.mockResolvedValue([
+      { categoria: "hotel", nombre: "Hotel y alojamiento", motivos: ["Habitación distinta a la reservada", "Check-in o check-out"] },
+      { categoria: "pagos", nombre: "Pagos y cobros", motivos: ["Cobro doble"] },
+    ]);
   });
 
   it("muestra los indicadores y la bandeja con su plazo", async () => {
@@ -82,6 +93,28 @@ describe("ModulePqr (equipo)", () => {
     expect(screen.getByText("75%")).toBeInTheDocument();
     expect(screen.getByText("Vence en 2 días hábiles")).toBeInTheDocument();
     expect(screen.getByText("Sin asignar")).toBeInTheDocument();
+    // En la fila (y como opción del filtro de categoría).
+    expect(screen.getAllByText("Sin tipificar").length).toBeGreaterThan(1);
+    expect(screen.getByText("Motivos más frecuentes")).toBeInTheDocument();
+  });
+
+  it("no deja responder sin tipificar y guarda la tipificación", async () => {
+    servicio.actualizar.mockResolvedValue({ ...detalle, categoria: "hotel", categoria_nombre: "Hotel y alojamiento", motivo: "Habitación distinta a la reservada" });
+    render(<ModulePqr />);
+    fireEvent.click(await screen.findByText("No me reembolsaron la noche"));
+    fireEvent.click(await screen.findByRole("tab", { name: /respuesta de fondo/i }));
+    expect(screen.getByText(/Primero tipifica la PQR/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Texto"), { target: { value: "x".repeat(120) } });
+    expect(screen.getByRole("button", { name: /enviar respuesta/i })).toBeDisabled();
+    await screen.findByRole("option", { name: "Hotel y alojamiento" });
+    fireEvent.change(screen.getByLabelText("Categoría", { selector: "#pqr-categoria" }), { target: { value: "hotel" } });
+    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "Habitación distinta a la reservada" } });
+    fireEvent.click(screen.getByRole("button", { name: "Guardar" }));
+    await waitFor(() =>
+      expect(servicio.actualizar).toHaveBeenCalledWith(9, { categoria: "hotel", motivo: "Habitación distinta a la reservada" }),
+    );
+    await waitFor(() => expect(screen.queryByText("Obligatoria para responder")).toBeNull());
+    expect(screen.queryByText(/Primero tipifica la PQR/)).toBeNull();
   });
 
   it("filtra por vencidas desde el indicador", async () => {
@@ -92,6 +125,7 @@ describe("ModulePqr (equipo)", () => {
   });
 
   it("en un reclamo la respuesta negativa exige motivos y no ofrece la opción informativa", async () => {
+    servicio.ver.mockResolvedValue({ ...detalle, categoria: "hotel", categoria_nombre: "Hotel y alojamiento", motivo: "Check-in o check-out" });
     servicio.responder.mockResolvedValue({ ...detalle, estado: "respondida" });
     render(<ModulePqr />);
     fireEvent.click(await screen.findByText("No me reembolsaron la noche"));

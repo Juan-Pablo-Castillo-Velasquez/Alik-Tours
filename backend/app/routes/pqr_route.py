@@ -10,7 +10,6 @@ Las reglas de plazos están en app/services/pqr_service.py.
 """
 
 import contextlib
-from html import escape
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import func, or_
@@ -19,8 +18,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.database import get_db
 from app.core.deps import get_usuario_verificado
 from app.core.dias_habiles import hoy_colombia, sumar_dias_habiles
-from app.core.mail import send_email
-from app.core.security import _roles_vigentes, require_empleado
+from app.core.mail import send_pqr_email
+from app.core.security import _roles_vigentes, require_admin, require_empleado
 from app.models.auth_model import Rol, UsuarioRol
 from app.models.cliente_model import Cliente
 from app.models.pqr_model import Pqr
@@ -28,10 +27,13 @@ from app.models.reserva_model import Reserva
 from app.models.user_model import Usuario
 from app.schemas.pqr_schema import (
     PqrCalificacion,
+    PqrCategoriaOut,
     PqrCierre,
     PqrCreate,
     PqrDesistimiento,
     PqrDetalleOut,
+    PqrEjemplosIn,
+    PqrEjemplosOut,
     PqrGestionUpdate,
     PqrMensajeCreate,
     PqrPagina,
@@ -44,6 +46,7 @@ from app.schemas.pqr_schema import (
 )
 from app.services import pqr_service as svc
 from app.services.notificacion_service import crear_notificacion
+from app.services.pqr_ejemplos import crear_ejemplos
 
 router = APIRouter(prefix="/api/pqr", tags=["PQR"])
 
@@ -84,22 +87,41 @@ def _correo_cliente(pqr: Pqr) -> str | None:
     return (usuario.correo_electronico if usuario else None) or pqr.cliente.correo
 
 
-def _avisar(bg: BackgroundTasks, pqr: Pqr, asunto: str, parrafos: list[str]) -> None:
+def _avisar(
+    bg: BackgroundTasks,
+    pqr: Pqr,
+    titulo: str,
+    parrafos: list[str],
+    *,
+    destacado: tuple[str, str] | None = None,
+    tono: str = "info",
+    nota: str | None = None,
+) -> None:
+    """Correo al cliente con la plantilla de marca (core/mail.send_pqr_email)."""
     correo = _correo_cliente(pqr)
     if not correo:
         return
-    saludo = f"Hola {pqr.cliente.nombre}," if pqr.cliente else "Hola,"
-    pie = "Puedes ver el detalle y responder desde tu perfil, en la sección Solicitudes (PQR)."
-    texto = "\n\n".join([saludo, *parrafos, pie, "Saludos,\nEl equipo de Alik Tours"])
-    html = "".join(f"<p>{escape(p)}</p>" for p in [saludo, *parrafos, pie]) + (
-        "<p>Saludos,<br>El equipo de Alik Tours</p>"
-    )
+    prefijo = "[Ejemplo] " if pqr.es_ejemplo else ""
+    datos = [
+        ("Tipo", svc.TIPOS[pqr.tipo]["nombre"]),
+        ("Fecha límite", svc.fecha_legible(pqr.fecha_vencimiento)),
+    ]
+    kwargs = {
+        "nombre": pqr.cliente.nombre if pqr.cliente else None,
+        "asunto_correo": f"{prefijo}{titulo} · {pqr.radicado}",
+        "titulo": titulo,
+        "radicado": pqr.radicado,
+        "asunto_pqr": pqr.asunto,
+        "parrafos": parrafos,
+        "destacado": destacado,
+        "tono": tono,
+        "datos": datos,
+        "nota": nota,
+    }
 
     async def _enviar():
         with contextlib.suppress(Exception):
-            await send_email(
-                email=correo, subject=f"{asunto} - {pqr.radicado} - Alik Tours", body=texto, html_body=html
-            )
+            await send_pqr_email(correo, **kwargs)
 
     bg.add_task(_enviar)
 
@@ -213,11 +235,14 @@ def radicar(
         pqr,
         "Recibimos tu solicitud",
         [
-            f"Radicamos tu {svc.TIPOS[pqr.tipo]['nombre'].lower()} con el número {pqr.radicado} "
-            f"el {svc.fecha_legible(hoy)}.",
-            f"Asunto: {pqr.asunto}.",
-            f"Te responderemos a más tardar el {svc.fecha_legible(pqr.fecha_vencimiento)} ({dias} días hábiles).",
+            f"Radicamos tu {svc.TIPOS[pqr.tipo]['nombre'].lower()} el {svc.fecha_legible(hoy)}. "
+            "Guarda el número de radicado: con él puedes hacerle seguimiento.",
+            "Si necesitamos un dato más te lo pediremos por este medio y en tu perfil.",
         ],
+        destacado=(
+            "Te respondemos a más tardar el",
+            f"{svc.fecha_legible(pqr.fecha_vencimiento)} ({dias} días hábiles)",
+        ),
     )
     return _detalle(pqr, equipo)
 
@@ -241,6 +266,7 @@ def mis_pqr(db: Session = Depends(get_db), usuario: Usuario = Depends(get_usuari
 def gestion(
     estado: str | None = Query(None, description="abiertas, finalizadas o un estado puntual"),
     tipo: str | None = None,
+    categoria: str | None = Query(None, description="código de categoría o 'sin' para las no tipificadas"),
     responsable: str | None = Query(None, description="yo, sin o el id de un usuario"),
     plazo: str | None = Query(None, description="vencidas o por_vencer"),
     q: str | None = Query(None, max_length=100),
@@ -258,6 +284,10 @@ def gestion(
         consulta = consulta.filter(Pqr.estado == estado)
     if tipo:
         consulta = consulta.filter(Pqr.tipo == tipo)
+    if categoria == "sin":
+        consulta = consulta.filter(Pqr.categoria.is_(None))
+    elif categoria:
+        consulta = consulta.filter(Pqr.categoria == categoria)
     if responsable == "yo":
         consulta = consulta.filter(Pqr.id_responsable == id_usuario)
     elif responsable == "sin":
@@ -328,7 +358,23 @@ def _resumen(db: Session, hoy) -> dict:
     respondidas = db.query(func.count(Pqr.id_pqr)).filter(Pqr.respondida_a_tiempo.isnot(None)).scalar() or 0
     a_tiempo = db.query(func.count(Pqr.id_pqr)).filter(Pqr.respondida_a_tiempo.is_(True)).scalar() or 0
     promedio = db.query(func.avg(Pqr.satisfaccion)).filter(Pqr.satisfaccion.isnot(None)).scalar()
+    sin_tipificar = (
+        db.query(func.count(Pqr.id_pqr)).filter(Pqr.estado.in_(svc.ABIERTAS), Pqr.categoria.is_(None)).scalar() or 0
+    )
+    conteos = (
+        db.query(Pqr.categoria, func.count(Pqr.id_pqr))
+        .filter(Pqr.categoria.isnot(None))
+        .group_by(Pqr.categoria)
+        .order_by(func.count(Pqr.id_pqr).desc())
+        .all()
+    )
+    ejemplos = db.query(func.count(Pqr.id_pqr)).filter(Pqr.es_ejemplo.is_(True)).scalar() or 0
     return {
+        "sin_tipificar": sin_tipificar,
+        "ejemplos": ejemplos,
+        "por_categoria": [
+            {"categoria": c, "nombre": svc.TIPIFICACION.get(c, {"nombre": c})["nombre"], "total": n} for c, n in conteos
+        ],
         "abiertas": abiertas,
         "sin_asignar": sin_asignar,
         "por_vencer": por_vencer,
@@ -337,6 +383,52 @@ def _resumen(db: Session, hoy) -> dict:
         "a_tiempo_pct": round(a_tiempo * 100 / respondidas) if respondidas else None,
         "satisfaccion_promedio": round(float(promedio), 1) if promedio is not None else None,
     }
+
+
+@router.get("/gestion/tipificaciones", response_model=list[PqrCategoriaOut])
+def tipificaciones(_id: int = Depends(require_empleado)):
+    """Catálogo de categorías y motivos para tipificar."""
+    return [{"categoria": k, "nombre": v["nombre"], "motivos": v["motivos"]} for k, v in svc.TIPIFICACION.items()]
+
+
+@router.post("/gestion/ejemplos", response_model=PqrEjemplosOut, status_code=201)
+def cargar_ejemplos(
+    data: PqrEjemplosIn,
+    bg: BackgroundTasks,
+    db: Session = Depends(get_db),
+    id_usuario: int = Depends(require_admin),
+):
+    """Crea PQR de ejemplo, en distintos estados, para el cliente indicado.
+    Quedan marcadas «Ejemplo» y se borran todas con DELETE /gestion/ejemplos."""
+    cliente = db.query(Cliente).filter(Cliente.id_cliente == data.id_cliente).first()
+    if cliente is None:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    admin = db.query(Usuario).filter(Usuario.id_usuario == id_usuario).first()
+    creadas = crear_ejemplos(db, cliente, admin)
+    db.commit()
+    # Los correos de las que ya tienen respuesta, para ver cómo le llegan al cliente.
+    for pqr in creadas:
+        db.refresh(pqr)
+        if pqr.respuesta and pqr.decision:
+            _avisar(
+                bg,
+                pqr,
+                "Respondimos tu solicitud",
+                [pqr.respuesta],
+                destacado=("Nuestra decisión", TEXTO_DECISION[pqr.decision]),
+                tono={"favorable": "exito", "parcial": "alerta", "desfavorable": "error"}.get(pqr.decision, "info"),
+            )
+    return {"creadas": len(creadas)}
+
+
+@router.delete("/gestion/ejemplos", response_model=PqrEjemplosOut)
+def borrar_ejemplos(db: Session = Depends(get_db), _id: int = Depends(require_admin)):
+    borradas = 0
+    for pqr in db.query(Pqr).filter(Pqr.es_ejemplo.is_(True)).all():
+        db.delete(pqr)
+        borradas += 1
+    db.commit()
+    return {"creadas": 0, "borradas": borradas}
 
 
 @router.get("/gestion/responsables", response_model=list[PqrResponsableOut])
@@ -392,7 +484,13 @@ def escribir(
                 id_cliente=pqr.id_cliente,
                 commit=False,
             )
-            _avisar(bg, pqr, "Te escribimos sobre tu solicitud", [data.texto])
+            _avisar(
+                bg,
+                pqr,
+                "Te escribimos sobre tu solicitud",
+                ["Puedes responder desde tu perfil, en la sección Solicitudes PQR."],
+                destacado=(f"Mensaje de {svc.nombre_usuario(usuario)}", data.texto),
+            )
     else:
         autor = svc.nombre_cliente(pqr)
         svc.registrar(db, pqr, "mensaje_cliente", data.texto, usuario, autor=autor)
@@ -512,6 +610,24 @@ def actualizar_gestion(
             if pqr.id_responsable != nuevo.id_usuario:
                 pqr.id_responsable = nuevo.id_usuario
                 svc.registrar(db, pqr, "asignacion", f"Asignada a {svc.nombre_usuario(nuevo)}.", usuario, visible=False)
+    if data.categoria is not None or data.motivo is not None:
+        if not data.categoria or not data.motivo or not svc.tipificacion_valida(data.categoria, data.motivo):
+            raise HTTPException(status_code=422, detail="Elige una categoría y un motivo válidos")
+        if (pqr.categoria, pqr.motivo) != (data.categoria, data.motivo):
+            antes = f"{pqr.categoria}/{pqr.motivo}" if pqr.categoria else None
+            pqr.categoria = data.categoria
+            pqr.motivo = data.motivo
+            pqr.id_usuario_tipifica = id_usuario
+            pqr.fecha_tipificacion = svc.ahora()
+            nombre = svc.TIPIFICACION[data.categoria]["nombre"]
+            svc.registrar(
+                db,
+                pqr,
+                "tipificacion",
+                f"Tipificada: {nombre} → {data.motivo}." + (f" (antes {antes})" if antes else ""),
+                usuario,
+                visible=False,
+            )
     if data.prioridad and data.prioridad != pqr.prioridad:
         pqr.prioridad = data.prioridad
         svc.registrar(db, pqr, "estado", f"Prioridad: {data.prioridad}.", usuario, visible=False)
@@ -563,10 +679,11 @@ def solicitar_informacion(
         pqr,
         "Necesitamos información para tu solicitud",
         [
-            data.texto,
             "Mientras nos respondes, el plazo queda en pausa y vuelve a empezar cuando nos envíes lo que falta. "
             "Si en un mes no recibimos respuesta, podremos archivar la solicitud; siempre puedes radicarla de nuevo.",
         ],
+        destacado=("Lo que necesitamos", data.texto),
+        tono="alerta",
     )
     return _detalle(pqr, True)
 
@@ -612,7 +729,14 @@ def prorrogar(
     )
     db.commit()
     db.refresh(pqr)
-    _avisar(bg, pqr, "Ampliamos el plazo de tu solicitud", [texto])
+    _avisar(
+        bg,
+        pqr,
+        "Ampliamos el plazo de tu solicitud",
+        [f"Motivo: {data.motivo}"],
+        destacado=("Nueva fecha límite", svc.fecha_legible(pqr.fecha_vencimiento)),
+        tono="alerta",
+    )
     return _detalle(pqr, True)
 
 
@@ -636,6 +760,8 @@ def responder(
     _exigir_abierta(pqr)
     if pqr.estado == "esperando_cliente":
         raise HTTPException(status_code=409, detail="Estamos esperando información del cliente")
+    if not pqr.categoria:
+        raise HTTPException(status_code=409, detail="Tipifica la PQR (categoría y motivo) antes de responder")
     if pqr.tipo == "reclamo" and data.decision == "informativa":
         raise HTTPException(
             status_code=422,
@@ -667,13 +793,22 @@ def responder(
     )
     db.commit()
     db.refresh(pqr)
-    parrafos = [TEXTO_DECISION[data.decision], pqr.respuesta]
+    nota = None
     if pqr.tipo in ("reclamo", "queja") and data.decision in ("parcial", "desfavorable"):
-        parrafos.append(
+        nota = (
             "Si no estás de acuerdo con esta respuesta, puedes acudir a la Superintendencia de Industria y "
-            "Comercio (www.sic.gov.co) como autoridad de protección al consumidor."
+            "Comercio (www.sic.gov.co), autoridad de protección al consumidor, con tu número de radicado."
         )
-    _avisar(bg, pqr, "Respondimos tu solicitud", parrafos)
+    tono = {"favorable": "exito", "parcial": "alerta", "desfavorable": "error"}.get(data.decision, "info")
+    _avisar(
+        bg,
+        pqr,
+        "Respondimos tu solicitud",
+        [pqr.respuesta, "Cuéntanos en tu perfil cómo te pareció la atención: tu calificación cierra la solicitud."],
+        destacado=("Nuestra decisión", TEXTO_DECISION[data.decision]),
+        tono=tono,
+        nota=nota,
+    )
     return _detalle(pqr, True)
 
 

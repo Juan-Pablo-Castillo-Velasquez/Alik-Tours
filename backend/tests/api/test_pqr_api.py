@@ -1,6 +1,7 @@
 """PQRSF: flujo completo entre cliente, asesor y admin."""
 
 from datetime import timedelta
+from email.header import decode_header, make_header
 
 import pytest
 
@@ -41,6 +42,16 @@ def _texto(correo):
     return "".join(p.get_payload(decode=True).decode("utf-8") for p in correo.walk() if not p.is_multipart())
 
 
+def _asunto(correo):
+    return str(make_header(decode_header(correo["Subject"])))
+
+
+def _tipificar(client, id_pqr, headers, categoria="pagos", motivo="Cobro doble"):
+    r = client.patch(f"/api/pqr/{id_pqr}/gestion", json={"categoria": categoria, "motivo": motivo}, headers=headers)
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
 def _radicar(client, headers, **extra):
     r = client.post("/api/pqr", json={**QUEJA, **extra}, headers=headers)
     assert r.status_code == 201, r.text
@@ -77,7 +88,7 @@ def test_radicar_queja_da_radicado_plazo_y_acuse(client, cliente, buzon, db):
     assert pqr["actuaciones"][0]["autor_equipo"] is False
     # Acuse de recibo por correo con el radicado y la fecha límite.
     assert len(buzon) == 1
-    assert pqr["radicado"] in buzon[0]["Subject"]
+    assert pqr["radicado"] in _asunto(buzon[0])
     # El panel recibe la notificación.
     assert db.query(Notificacion).filter(Notificacion.tipo == "pqr", Notificacion.id_cliente.is_(None)).count() == 1
 
@@ -242,6 +253,7 @@ def test_asignar_responsable_y_prioridad(client, cliente, asesor, admin):
 
 def test_responder_queja_a_tiempo_y_calificar(client, cliente, asesor, buzon):
     pqr = _radicar(client, cliente[1])
+    _tipificar(client, pqr["id_pqr"], asesor[1], "atencion", "Demora en la respuesta")
     buzon.clear()
     r = client.post(
         f"/api/pqr/{pqr['id_pqr']}/responder",
@@ -271,6 +283,7 @@ def test_responder_queja_a_tiempo_y_calificar(client, cliente, asesor, buzon):
 def test_reclamo_exige_decision_expresa_y_motivos_si_se_niega(client, cliente, asesor, buzon):
     pqr = _radicar(client, cliente[1], tipo="reclamo", pretension="Reembolso de la noche que no se prestó.")
     url = f"/api/pqr/{pqr['id_pqr']}/responder"
+    _tipificar(client, pqr["id_pqr"], asesor[1], "hotel", "Habitación distinta a la reservada")
     r = client.post(url, json={"decision": "informativa", "respuesta": "x" * 40}, headers=asesor[1])
     assert r.status_code == 422
     r = client.post(
@@ -296,6 +309,7 @@ def test_respuesta_tardia_queda_marcada(client, cliente, asesor, db):
     lista = client.get("/api/pqr/gestion?plazo=vencidas", headers=asesor[1]).json()
     assert lista["total"] == 1 and lista["resumen"]["vencidas"] == 1
     assert lista["items"][0]["estado_plazo"] == "vencida"
+    _tipificar(client, pqr["id_pqr"], asesor[1])
     r = client.post(
         f"/api/pqr/{pqr['id_pqr']}/responder",
         json={"decision": "favorable", "respuesta": "Respuesta de fondo a la queja presentada."},
@@ -429,3 +443,104 @@ def test_listado_con_filtros_busqueda_y_paginacion(client, cliente, otro_cliente
     assert resumen["abiertas"] == 8 and resumen["sin_asignar"] == 8
     de_cliente = client.get(f"/api/pqr/gestion/cliente/{otro_cliente[0].id_cliente}", headers=h).json()
     assert len(de_cliente) == 1
+
+
+# ─── tipificación ─────────────────────────────────────────────────────────
+
+
+def test_catalogo_de_tipificacion_solo_para_el_equipo(client, cliente, asesor):
+    assert client.get("/api/pqr/gestion/tipificaciones", headers=cliente[1]).status_code == 403
+    catalogo = client.get("/api/pqr/gestion/tipificaciones", headers=asesor[1]).json()
+    pagos = next(c for c in catalogo if c["categoria"] == "pagos")
+    assert "Cobro doble" in pagos["motivos"]
+
+
+def test_no_se_responde_sin_tipificar(client, cliente, asesor):
+    pqr = _radicar(client, cliente[1])
+    url = f"/api/pqr/{pqr['id_pqr']}/responder"
+    cuerpo = {"decision": "favorable", "respuesta": "Respuesta de fondo a la queja presentada por el cliente."}
+    r = client.post(url, json=cuerpo, headers=asesor[1])
+    assert r.status_code == 409
+    assert "Tipifica" in r.json()["detail"]
+    _tipificar(client, pqr["id_pqr"], asesor[1], "atencion", "Trato del asesor")
+    assert client.post(url, json=cuerpo, headers=asesor[1]).status_code == 200
+
+
+def test_tipificacion_valida_y_registrada_solo_para_el_equipo(client, cliente, asesor):
+    pqr = _radicar(client, cliente[1])
+    url = f"/api/pqr/{pqr['id_pqr']}/gestion"
+    # Motivo de otra categoría, o solo uno de los dos: no.
+    assert client.patch(url, json={"categoria": "pagos", "motivo": "Equipaje"}, headers=asesor[1]).status_code == 422
+    assert client.patch(url, json={"categoria": "pagos"}, headers=asesor[1]).status_code == 422
+    assert (
+        client.patch(url, json={"categoria": "pagos", "motivo": "Cobro doble"}, headers=cliente[1]).status_code == 403
+    )
+    d = _tipificar(client, pqr["id_pqr"], asesor[1], "vuelos", "Equipaje")
+    assert (d["categoria"], d["categoria_nombre"], d["motivo"]) == ("vuelos", "Vuelos", "Equipaje")
+    assert any(a["tipo"] == "tipificacion" and not a["visible_cliente"] for a in d["actuaciones"])
+    vista_cliente = client.get(f"/api/pqr/{pqr['id_pqr']}", headers=cliente[1]).json()
+    assert all(a["tipo"] != "tipificacion" for a in vista_cliente["actuaciones"])
+
+
+def test_filtro_y_reporte_por_categoria(client, cliente, asesor):
+    a = _radicar(client, cliente[1])
+    b = _radicar(client, cliente[1])
+    _radicar(client, cliente[1])
+    _tipificar(client, a["id_pqr"], asesor[1], "pagos", "Cobro doble")
+    _tipificar(client, b["id_pqr"], asesor[1], "pagos", "Reembolso pendiente")
+    h = asesor[1]
+    assert client.get("/api/pqr/gestion?categoria=pagos", headers=h).json()["total"] == 2
+    datos = client.get("/api/pqr/gestion?categoria=sin", headers=h).json()
+    assert datos["total"] == 1
+    assert datos["resumen"]["sin_tipificar"] == 1
+    assert datos["resumen"]["por_categoria"] == [{"categoria": "pagos", "nombre": "Pagos y cobros", "total": 2}]
+
+
+# ─── ejemplos ─────────────────────────────────────────────────────────────
+
+
+def test_ejemplos_solo_admin_y_en_todos_los_estados(client, cliente, asesor, admin, buzon):
+    id_cliente = cliente[0].id_cliente
+    assert (
+        client.post("/api/pqr/gestion/ejemplos", json={"id_cliente": id_cliente}, headers=asesor[1]).status_code == 403
+    )
+    r = client.post("/api/pqr/gestion/ejemplos", json={"id_cliente": id_cliente}, headers=admin[1])
+    assert r.status_code == 201
+    assert r.json()["creadas"] == 8
+    mias = client.get("/api/pqr/mias", headers=cliente[1]).json()
+    assert len(mias) == 8 and all(p["es_ejemplo"] for p in mias)
+    estados = {p["estado"] for p in mias}
+    assert {"radicada", "en_tramite", "esperando_cliente", "respondida", "cerrada"} <= estados
+    plazos = {p["estado_plazo"] for p in mias}
+    assert {"vencida", "por_vencer", "pausada", "respondida_a_tiempo"} <= plazos
+    assert any(p["prorrogada"] for p in mias)
+    # Las ya respondidas le llegan al cliente por correo, marcadas como ejemplo.
+    assert len(buzon) == 2 and all(_asunto(c).startswith("[Ejemplo]") for c in buzon)
+    # El cliente no ve las notas internas de los ejemplos.
+    for p in mias:
+        detalle = client.get(f"/api/pqr/{p['id_pqr']}", headers=cliente[1]).json()
+        assert all(a["visible_cliente"] for a in detalle["actuaciones"])
+    resumen = client.get("/api/pqr/gestion", headers=admin[1]).json()["resumen"]
+    assert resumen["ejemplos"] == 8
+    r = client.delete("/api/pqr/gestion/ejemplos", headers=admin[1])
+    assert r.json()["borradas"] == 8
+    assert client.get("/api/pqr/mias", headers=cliente[1]).json() == []
+
+
+def test_correo_de_respuesta_con_la_marca_y_la_decision(client, cliente, asesor, buzon):
+    pqr = _radicar(client, cliente[1])
+    acuse = _texto(buzon[0])
+    assert pqr["radicado"] in acuse and "Te respondemos a más tardar el" in acuse
+    _tipificar(client, pqr["id_pqr"], asesor[1], "atencion", "Demora en la respuesta")
+    buzon.clear()
+    client.post(
+        f"/api/pqr/{pqr['id_pqr']}/responder",
+        json={"decision": "favorable", "respuesta": "Te reenviamos los vouchers y ajustamos el proceso de envío."},
+        headers=asesor[1],
+    )
+    correo = buzon[0]
+    assert _asunto(correo) == f"Respondimos tu solicitud · {pqr['radicado']}"
+    cuerpo = _texto(correo)
+    assert "Accedemos a lo que pediste." in cuerpo
+    assert "Te reenviamos los vouchers" in cuerpo
+    assert "/profile?tab=pqr" in cuerpo

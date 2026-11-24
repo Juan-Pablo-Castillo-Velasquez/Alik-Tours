@@ -13,6 +13,9 @@ import {
   Search,
   Send,
   Smile,
+  Sparkles,
+  Tags,
+  Trash2,
   UserX,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -21,13 +24,14 @@ import {
   pqrService,
   type DecisionPqr,
   type FiltrosGestionPqr,
+  type PqrCategoria,
   type PqrDetalle,
   type PqrPagina,
   type TipoPqr,
 } from "../../services/pqr.service";
 import { DECISION_PQR, fechaCorta, TIPOS_PQR } from "../../utils/pqr";
 import { codigoReserva } from "../../utils/reservaPresentacion";
-import { EstadoPqrBadge, HiloPqr, PlazoCorto, PlazoDetalle } from "../pqr/PqrPiezas";
+import { EstadoPqrBadge, EtiquetaEjemplo, HiloPqr, PlazoCorto, PlazoDetalle } from "../pqr/PqrPiezas";
 import Pagination from "../ui/pagination";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet";
 import AdminModal from "./ui/AdminModal";
@@ -44,9 +48,11 @@ type Accion = "mensaje" | "nota" | "informacion" | "prorroga" | "respuesta" | "c
 export default function ModulePqr({
   clientes = [],
   usuarioId,
+  esAdmin = false,
 }: {
   clientes?: Cliente[];
   usuarioId?: number;
+  esAdmin?: boolean;
 }) {
   const [filtros, setFiltros] = useState<FiltrosGestionPqr>({ estado: "abiertas", page: 1, page_size: POR_PAGINA });
   const [busqueda, setBusqueda] = useState("");
@@ -55,6 +61,8 @@ export default function ModulePqr({
   const [abierta, setAbierta] = useState<number | null>(null);
   const [radicar, setRadicar] = useState(false);
   const [responsables, setResponsables] = useState<{ id_usuario: number; nombre: string }[]>([]);
+  const [catalogo, setCatalogo] = useState<PqrCategoria[]>([]);
+  const [ejemplos, setEjemplos] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -73,6 +81,7 @@ export default function ModulePqr({
 
   useEffect(() => {
     pqrService.responsables().then(setResponsables).catch(() => {});
+    pqrService.tipificaciones().then(setCatalogo).catch(() => {});
   }, []);
 
   // Búsqueda con espera corta para no pedir en cada tecla.
@@ -93,13 +102,24 @@ export default function ModulePqr({
         title="PQR"
         subtitle="Peticiones, quejas, reclamos, sugerencias y felicitaciones, con su plazo legal en días hábiles."
         action={
-          <button
-            type="button"
-            onClick={() => setRadicar(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
-          >
-            <PhoneCall className="h-4 w-4" /> Radicar por un cliente
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {esAdmin && (
+              <button
+                type="button"
+                onClick={() => setEjemplos(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted"
+              >
+                <Sparkles className="h-4 w-4" /> Cargar ejemplos
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setRadicar(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
+            >
+              <PhoneCall className="h-4 w-4" /> Radicar por un cliente
+            </button>
+          </div>
         }
       />
 
@@ -143,8 +163,78 @@ export default function ModulePqr({
         />
       </div>
 
+      {r && r.ejemplos > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-3 text-sm">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className="text-foreground">
+            Hay <strong>{r.ejemplos}</strong> PQR de ejemplo, marcadas «Ejemplo». Cuentan en estos indicadores.
+          </span>
+          {esAdmin && (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const { borradas } = await pqrService.borrarEjemplos();
+                  toast.success(`Se borraron ${borradas} PQR de ejemplo`);
+                  cargar();
+                } catch (e) {
+                  toast.error(mensajeError(e, "No se pudieron borrar"));
+                }
+              }}
+              className="ml-auto inline-flex items-center gap-1.5 font-semibold text-destructive hover:underline"
+            >
+              <Trash2 className="h-4 w-4" /> Quitar ejemplos
+            </button>
+          )}
+        </div>
+      )}
+
+      {r && r.por_categoria.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Tags className="h-4 w-4 text-primary" /> Motivos más frecuentes
+            </h3>
+            {r.sin_tipificar > 0 && (
+              <button
+                type="button"
+                onClick={() => filtrar({ categoria: "sin", estado: "abiertas" })}
+                className="text-xs font-semibold text-warning hover:underline"
+              >
+                {r.sin_tipificar} abiertas sin tipificar
+              </button>
+            )}
+          </div>
+          <ul className="grid gap-x-8 gap-y-2.5 md:grid-cols-2">
+            {r.por_categoria.slice(0, 6).map((c) => {
+              const max = r.por_categoria[0].total;
+              return (
+                <li key={c.categoria}>
+                  <button
+                    type="button"
+                    onClick={() => filtrar({ categoria: c.categoria, estado: undefined })}
+                    className="group w-full text-left"
+                  >
+                    <span className="flex justify-between text-sm">
+                      <span className="text-foreground group-hover:text-primary">{c.nombre}</span>
+                      <span className="font-semibold tabular-nums text-foreground">{c.total}</span>
+                    </span>
+                    <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-muted">
+                      <span
+                        className="block h-full rounded-full bg-primary"
+                        style={{ width: `${Math.max(6, (c.total / max) * 100)}%` }}
+                      />
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_repeat(4,minmax(0,1fr))]">
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -181,6 +271,20 @@ export default function ModulePqr({
             {TIPOS_PQR.map((t) => (
               <option key={t.tipo} value={t.tipo}>
                 {t.nombre}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Categoría"
+            value={filtros.categoria ?? ""}
+            onChange={(e) => filtrar({ categoria: e.target.value || undefined })}
+            className={inputCls}
+          >
+            <option value="">Todas las categorías</option>
+            <option value="sin">Sin tipificar</option>
+            {catalogo.map((c) => (
+              <option key={c.categoria} value={c.categoria}>
+                {c.nombre}
               </option>
             ))}
           </select>
@@ -252,7 +356,21 @@ export default function ModulePqr({
                           </span>
                         )}
                       </span>
-                      <span className="mt-0.5 block truncate font-semibold text-foreground">{p.asunto}</span>
+                      <span className="mt-0.5 flex items-center gap-2">
+                        <span className="truncate font-semibold text-foreground">{p.asunto}</span>
+                        {p.es_ejemplo && <EtiquetaEjemplo />}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs">
+                        {p.categoria_nombre ? (
+                          <span className="text-muted-foreground">
+                            {p.categoria_nombre} → {p.motivo}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 font-medium text-warning">
+                            <Tags className="h-3 w-3" /> Sin tipificar
+                          </span>
+                        )}
+                      </span>
                     </span>
                     <span className="truncate text-sm text-foreground">
                       {p.cliente_nombre ?? `Cliente #${p.id_cliente}`}
@@ -297,6 +415,7 @@ export default function ModulePqr({
           {abierta != null && (
             <DetalleGestion
               id={abierta}
+              catalogo={catalogo}
               responsables={responsables}
               usuarioId={usuarioId}
               onCambio={cargar}
@@ -304,6 +423,17 @@ export default function ModulePqr({
           )}
         </SheetContent>
       </Sheet>
+
+      <CargarEjemplos
+        open={ejemplos}
+        onOpenChange={setEjemplos}
+        clientes={clientes}
+        onListo={(n) => {
+          setEjemplos(false);
+          toast.success(`Se crearon ${n} PQR de ejemplo`);
+          filtrar({ estado: undefined, plazo: undefined, categoria: undefined, responsable: undefined });
+        }}
+      />
 
       <RadicarPorCliente
         open={radicar}
@@ -324,11 +454,13 @@ export default function ModulePqr({
 
 function DetalleGestion({
   id,
+  catalogo,
   responsables,
   usuarioId,
   onCambio,
 }: {
   id: number;
+  catalogo: PqrCategoria[];
   responsables: { id_usuario: number; nombre: string }[];
   usuarioId?: number;
   onCambio: () => void;
@@ -339,6 +471,13 @@ function DetalleGestion({
   const [dias, setDias] = useState(5);
   const [decision, setDecision] = useState<DecisionPqr>("favorable");
   const [enviando, setEnviando] = useState(false);
+  const [categoria, setCategoria] = useState("");
+  const [motivo, setMotivo] = useState("");
+
+  useEffect(() => {
+    setCategoria(pqr?.categoria ?? "");
+    setMotivo(pqr?.motivo ?? "");
+  }, [pqr?.categoria, pqr?.motivo]);
 
   useEffect(() => {
     pqrService.ver(id).then(setPqr).catch((e) => toast.error(mensajeError(e, "No se pudo abrir la PQR")));
@@ -393,7 +532,11 @@ function DetalleGestion({
     respuesta: decision === "parcial" || decision === "desfavorable" ? 80 : 30,
     cierre: 10,
   };
-  const listo = actual ? texto.trim().length >= minimo[actual] : false;
+  const tipificada = !!pqr.categoria;
+  const listo =
+    (actual ? texto.trim().length >= minimo[actual] : false) && (actual !== "respuesta" || tipificada);
+  const motivos = catalogo.find((c) => c.categoria === categoria)?.motivos ?? [];
+  const cambioTipificacion = categoria !== (pqr.categoria ?? "") || motivo !== (pqr.motivo ?? "");
 
   const enviar = () => {
     const t = texto.trim();
@@ -435,6 +578,7 @@ function DetalleGestion({
           <span className="font-mono font-semibold text-foreground">{pqr.radicado}</span>
           <span>· {pqr.tipo_nombre}</span>
           <span>· canal {pqr.canal}</span>
+          {pqr.es_ejemplo && <EtiquetaEjemplo />}
           <EstadoPqrBadge estado={pqr.estado} vista="equipo" />
         </div>
         <SheetTitle className="text-xl font-bold text-foreground">{pqr.asunto}</SheetTitle>
@@ -501,6 +645,76 @@ function DetalleGestion({
           </div>
         )}
 
+        <section
+          className={`rounded-xl border p-4 ${tipificada ? "border-border bg-card" : "border-warning/50 bg-warning/5"}`}
+          aria-label="Tipificación"
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Tags className="h-4 w-4 text-primary" /> Tipificación
+            </p>
+            {!tipificada && <span className="text-xs font-medium text-warning">Obligatoria para responder</span>}
+          </div>
+          {abierta ? (
+            <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <div>
+                <label htmlFor="pqr-categoria" className={labelCls}>
+                  Categoría
+                </label>
+                <select
+                  id="pqr-categoria"
+                  value={categoria}
+                  onChange={(e) => {
+                    setCategoria(e.target.value);
+                    setMotivo("");
+                  }}
+                  className={inputCls}
+                >
+                  <option value="">Elige…</option>
+                  {catalogo.map((c) => (
+                    <option key={c.categoria} value={c.categoria}>
+                      {c.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="pqr-motivo" className={labelCls}>
+                  Motivo
+                </label>
+                <select
+                  id="pqr-motivo"
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  disabled={!categoria}
+                  className={inputCls}
+                >
+                  <option value="">Elige…</option>
+                  {motivos.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                disabled={!categoria || !motivo || !cambioTipificacion || enviando}
+                onClick={() =>
+                  ejecutar(() => pqrService.actualizar(pqr.id_pqr, { categoria, motivo }), "PQR tipificada")
+                }
+                className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
+              >
+                Guardar
+              </button>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-foreground">
+              {pqr.categoria_nombre ? `${pqr.categoria_nombre} → ${pqr.motivo}` : "Sin tipificar"}
+            </p>
+          )}
+        </section>
+
         <section className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Lo que pide el cliente</p>
           <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground">{pqr.descripcion}</p>
@@ -547,6 +761,11 @@ function DetalleGestion({
               ))}
             </div>
 
+            {actual === "respuesta" && !tipificada && (
+              <p className="mb-3 rounded-lg bg-warning/10 px-3 py-2 text-sm text-warning">
+                Primero tipifica la PQR (categoría y motivo) para poder dar la respuesta.
+              </p>
+            )}
             {actual === "respuesta" && (
               <div className="mb-3">
                 <label htmlFor="pqr-decision" className={labelCls}>
@@ -775,6 +994,85 @@ function RadicarPorCliente({
           <input type="checkbox" checked={autoriza} onChange={(e) => setAutoriza(e.target.checked)} className="mt-0.5" />
           El cliente autorizó el tratamiento de sus datos para tramitar esta solicitud.
         </label>
+      </div>
+    </AdminModal>
+  );
+}
+
+// ─── PQR de ejemplo ───────────────────────────────────────────────────────
+
+function CargarEjemplos({
+  open,
+  onOpenChange,
+  clientes,
+  onListo,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  clientes: Cliente[];
+  onListo: (n: number) => void;
+}) {
+  const [idCliente, setIdCliente] = useState("");
+  const [filtro, setFiltro] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const opciones = clientes
+    .filter((c) => {
+      const q = filtro.trim().toLowerCase();
+      return !q || `${c.nombre} ${c.apellido} ${c.cedula} ${c.correo ?? ""}`.toLowerCase().includes(q);
+    })
+    .slice(0, 50);
+
+  return (
+    <AdminModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Cargar PQR de ejemplo"
+      description="Para demostraciones: se crean 8 solicitudes en todos los estados (en trámite, por vencer, vencida, prorrogada, esperando al cliente, respondida y cerrada) para el cliente que elijas."
+      maxWidth="sm:max-w-lg"
+      footer={
+        <button
+          type="button"
+          disabled={!idCliente || enviando}
+          onClick={async () => {
+            setEnviando(true);
+            try {
+              const { creadas } = await pqrService.cargarEjemplos(Number(idCliente));
+              onListo(creadas);
+            } catch (e) {
+              toast.error(mensajeError(e, "No se pudieron crear los ejemplos"));
+            } finally {
+              setEnviando(false);
+            }
+          }}
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+        >
+          {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Crear ejemplos
+        </button>
+      }
+    >
+      <div className="space-y-3">
+        <label htmlFor="ej-buscar" className={labelCls}>
+          Cliente que verá los ejemplos en su perfil
+        </label>
+        <input
+          id="ej-buscar"
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
+          placeholder="Buscar por nombre, cédula o correo"
+          className={inputCls}
+        />
+        <select aria-label="Cliente para los ejemplos" value={idCliente} onChange={(e) => setIdCliente(e.target.value)} className={inputCls}>
+          <option value="">Elige un cliente</option>
+          {opciones.map((c) => (
+            <option key={c.id_cliente} value={c.id_cliente}>
+              {c.nombre} {c.apellido} · {c.cedula}
+            </option>
+          ))}
+        </select>
+        <p className="rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground">
+          Usa una cuenta de prueba o la tuya: a ese correo llegan 2 respuestas marcadas «[Ejemplo]». Las PQR llevan la
+          etiqueta «Ejemplo» en el panel y en el perfil, y las quitas todas con «Quitar ejemplos».
+        </p>
       </div>
     </AdminModal>
   );

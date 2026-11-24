@@ -42,6 +42,9 @@ class PqrGestionUpdate(BaseModel):
     prioridad: Literal["normal", "alta"] | None = None
     # 0 = quitar el responsable.
     id_responsable: int | None = None
+    # Tipificación: se mandan juntos.
+    categoria: str | None = Field(None, max_length=30)
+    motivo: str | None = Field(None, max_length=80)
 
 
 class PqrSolicitarInformacion(BaseModel):
@@ -106,6 +109,10 @@ class PqrResumenOut(BaseModel):
     decision: DecisionPqr | None
     fecha_respuesta: datetime | None
     satisfaccion: int | None
+    categoria: str | None
+    categoria_nombre: str | None
+    motivo: str | None
+    es_ejemplo: bool
     ultima_actividad: datetime | None
 
 
@@ -123,6 +130,12 @@ class PqrDetalleOut(PqrResumenOut):
     actuaciones: list[PqrActuacionOut]
 
 
+class PqrConteoCategoria(BaseModel):
+    categoria: str
+    nombre: str
+    total: int
+
+
 class PqrResumenGestion(BaseModel):
     abiertas: int
     sin_asignar: int
@@ -131,6 +144,9 @@ class PqrResumenGestion(BaseModel):
     respondidas: int
     a_tiempo_pct: int | None
     satisfaccion_promedio: float | None
+    sin_tipificar: int
+    ejemplos: int
+    por_categoria: list[PqrConteoCategoria]
 
 
 class PqrPagina(BaseModel):
@@ -147,6 +163,21 @@ class PqrTipoOut(BaseModel):
     descripcion: str
     dias: int
     norma: str
+
+
+class PqrCategoriaOut(BaseModel):
+    categoria: str
+    nombre: str
+    motivos: list[str]
+
+
+class PqrEjemplosIn(BaseModel):
+    id_cliente: int
+
+
+class PqrEjemplosOut(BaseModel):
+    creadas: int
+    borradas: int = 0
 
 
 class PqrResponsableOut(BaseModel):

@@ -18,7 +18,7 @@ import { usePagination } from "../../hooks/usePagination";
 import { pqrService, type PqrDetalle, type PqrResumen, type TipoPqr } from "../../services/pqr.service";
 import { DECISION_PQR, fechaCorta, TIPOS_PQR } from "../../utils/pqr";
 import { codigoReserva, tituloReserva } from "../../utils/reservaPresentacion";
-import { EstadoPqrBadge, HiloPqr, PlazoCorto, PlazoDetalle } from "../pqr/PqrPiezas";
+import { EstadoPqrBadge, EtiquetaEjemplo, HiloPqr, PlazoCorto, PlazoDetalle } from "../pqr/PqrPiezas";
 import Pagination from "../ui/pagination";
 import EncabezadoTab, { PanelPerfil, VacioPerfil } from "./EncabezadoTab";
 
@@ -208,6 +208,7 @@ export default function TabPqr({ reservas = [], pqrIdInicial }: { reservas?: Res
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="font-mono text-xs font-semibold text-muted-foreground">{p.radicado}</span>
                           <span className="text-xs text-muted-foreground">· {p.tipo_nombre}</span>
+                          {p.es_ejemplo && <EtiquetaEjemplo />}
                         </div>
                         <p className="mt-0.5 truncate font-semibold text-foreground">{p.asunto}</p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -566,6 +567,7 @@ function DetallePqr({ id, onVolver }: { id: number; onVolver: () => void }) {
             {pqr.radicado} <Copy className="h-3 w-3" />
           </button>
           <span className="text-xs text-muted-foreground">{pqr.tipo_nombre}</span>
+          {pqr.es_ejemplo && <EtiquetaEjemplo />}
           <span className="ml-auto">
             <EstadoPqrBadge estado={pqr.estado} />
           </span>

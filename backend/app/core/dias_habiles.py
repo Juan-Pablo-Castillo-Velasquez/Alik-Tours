@@ -72,6 +72,18 @@ def sumar_dias_habiles(desde: date, dias: int) -> date:
     return actual
 
 
+def restar_dias_habiles(hasta: date, dias: int) -> date:
+    """Inverso de sumar_dias_habiles: el día desde el que, sumando `dias`
+    días hábiles, se llega a `hasta` (o a un día hábil anterior)."""
+    actual = hasta
+    contados = 0
+    while contados < dias:
+        if es_dia_habil(actual):
+            contados += 1
+        actual -= timedelta(days=1)
+    return actual
+
+
 def dias_habiles_entre(desde: date, hasta: date) -> int:
     """Días hábiles que quedan desde `desde` (exclusive) hasta `hasta`
     (inclusive). Negativo si `hasta` ya pasó: cuántos días hábiles de mora."""

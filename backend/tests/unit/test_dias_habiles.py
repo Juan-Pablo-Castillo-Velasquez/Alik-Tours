@@ -92,3 +92,13 @@ def test_hoy_colombia_usa_utc_menos_5():
     # 03:00 UTC del 25 nov = 22:00 del 24 nov en Bogotá.
     assert hoy_colombia(datetime(2026, 11, 25, 3, 0, tzinfo=UTC)) == date(2026, 11, 24)
     assert hoy_colombia(datetime(2026, 11, 25, 3, 0)) == date(2026, 11, 24)
+
+
+def test_restar_dias_habiles_es_el_inverso_de_sumar():
+    from app.core.dias_habiles import restar_dias_habiles
+
+    # 16 dic 2026 menos 15 hábiles = 24 nov (salta el festivo del 8 de dic).
+    assert restar_dias_habiles(date(2026, 12, 16), 15) == date(2026, 11, 24)
+    for dias in (1, 5, 10, 30):
+        inicio = restar_dias_habiles(date(2026, 11, 24), dias)
+        assert sumar_dias_habiles(inicio, dias) == date(2026, 11, 24)
