@@ -418,7 +418,7 @@ export default function ModuleHoteles({ hoteles, onDelete, onSubmit, loading, on
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5 text-xs text-foreground">
-                      <Star className="w-3.5 h-3.5 text-[#7A5F08] dark:text-[#E3C55A] fill-[#C9A227]" />
+                      <Star className="w-3.5 h-3.5 text-[#C9A227] fill-[#C9A227]" />
                       <span className="font-medium">{h.calificacion_promedio ?? h.calificacion}</span>
                       {!!h.total_resenas && (
                         <span className="text-[11px] text-muted-foreground">({h.total_resenas} reseña{h.total_resenas === 1 ? "" : "s"})</span>

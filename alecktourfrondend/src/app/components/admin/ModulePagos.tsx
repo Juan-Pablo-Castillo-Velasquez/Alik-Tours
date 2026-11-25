@@ -454,7 +454,7 @@ export default function ModulePagos({
                         </button>
                         {/* Un pago aprobado o con comprobante es registro de dinero
                             recibido: el backend rechaza borrarlo (409). */}
-                        {p.estado !== "pagado" && !p.numero_factura && (
+                        {p.estado !== "pagado" && !p.numero_factura ? (
                           <button aria-label="Eliminar pago"
                             onClick={() => onDelete(p.id_pago)}
                             className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
@@ -462,6 +462,9 @@ export default function ModulePagos({
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
+                        ) : (
+                          // mantiene las columnas de acciones alineadas entre filas
+                          <span className="w-7" aria-hidden="true" />
                         )}
                       </div>
                   </td>

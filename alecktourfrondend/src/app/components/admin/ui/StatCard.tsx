@@ -27,24 +27,35 @@ export default function StatCard({
 }: StatCardProps) {
   const Comp = (onClick ? "button" : "div") as any;
 
+  // Horizontal y compacta (como los totales de Reservas): el número se lee
+  // de un vistazo y la tabla, que es lo importante, sube en la pantalla.
   return (
     <Comp
       onClick={onClick}
-      className={`bg-card rounded-2xl p-5 shadow-sm border border-border hover:shadow-md transition-shadow text-left w-full ${
-        onClick ? "cursor-pointer" : ""
+      type={onClick ? "button" : undefined}
+      className={`group flex w-full items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-[box-shadow,border-color,transform] ${
+        onClick
+          ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          : ""
       }`}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div
-          className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-sm`}
-        >
-          <Icon className="w-5 h-5 text-white" />
-        </div>
-        {onClick && <ArrowUpRight className="w-4 h-4 text-muted-foreground" />}
+      <div
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-sm ring-4 ring-black/[0.03]`}
+        aria-hidden="true"
+      >
+        <Icon className="h-5 w-5 text-white" />
       </div>
-      <p className="text-3xl font-bold text-foreground mb-0.5">{value}</p>
-      <p className="text-sm font-medium text-muted-foreground">{label}</p>
-      {sub && <p className={`text-xs mt-1 font-medium ${subColor}`}>{sub}</p>}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-2xl font-bold leading-tight tracking-tight text-foreground tabular-nums">{value}</p>
+        <p className="truncate text-sm font-medium text-muted-foreground">{label}</p>
+        {sub && <p className={`mt-0.5 truncate text-xs font-medium ${subColor}`}>{sub}</p>}
+      </div>
+      {onClick && (
+        <ArrowUpRight
+          className="h-4 w-4 shrink-0 self-start text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
+          aria-hidden="true"
+        />
+      )}
     </Comp>
   );
 }

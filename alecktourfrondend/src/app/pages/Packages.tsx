@@ -219,7 +219,7 @@ export default function Packages() {
             {totalPaginas > 1 && (
               <nav
                 aria-label="Paginación de paquetes"
-                className="flex items-center justify-center gap-1.5 mt-8"
+                className="flex flex-wrap items-center justify-center gap-1.5 mt-8"
               >
                 <button
                   type="button"

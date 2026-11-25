@@ -104,18 +104,19 @@ export default function Hero() {
   // de reseñas es mayor a cero, para no aparentar un puntaje real inexistente.
   const hayResenasReales = resenasTotal != null && resenasTotal > 0;
 
+  // Sin reseñas reales la casilla de reseñas no se muestra: un "—" grande
+  // en el hero se lee como un dato roto, no como "todavía no hay".
   const stats = [
     { value: totalHotelesLabel, label: t("hero.statHoteles") },
     { value: String(totalDestinos), label: t("hero.statDestinos") },
-    {
-      value:
-        hayResenasReales && resenasPromedio != null
-          ? `${resenasPromedio.toFixed(1)}★`
-          : "—",
-      label: hayResenasReales
-        ? t(resenasTotal === 1 ? "hero.statResena1" : "hero.statResenaN", { n: resenasTotal })
-        : t("hero.statResenas"),
-    },
+    ...(hayResenasReales && resenasPromedio != null
+      ? [
+          {
+            value: `${resenasPromedio.toFixed(1)}★`,
+            label: t(resenasTotal === 1 ? "hero.statResena1" : "hero.statResenaN", { n: resenasTotal }),
+          },
+        ]
+      : []),
     { value: String(totalHabitacionesDisponibles), label: t("hero.statHab") },
   ];
 
