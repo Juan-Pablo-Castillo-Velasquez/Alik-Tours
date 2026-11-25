@@ -254,6 +254,12 @@
   --color-ring: var(--ring);
 
   --color-gold: var(--gold);
+  /* Colores de gráficos (también usados en estrellas de calificación). */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
   --color-gold-foreground: var(--gold-foreground);
 
   --color-sidebar: var(--sidebar);
@@ -330,6 +336,65 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+
+  /* ── Superficies del navegador con la marca ─────────────────────────
+     Selección de texto, cursor de escritura, casillas nativas, barras de
+     desplazamiento y subrayados: lo que el navegador pinta por defecto
+     también lleva el granate y el dorado de Alik Tours. */
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
+    color: var(--foreground);
+  }
+  .dark ::selection {
+    background: color-mix(in srgb, var(--gold-surface) 35%, transparent);
+  }
+  html {
+    accent-color: var(--primary);
+    caret-color: var(--primary);
+    scrollbar-color: color-mix(in srgb, var(--primary) 35%, var(--muted)) transparent;
+    -webkit-tap-highlight-color: color-mix(in srgb, var(--primary) 12%, transparent);
+    text-rendering: optimizeLegibility;
+  }
+  .dark {
+    accent-color: var(--gold-surface);
+    caret-color: var(--gold-surface);
+    scrollbar-color: color-mix(in srgb, var(--gold-surface) 30%, var(--muted)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--primary) 30%, var(--muted));
+    border-radius: 999px;
+    border: 2px solid var(--background);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--primary) 55%, var(--muted));
+  }
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: from-font;
+  }
+  /* Títulos sin palabras huérfanas; párrafos sin una sola palabra en la última línea. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* Precios, fechas y contadores con cifras del mismo ancho: las columnas no "bailan". */
+  table,
+  time,
+  .tabular-nums,
+  [data-cifras] {
+    font-variant-numeric: tabular-nums;
   }
 }
 

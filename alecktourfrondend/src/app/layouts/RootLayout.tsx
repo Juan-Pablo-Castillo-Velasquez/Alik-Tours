@@ -8,6 +8,7 @@ import PanelAccesibilidad from "../components/accesibilidad/PanelAccesibilidad";
 import SaltarContenido from "../components/accesibilidad/SaltarContenido";
 import AsistenteVoz from "../components/accesibilidad/AsistenteVoz";
 import AnunciadorRuta from "../components/accesibilidad/AnunciadorRuta";
+import ImagenesRotas from "../components/ImagenesRotas";
 import { AuthModalProvider } from "../context/AuthModalContext";
 import WhatsAppButton from "../components/WhatsAppButton";
 import CookieConsent from "../components/CookieConsent";
@@ -32,6 +33,7 @@ export default function RootLayout() {
         <AuthModalProvider>
             <SaltarContenido />
             <AnunciadorRuta />
+            <ImagenesRotas />
             <Toaster />
             <ConfirmacionGlobal />
             <AvisoLimiteEnvios />

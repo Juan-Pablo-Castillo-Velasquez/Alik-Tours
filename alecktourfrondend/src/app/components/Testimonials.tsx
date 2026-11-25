@@ -105,29 +105,29 @@ export default function Testimonials() {
             </p>
           </div>
 
-          {/* Rating general */}
+          {/* Rating general: solo cuando ya hay reseñas reales (un recuadro
+              que dice "Aún sin calificación" no aporta nada). */}
+          {ratingPromedio !== null && (totalResenas ?? 0) > 0 && (
           <div className="flex items-center gap-4 bg-card rounded-2xl px-5 py-4 border border-border shadow-xl shadow-primary/5 dark:shadow-none">
             <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-              <Star className="w-6 h-6 text-[#7A5F08] dark:text-[#E3C55A] fill-[#C9A227]" />
+              <Star className="w-6 h-6 text-[#E3C55A] fill-[#E3C55A]" aria-hidden />
             </div>
 
             <div>
-              {ratingPromedio !== null && (totalResenas ?? 0) > 0 ? (
-                <>
-                  <div className="flex items-center gap-1 mb-1">
+                  <div className="flex items-center gap-1 mb-1" aria-hidden>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
                         className={`w-3.5 h-3.5 ${
                           star <= Math.round(ratingPromedio)
-                            ? "fill-[#C9A227] text-[#7A5F08] dark:text-[#E3C55A]"
+                            ? "fill-[#C9A227] text-[#C9A227]"
                             : "text-muted-foreground/40"
                         }`}
                       />
                     ))}
                   </div>
 
-                  <p className="text-foreground font-bold text-sm">
+                  <p className="text-foreground font-bold text-sm tabular-nums">
                     {ratingPromedio.toFixed(1)} / 5.0
                   </p>
 
@@ -136,14 +136,9 @@ export default function Testimonials() {
                       ? `${totalResenas} opiniones verificadas`
                       : "Opiniones verificadas"}
                   </p>
-                </>
-              ) : (
-                <p className="text-muted-foreground text-xs font-medium">
-                  Aún sin calificación
-                </p>
-              )}
             </div>
           </div>
+          )}
         </motion.div>
 
         {/* CONTENIDO */}
@@ -151,8 +146,10 @@ export default function Testimonials() {
           {/* TESTIMONIOS */}
           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-5">
             {testimonials.length === 0 && (
-              <div className="md:col-span-3 flex flex-col items-center justify-center text-center gap-2 bg-card rounded-3xl p-10 border border-dashed border-border">
-                <Quote className="w-8 h-8 text-muted-foreground" />
+              <div className="md:col-span-3 flex flex-col items-center justify-center text-center gap-2 rounded-3xl border border-border bg-card p-10 shadow-lg shadow-primary/5 dark:shadow-none">
+                <span className="mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary" aria-hidden>
+                  <Quote className="h-6 w-6" />
+                </span>
                 <p className="text-foreground font-semibold text-sm">
                   Todavía no hay reseñas destacadas
                 </p>
@@ -186,7 +183,7 @@ export default function Testimonials() {
                   {Array.from({ length: t.rating }, (_, index) => (
                     <Star
                       key={index}
-                      className="w-4 h-4 fill-[#C9A227] text-[#7A5F08] dark:text-[#E3C55A]"
+                      className="w-4 h-4 fill-[#C9A227] text-[#C9A227]"
                     />
                   ))}
                   <span className="ml-1 text-[11px] text-muted-foreground">
@@ -253,7 +250,7 @@ export default function Testimonials() {
             <div className="relative">
               <div className="flex items-center justify-between mb-5">
                 <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center">
-                  <PlaneTakeoff className="w-7 h-7 text-[#7A5F08] dark:text-[#E3C55A]" />
+                  <PlaneTakeoff className="w-7 h-7 text-[#E3C55A]" />
                 </div>
                 <span className="text-[10px] uppercase tracking-wider font-bold text-white/80 bg-white/10 px-3 py-1.5 rounded-full">
                   Grupos
@@ -269,7 +266,7 @@ export default function Testimonials() {
               >
                 Tu próximo viaje
                 <br />
-                <span className="text-[#7A5F08] dark:text-[#E3C55A]">empieza aquí.</span>
+                <span className="text-[#E3C55A]">empieza aquí.</span>
               </h3>
 
               <p className="text-white/80 text-sm leading-relaxed">

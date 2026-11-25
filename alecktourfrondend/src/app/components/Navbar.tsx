@@ -137,7 +137,7 @@ export default function Navbar() {
 
                 {/* El nombre en texto se oculta solo donde el menú completo
                     compite por espacio (1280 a 1680 px); el logo sigue visible. */}
-                <div className="leading-none whitespace-nowrap xl:hidden min-[1680px]:block">
+                <div className="hidden leading-none whitespace-nowrap min-[430px]:block xl:hidden min-[1680px]:block">
                   <div
                     className="
                     text-[22px]
@@ -314,6 +314,7 @@ export default function Navbar() {
               {/* HOTELES */}
               <Link
                 to="/search"
+                aria-current={isActivePath("/search") ? "page" : undefined}
                 className={`
                   group
                   relative
@@ -338,6 +339,7 @@ export default function Navbar() {
                   el sitio no tiene realmente. */}
               <Link
                 to="/travel-info"
+                aria-current={isActivePath("/travel-info") ? "page" : undefined}
                 className={`
                   group
                   relative
@@ -359,6 +361,7 @@ export default function Navbar() {
               {/* VUELOS — ofertas aéreas que vende la agencia */}
               <Link
                 to="/vuelos"
+                aria-current={isActivePath("/vuelos") ? "page" : undefined}
                 className={`
                   group
                   relative
@@ -380,6 +383,7 @@ export default function Navbar() {
               {/* COMUNIDAD — videos de la agencia y experiencias de viajeros */}
               <Link
                 to="/comunidad"
+                aria-current={isActivePath("/comunidad") ? "page" : undefined}
                 className={`
                   group
                   relative
@@ -401,19 +405,18 @@ export default function Navbar() {
               {/* PAQUETES - CTA COMERCIAL */}
               <Link
                 to="/packages"
-                className="
+                aria-current={isActivePath("/packages") ? "page" : undefined}
+                className={`
                   group
                   flex items-center gap-1.5
                   px-2.5 2xl:px-3.5 py-2.5
                   rounded-xl
                   shrink-0
-                  bg-primary/[0.08]
-                  text-primary
+                  ${isActivePath("/packages") ? "bg-primary text-primary-foreground shadow-md" : "bg-primary/[0.08] text-primary shadow-sm ring-1 ring-inset ring-primary/15"}
                   hover:bg-primary
                   hover:text-primary-foreground
                   transition-all
-                  shadow-sm
-                "
+                `}
               >
                 <Package className="w-3.5 h-3.5 group-hover:scale-110 transition-transform shrink-0" />
                 <span>{t("nav.paquetes")}</span>
@@ -762,18 +765,26 @@ export default function Navbar() {
             {/* =========================================================
                 MOBILE
             ========================================================= */}
-            <div className="col-start-3 flex items-center gap-2 xl:hidden">
+            <div className="col-start-3 flex items-center gap-1 sm:gap-2 xl:hidden">
               {isAuthenticated && cliente && (
                 <NotificacionesBell idCliente={cliente.id_cliente} />
               )}
 
-              <SelectorIdioma className="px-2" />
+              {/* En pantallas angostas el idioma y el tema viven dentro del
+                  menú: cinco botones no caben junto al logo sin desbordar. */}
+              <div className="hidden min-[430px]:flex items-center gap-1 sm:gap-2">
+                <SelectorIdioma className="px-2" />
+              </div>
               <BotonAccesibilidad />
-              <ThemeToggle />
+              <div className="hidden min-[430px]:flex">
+                <ThemeToggle />
+              </div>
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
+                aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"}
+                aria-expanded={isMenuOpen}
                 className="
                   w-10 h-10
                   flex items-center justify-center
@@ -820,6 +831,10 @@ export default function Navbar() {
                 "
               >
                 <div className="py-4 space-y-1">
+                  <div className="mb-2 flex items-center justify-between rounded-xl bg-muted/60 px-3 py-1.5 min-[430px]:hidden">
+                    <SelectorIdioma />
+                    <ThemeToggle />
+                  </div>
                   <Link
                     to="/"
                     className="

@@ -102,7 +102,7 @@ export default function ProfileHero({ usuario, clienteData, reservas, bloqueado 
           transition={{ duration: 0.5, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col gap-3 lg:items-end"
         >
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-[1fr_1fr_1.4fr] gap-2 sm:grid-cols-3 sm:gap-3">
             {datos.map((d) => (
               <button
                 key={d.etiqueta}
@@ -111,17 +111,17 @@ export default function ProfileHero({ usuario, clienteData, reservas, bloqueado 
                 disabled={bloqueado}
                 className="min-w-0 rounded-2xl border border-white/15 bg-white/10 px-3 py-2.5 text-left backdrop-blur transition-colors enabled:hover:bg-white/15 sm:min-w-[8.5rem] sm:px-4"
               >
-                <span className="block whitespace-nowrap text-lg font-bold tabular-nums sm:text-xl">{d.valor}</span>
+                <span className="block truncate whitespace-nowrap text-base font-bold tabular-nums min-[400px]:text-lg sm:text-xl">{d.valor}</span>
                 <span className="block text-[10px] font-semibold uppercase leading-tight tracking-wide text-white/70 sm:text-[11px]">
                   {d.etiqueta}
                 </span>
               </button>
             ))}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <Link
               to="/packages"
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--gold)] px-4 py-2.5 text-sm font-bold text-[var(--gold-foreground)] shadow-lg transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--gold)] px-4 py-2.5 text-sm font-bold text-[var(--gold-foreground)] shadow-lg transition-transform hover:-translate-y-0.5"
             >
               <Compass className="h-4 w-4" aria-hidden="true" /> Planear un viaje
             </Link>
@@ -129,7 +129,7 @@ export default function ProfileHero({ usuario, clienteData, reservas, bloqueado 
               type="button"
               onClick={() => !bloqueado && onIr("mensajes")}
               disabled={bloqueado}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold backdrop-blur transition-colors enabled:hover:bg-white/20 disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold backdrop-blur transition-colors enabled:hover:bg-white/20 disabled:opacity-60"
             >
               <MessageCircle className="h-4 w-4" aria-hidden="true" /> Hablar con un asesor
             </button>

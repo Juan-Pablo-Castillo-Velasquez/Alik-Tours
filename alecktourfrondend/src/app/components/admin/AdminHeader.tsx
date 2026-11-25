@@ -182,7 +182,7 @@ export default function AdminHeader({
       </div>
 
       {/* Buscador global */}
-      <div ref={searchRef} className="relative flex-1 max-w-md ml-2 hidden md:block">
+      <div ref={searchRef} className="relative flex-1 min-w-[12rem] max-w-md ml-2 hidden md:block">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
         <input maxLength={100}
           value={query}
